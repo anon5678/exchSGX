@@ -3,8 +3,6 @@ set(SOURCE_FILES
         Enclave_t.c
         Log.c
         pprint.c
-        s_client.c
-        s_server.c
         ssl_conn_hdlr.cpp
         )
 

@@ -1,14 +1,6 @@
 #include "Enclave_u.h"
 #include <errno.h>
 
-typedef struct ms_sgx_connect_t {
-	int ms_retval;
-} ms_sgx_connect_t;
-
-typedef struct ms_sgx_accept_t {
-	int ms_retval;
-} ms_sgx_accept_t;
-
 
 
 typedef struct ms_ssl_conn_handle_t {
@@ -267,35 +259,17 @@ static const struct {
 		(void*)Enclave_sgx_thread_set_multiple_untrusted_events_ocall,
 	}
 };
-sgx_status_t sgx_connect(sgx_enclave_id_t eid, int* retval)
-{
-	sgx_status_t status;
-	ms_sgx_connect_t ms;
-	status = sgx_ecall(eid, 0, &ocall_table_Enclave, &ms);
-	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
-	return status;
-}
-
-sgx_status_t sgx_accept(sgx_enclave_id_t eid, int* retval)
-{
-	sgx_status_t status;
-	ms_sgx_accept_t ms;
-	status = sgx_ecall(eid, 1, &ocall_table_Enclave, &ms);
-	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
-	return status;
-}
-
 sgx_status_t ssl_conn_init(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 2, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 0, &ocall_table_Enclave, NULL);
 	return status;
 }
 
 sgx_status_t ssl_conn_teardown(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 3, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 1, &ocall_table_Enclave, NULL);
 	return status;
 }
 
@@ -305,14 +279,14 @@ sgx_status_t ssl_conn_handle(sgx_enclave_id_t eid, long int thread_id, thread_in
 	ms_ssl_conn_handle_t ms;
 	ms.ms_thread_id = thread_id;
 	ms.ms_thread_info = thread_info;
-	status = sgx_ecall(eid, 4, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 2, &ocall_table_Enclave, &ms);
 	return status;
 }
 
 sgx_status_t dummy(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 5, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 3, &ocall_table_Enclave, NULL);
 	return status;
 }
 

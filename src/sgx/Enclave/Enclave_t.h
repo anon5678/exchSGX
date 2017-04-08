@@ -19,8 +19,6 @@ extern "C" {
 #endif
 
 
-int sgx_connect();
-int sgx_accept();
 void ssl_conn_init();
 void ssl_conn_teardown();
 void ssl_conn_handle(long int thread_id, thread_info_t* thread_info);

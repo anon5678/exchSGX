@@ -36,8 +36,6 @@ int SGX_UBRIDGE(SGX_CDECL, sgx_thread_set_untrusted_event_ocall, (const void* wa
 int SGX_UBRIDGE(SGX_CDECL, sgx_thread_setwait_untrusted_events_ocall, (const void* waiter, const void* self));
 int SGX_UBRIDGE(SGX_CDECL, sgx_thread_set_multiple_untrusted_events_ocall, (const void** waiters, size_t total));
 
-sgx_status_t sgx_connect(sgx_enclave_id_t eid, int* retval);
-sgx_status_t sgx_accept(sgx_enclave_id_t eid, int* retval);
 sgx_status_t ssl_conn_init(sgx_enclave_id_t eid);
 sgx_status_t ssl_conn_teardown(sgx_enclave_id_t eid);
 sgx_status_t ssl_conn_handle(sgx_enclave_id_t eid, long int thread_id, thread_info_t* thread_info);

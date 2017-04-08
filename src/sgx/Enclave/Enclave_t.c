@@ -17,14 +17,6 @@
 } while (0)
 
 
-typedef struct ms_sgx_connect_t {
-	int ms_retval;
-} ms_sgx_connect_t;
-
-typedef struct ms_sgx_accept_t {
-	int ms_retval;
-} ms_sgx_accept_t;
-
 
 
 typedef struct ms_ssl_conn_handle_t {
@@ -131,32 +123,6 @@ typedef struct ms_sgx_thread_set_multiple_untrusted_events_ocall_t {
 	size_t ms_total;
 } ms_sgx_thread_set_multiple_untrusted_events_ocall_t;
 
-static sgx_status_t SGX_CDECL sgx_sgx_connect(void* pms)
-{
-	ms_sgx_connect_t* ms = SGX_CAST(ms_sgx_connect_t*, pms);
-	sgx_status_t status = SGX_SUCCESS;
-
-	CHECK_REF_POINTER(pms, sizeof(ms_sgx_connect_t));
-
-	ms->ms_retval = sgx_connect();
-
-
-	return status;
-}
-
-static sgx_status_t SGX_CDECL sgx_sgx_accept(void* pms)
-{
-	ms_sgx_accept_t* ms = SGX_CAST(ms_sgx_accept_t*, pms);
-	sgx_status_t status = SGX_SUCCESS;
-
-	CHECK_REF_POINTER(pms, sizeof(ms_sgx_accept_t));
-
-	ms->ms_retval = sgx_accept();
-
-
-	return status;
-}
-
 static sgx_status_t SGX_CDECL sgx_ssl_conn_init(void* pms)
 {
 	sgx_status_t status = SGX_SUCCESS;
@@ -213,12 +179,10 @@ static sgx_status_t SGX_CDECL sgx_dummy(void* pms)
 
 SGX_EXTERNC const struct {
 	size_t nr_ecall;
-	struct {void* ecall_addr; uint8_t is_priv;} ecall_table[6];
+	struct {void* ecall_addr; uint8_t is_priv;} ecall_table[4];
 } g_ecall_table = {
-	6,
+	4,
 	{
-		{(void*)(uintptr_t)sgx_sgx_connect, 0},
-		{(void*)(uintptr_t)sgx_sgx_accept, 0},
 		{(void*)(uintptr_t)sgx_ssl_conn_init, 0},
 		{(void*)(uintptr_t)sgx_ssl_conn_teardown, 0},
 		{(void*)(uintptr_t)sgx_ssl_conn_handle, 0},
@@ -228,26 +192,26 @@ SGX_EXTERNC const struct {
 
 SGX_EXTERNC const struct {
 	size_t nr_ocall;
-	uint8_t entry_table[16][6];
+	uint8_t entry_table[16][4];
 } g_dyn_entry_table = {
 	16,
 	{
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
+		{0, 0, 0, 0, },
 	}
 };
 
