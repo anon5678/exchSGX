@@ -15,5 +15,5 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 set(MBEDTLS_SGX_ROOT_DIR "${CMAKE_SOURCE_DIR}/mbedtls-SGX/")
 
-add_subdirectory(App)
+add_subdirectory(untrusted)
 add_subdirectory(Enclave)
