@@ -49,7 +49,7 @@ void sha256double(void const* const s1,
    SHA256_Final((unsigned char *)dst, &h2);
 }
 
-void ripemd160(void const* const src, int len, void * const dst) {
+void hash160(void const* const src, int len, void * const dst) {
    SHA256_CTX h1;
    unsigned char tmp[SHA256_DIGEST_LENGTH];
    SHA256_Init(&h1);
@@ -143,6 +143,15 @@ cointype validateDeposit(const unsigned char * tx,
    if(0x14 != tx[j++]) return 0; //20 bytes
    if(0x87 != tx[j + 20]) return 0; //op_equal
    hexdump(tx+j, 20);
+
+   //const std::string str = "63a820c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646882103d7c6052544bc42eb2bc0d27c884016adb933f15576a1a2d21cd4dd0f2de0c37dac6703389900b17521021844989a2bd7acd127dd7ed51aa2f4d55b32dbb414de6325ae37e05c1067598dac68";
+   const std::string str = "Y6ggx3Xnt1ft5jDNCqERO9ECZhqziCnKUqZCKreChi8mhkaIIQPXxgUlRLxC6yvA0nyIQBatuTPxVXahotIc1N0PLeDDfaxnAziZALF1IQIYRJiaK9es0SfdftUaovTVWzLbtBTeYyWuN+BcEGdZjaxo";
+   char arr[114];
+   std::memcpy(arr, (base64_decode(str)).data(), 114);
+   unsigned char res[20];
+   hash160(arr, 114, res);
+   hexdump(res, 20);
+
    return r;
 }
 
