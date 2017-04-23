@@ -142,6 +142,17 @@ int main() {
    std::cout << r << std::endl;
 #endif
 
+#if 0
+   //8725ed2bbbe730afe563ff201f46f07d52c51e8a68a52bc5e9146fde0a96e825
+   const std::string inp2[4] = {
+      "/PafLqVayW8Yh9fGA50j0pctG8hHU4X7TisRenmavrY=",
+      "dvaEORSIDLT9AwDJuaCzACdjjDida3Fx7JH9GynKgi8=",
+      "7bwQ7H6yj078Komhz58NKG3yjrWdOi2XYx3D6UdNOqc",
+      "wvfrsNv1QBKG8YNHJGjt3DQFq8bG9rh6I0AFzP0DSOg=" };
+   merkGenPath(inp2,4,2);
+#endif
+
+#if 1
    //b42be2d0403e5a7336b1f5e2b5c344827177d191b1cbced3565b7ba138d8a83d
    const std::string inp1[5] = {
       "EUEhf32xvT89CYMQ5vcH6ySXNs3zHONABwX6crvFJPA",
@@ -157,20 +168,31 @@ int main() {
       std::string(),
       std::string(),
       "TBCwOKsBxfQEjr57S2be+XJdvSnW9XFHSsDJWUn3QRPT" };
-
-#if 0
-   //8725ed2bbbe730afe563ff201f46f07d52c51e8a68a52bc5e9146fde0a96e825
-   const std::string inp2[4] = {
-      "/PafLqVayW8Yh9fGA50j0pctG8hHU4X7TisRenmavrY=",
-      "dvaEORSIDLT9AwDJuaCzACdjjDida3Fx7JH9GynKgi8=",
-      "7bwQ7H6yj078Komhz58NKG3yjrWdOi2XYx3D6UdNOqc",
-      "wvfrsNv1QBKG8YNHJGjt3DQFq8bG9rh6I0AFzP0DSOg=" };
-   merkGenPath(inp2,4,2);
-#endif
-
    merkGenPath(inp1,5,2);
    merkVerifyPath(inp1[2], path1, 3);
    merkVerifyPath(inp1[4], path2, 3);
+#endif
+
+#if 1
+   #include "txdata/tx390580base64.txt"
+   merkGenPath(leaves390580,1182,664);
+
+   unsigned char arr288bcaaa[223];
+   std::memcpy(arr288bcaaa, (base64_decode(txin288bcaaa)).data(), 223);
+   //byte_swap(arr288bcaaa, 223);
+
+   SHA256_CTX h1,h2;
+   unsigned char t1[SHA256_DIGEST_LENGTH];
+   SHA256_Init(&h1);
+   SHA256_Update(&h1, arr288bcaaa, 223);
+   SHA256_Final(t1, &h1);
+   SHA256_Init(&h2);
+   SHA256_Update(&h2, t1, SHA256_DIGEST_LENGTH);
+   SHA256_Final(t1, &h2);
+
+   byte_swap(t1, 32);
+   hexdump(t1, 32);
+#endif
 
    return 0;
 }
