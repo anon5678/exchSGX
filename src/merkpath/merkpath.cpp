@@ -1,4 +1,5 @@
 #include <openssl/sha.h>
+#include <openssl/ripemd.h>
 #include <iostream>
 #include <iomanip>
 #include <cstring>
@@ -6,13 +7,14 @@
 std::string base64_encode(const std::string &);
 std::string base64_decode(const std::string &);
 
+typedef unsigned long long cointype;
 typedef unsigned char arrdigest[SHA256_DIGEST_LENGTH];
 
 void hexdump(const unsigned char* data, int len) {
    std::cout << std::hex;
    for(int i=0; i<len; ++i)
       std::cout << std::setfill('0') << std::setw(2) << (int)data[i];
-   std::cout << std::endl;
+   std::cout << std::dec << std::endl;
 }
 
 void byte_swap(unsigned char* data, int len) {
@@ -45,6 +47,18 @@ void sha256double(void const* const s1,
    SHA256_Init(&h2);
    SHA256_Update(&h2, tmp, SHA256_DIGEST_LENGTH);
    SHA256_Final((unsigned char *)dst, &h2);
+}
+
+void ripemd160(void const* const src, int len, void * const dst) {
+   SHA256_CTX h1;
+   unsigned char tmp[SHA256_DIGEST_LENGTH];
+   SHA256_Init(&h1);
+   SHA256_Update(&h1, (unsigned char*)src, len);
+   SHA256_Final(tmp, &h1);
+   RIPEMD160_CTX h2;
+   RIPEMD160_Init(&h2);
+   RIPEMD160_Update(&h2, tmp, SHA256_DIGEST_LENGTH);
+   RIPEMD160_Final((unsigned char *)dst, &h2);
 }
 
 void recursiveMerk(const arrdigest * level, int size, int path) {
@@ -115,6 +129,21 @@ void merkVerifyPath(const std::string & leaf, const std::string * branch,
    
    byte_swap(curr, 32);
    hexdump(curr, 32);
+}
+
+cointype validateDeposit(const unsigned char * tx,
+   const char * mypubkey, int timeout, const char * refund) {
+   if(1 != tx[4]) return 0; //single input
+   int j = 5+32+4+1+tx[5+32+4]+4+1; //skip to first output
+   cointype r = tx[j++];
+   for(int i=8; i<=56; i+=8)
+      r += cointype(tx[j++]) << i;
+   if(23 != tx[j++]) return 0; //p2sh size
+   if(0xA9 != tx[j++]) return 0; //op_hash160
+   if(0x14 != tx[j++]) return 0; //20 bytes
+   if(0x87 != tx[j + 20]) return 0; //op_equal
+   hexdump(tx+j, 20);
+   return r;
 }
 
 int main() {
@@ -192,6 +221,8 @@ int main() {
 
    byte_swap(t1, 32);
    hexdump(t1, 32);
+
+   std::cout << validateDeposit(arr288bcaaa, 0, 0, 0) << std::endl;
 #endif
 
    return 0;
