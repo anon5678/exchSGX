@@ -131,8 +131,34 @@ void merkVerifyPath(const std::string & leaf, const std::string * branch,
    hexdump(curr, 32);
 }
 
+void fill_timelock_payment_template(unsigned char * aa,
+   const char * RTEpk, int timeout, const char * refund) {
+   int j=0;
+   aa[j++] = 0x63; //op_if
+   aa[j++] = 0xa8; //op_sha256 (rm)
+   aa[j++] = 0x20; //32 bytes digest size (rm)
+   std::memcpy(aa+j, (base64_decode("x3Xnt1ft5jDNCqERO9ECZhqziCnKUqZCKreChi8mhkY=")).data(), 32); //sha256 digest (rm)
+   aa[j+32] = 0x88; //op_equalverify (rm)
+   j+=33;
+   aa[j++] = 0x21; //33 bytes pubkey size
+   std::memcpy(aa+j, RTEpk, 33);
+   aa[j+33] = 0xAC; //op_checksig
+   j+=34;
+   aa[j++] = 0x67; //op_else
+   aa[j++] = 0x3; //timeout size
+   aa[j++] = timeout >> 16;
+   aa[j++] = timeout >> 8;
+   aa[j++] = timeout;
+   aa[j++] = 0xb1; //op_CLTV
+   aa[j++] = 0x75; //op_drop
+   aa[j++] = 0x21; //33 bytes pubkey size
+   std::memcpy(aa+j, refund, 33);
+   aa[j+33] = 0xAC; //op_checksig
+   aa[j+34] = 0x68; //op_endif
+}
+
 cointype validateDeposit(const unsigned char * tx,
-   const char * mypubkey, int timeout, const char * refund) {
+   const char * RTEpubkey, int timeout, const char * refund) {
    if(1 != tx[4]) return 0; //single input
    int j = 5+32+4+1+tx[5+32+4]+4+1; //skip to first output
    cointype r = tx[j++];
@@ -144,10 +170,8 @@ cointype validateDeposit(const unsigned char * tx,
    if(0x87 != tx[j + 20]) return 0; //op_equal
    hexdump(tx+j, 20);
 
-   //const std::string str = "63a820c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646882103d7c6052544bc42eb2bc0d27c884016adb933f15576a1a2d21cd4dd0f2de0c37dac6703389900b17521021844989a2bd7acd127dd7ed51aa2f4d55b32dbb414de6325ae37e05c1067598dac68";
-   const std::string str = "Y6ggx3Xnt1ft5jDNCqERO9ECZhqziCnKUqZCKreChi8mhkaIIQPXxgUlRLxC6yvA0nyIQBatuTPxVXahotIc1N0PLeDDfaxnAziZALF1IQIYRJiaK9es0SfdftUaovTVWzLbtBTeYyWuN+BcEGdZjaxo";
-   char arr[114];
-   std::memcpy(arr, (base64_decode(str)).data(), 114);
+   unsigned char arr[114];
+   fill_timelock_payment_template(arr,RTEpubkey,timeout,refund);
    unsigned char res[20];
    hash160(arr, 114, res);
    hexdump(res, 20);
@@ -231,7 +255,11 @@ int main() {
    byte_swap(t1, 32);
    hexdump(t1, 32);
 
-   std::cout << validateDeposit(arr288bcaaa, 0, 0, 0) << std::endl;
+   const cointype amount = validateDeposit(arr288bcaaa,
+      base64_decode("A9fGBSVEvELrK8DSfIhAFq25M/FVdqGi0hzU3Q8t4MN9").data(),
+      0x389900,
+      base64_decode("AhhEmJor16zRJ91+1Rqi9NVbMtu0FN5jJa434FwQZ1mN").data());
+   std::cout << amount << std::endl;
 #endif
 
    return 0;
