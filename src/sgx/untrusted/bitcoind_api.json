@@ -1,0 +1,14 @@
+[
+  {
+    "method": "getblockcount",
+    "params": [],
+    "returns": 123123123
+  },
+  {
+    "method": "getblockhash",
+    "params": [
+      123123123
+    ],
+    "returns": "0x1"
+  }
+]
