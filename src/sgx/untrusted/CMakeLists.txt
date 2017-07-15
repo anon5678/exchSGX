@@ -33,7 +33,11 @@ include_directories(
 set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_u.a")
 
 target_link_libraries(blockfeeder
-        ${JSONCPP_LIBRARIES} ${CURL_LIBRARIES} ${JSONRPCCPP_LIBRARIES}
+        ${JSONCPP_LIBRARIES} ${CURL_LIBRARIES}
+        # commentted for debugging
+        ${JSONRPCCPP_LIBRARIES}
+        # /home/fanz/dev/exchSGX/src/sgx/libjson-rpc-cpp-0.7.0/build/lib/libjsonrpccpp-client.so
+        # /home/fanz/dev/exchSGX/src/sgx/libjson-rpc-cpp-0.7.0/build/lib/libjsonrpccpp-common.so
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
         ${LIB_MBEDTLS_PATH}
         -Wl,-rpath -Wl,/usr/local/lib

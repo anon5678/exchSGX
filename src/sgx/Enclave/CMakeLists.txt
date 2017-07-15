@@ -4,11 +4,23 @@ set(SOURCE_FILES
         Log.c
         pprint.c
         ssl_conn_hdlr.cpp
+
+        latest_blocks.cpp
+
+
+        bitcoin/uint256.cpp
+        bitcoin/hash.cpp
+        bitcoin/utilstrencodings.cpp
+        bitcoin/primitives/block.cpp
+        bitcoin/primitives/block.h
+        bitcoin/crypto/hmac_sha256.cpp
+        bitcoin/crypto/hmac_sha512.cpp
+        bitcoin/crypto/sha256.cpp
+        bitcoin/crypto/sha512.cpp
         )
 
 add_definitions(-DENCLAVE_STD_ALT)
 
-# TODO: correct the typo in Town Cirer (_u -> _t)
 set_directory_properties(PROPERTIES
         ADDITIONAL_MAKE_CLEAN_FILES "Enclave_t.c; Enclave_t.h")
 
@@ -23,15 +35,16 @@ add_custom_command(
 add_library(enclave SHARED ${SOURCE_FILES})
 
 include_directories(
-        $(CMAKE_CURRENT_SOURCE_DIR)
+        ${CMAKE_CURRENT_SOURCE_DIR}
         ${SGX_SDK}/include
         ${SGX_SDK}/include/tlibc
-        ${SGX_SDK}/include/stlport
+        ${SGX_SDK}/include/libcxx
         ${MBEDTLS_SGX_ROOT_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/bitcoin
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SGX_COMMON_CFLAGS} -nostdinc -fvisibility=hidden -fpie -fstack-protector")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++03 -nostdinc++")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11 -nostdinc++")
 
 set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_t.a")
 
@@ -40,7 +53,7 @@ set_target_properties(enclave PROPERTIES PREFIX "")
 target_link_libraries(enclave "${SGX_COMMON_CFLAGS} \
     -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L${SGX_LIBRARY_PATH} \
     -Wl,--whole-archive -l${SGX_TRTS_LIB} -Wl,--no-whole-archive \
-    -Wl,--start-group ${LIB_MBEDTLS_PATH} -lsgx_tstdc -lsgx_tstdcxx -lsgx_tcrypto -l${SGX_TSVC_LIB} -Wl,--end-group \
+    -Wl,--start-group ${LIB_MBEDTLS_PATH} -lsgx_tstdc -lsgx_tcxx -lsgx_tcrypto -l${SGX_TSVC_LIB} -Wl,--end-group \
     -Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
     -Wl,-pie,-eenclave_entry -Wl,--export-dynamic \
     -Wl,--defsym,__ImageBase=0")
