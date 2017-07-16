@@ -4,3 +4,7 @@
 
 #include "latest_blocks.h"
 
+LatestBlocks<512> blockchain;
+
+void push() {
+}

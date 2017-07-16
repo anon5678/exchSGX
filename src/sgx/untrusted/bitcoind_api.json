@@ -11,7 +11,7 @@
   },
   {
     "method": "getblockheader",
-    "params": [ "0xheader hash" ],
-    "returns": {}
+    "params": [ "0xheader hash", true],
+    "returns": "binary string"
   }
 ]

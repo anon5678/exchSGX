@@ -13,6 +13,9 @@
 
 using namespace std;
 
+#define HDR_FMT_JSON  true
+#define HDR_FMT_BIN   false
+
 namespace cfg {
 string bitcoind_rpc_addr = "http://exch:goodpass@localhost:8332";
 }
@@ -31,8 +34,10 @@ int main() {
 
     cout << block_count << " => " << hash << endl;
 
-    Json::Value block_header = rpcClient.getblockheader(hash);
+    Json::Value block_header = rpcClient.getblockheader(hash, HDR_FMT_BIN);
+    cout << block_header.asString() << endl;
 
+    block_header = rpcClient.getblockheader(hash, HDR_FMT_JSON);
     cout << block_header.toStyledString() << endl;
 
   }
