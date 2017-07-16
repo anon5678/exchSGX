@@ -16,7 +16,7 @@ add_custom_command(
 )
 
 add_executable(m_server m_server.cpp mbedtls_net.c mbedtls_error.c Enclave_u.c Utils.cpp)
-add_executable(blockfeeder blockfeeder.cpp)
+add_executable(blockfeeder blockfeeder.cpp Utils.cpp Enclave_u.c)
 
 find_package(Jsoncpp REQUIRED)
 find_package(JsonCppRpc REQUIRED)

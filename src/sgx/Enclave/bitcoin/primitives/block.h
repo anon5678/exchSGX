@@ -6,7 +6,7 @@
 #ifndef BITCOIN_PRIMITIVES_BLOCK_H
 #define BITCOIN_PRIMITIVES_BLOCK_H
 
-//#include "serialize.h"
+#include "serialize.h"
 #include "uint256.h"
 
 /** Nodes collect new transactions into a block, hash them into a hash tree,
@@ -32,17 +32,17 @@ public:
         SetNull();
     }
 
-//    ADD_SERIALIZE_METHODS;
-//
-//    template <typename Stream, typename Operation>
-//    inline void SerializationOp(Stream& s, Operation ser_action) {
-//        READWRITE(this->nVersion);
-//        READWRITE(hashPrevBlock);
-//        READWRITE(hashMerkleRoot);
-//        READWRITE(nTime);
-//        READWRITE(nBits);
-//        READWRITE(nNonce);
-//    }
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action) {
+        READWRITE(this->nVersion);
+        READWRITE(hashPrevBlock);
+        READWRITE(hashMerkleRoot);
+        READWRITE(nTime);
+        READWRITE(nBits);
+        READWRITE(nNonce);
+    }
 
     void SetNull()
     {

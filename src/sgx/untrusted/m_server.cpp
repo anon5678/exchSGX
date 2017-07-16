@@ -127,7 +127,6 @@ int main(void) {
   }
 
   mbedtls_printf(" ok\n");
-
   mbedtls_printf("  [ main ]  Waiting for a remote connection\n");
 
   // non-block accept

@@ -7,7 +7,6 @@ set(SOURCE_FILES
 
         latest_blocks.cpp
 
-
         bitcoin/uint256.cpp
         bitcoin/hash.cpp
         bitcoin/utilstrencodings.cpp

@@ -39,6 +39,7 @@ int SGX_UBRIDGE(SGX_CDECL, sgx_thread_set_multiple_untrusted_events_ocall, (cons
 sgx_status_t ssl_conn_init(sgx_enclave_id_t eid);
 sgx_status_t ssl_conn_teardown(sgx_enclave_id_t eid);
 sgx_status_t ssl_conn_handle(sgx_enclave_id_t eid, long int thread_id, thread_info_t* thread_info);
+sgx_status_t push(sgx_enclave_id_t eid, const char* header);
 sgx_status_t dummy(sgx_enclave_id_t eid);
 
 #ifdef __cplusplus

@@ -8,6 +8,10 @@ typedef struct ms_ssl_conn_handle_t {
 	thread_info_t* ms_thread_info;
 } ms_ssl_conn_handle_t;
 
+typedef struct ms_push_t {
+	char* ms_header;
+} ms_push_t;
+
 
 typedef struct ms_ocall_mbedtls_net_connect_t {
 	int ms_retval;
@@ -283,10 +287,19 @@ sgx_status_t ssl_conn_handle(sgx_enclave_id_t eid, long int thread_id, thread_in
 	return status;
 }
 
+sgx_status_t push(sgx_enclave_id_t eid, const char* header)
+{
+	sgx_status_t status;
+	ms_push_t ms;
+	ms.ms_header = (char*)header;
+	status = sgx_ecall(eid, 3, &ocall_table_Enclave, &ms);
+	return status;
+}
+
 sgx_status_t dummy(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 3, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 4, &ocall_table_Enclave, NULL);
 	return status;
 }
 
