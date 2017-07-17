@@ -30,13 +30,13 @@ class LatestBlocks {
   //! validate a block by checking its hash
   //! \param new_block
   //! \return  true = validated
-  bool pushable(const CBlockHeader &new_block) const {
+  bool IsAppendable(const CBlockHeader &new_block) const {
     if (headers.empty())
       return true;
 
     CBlockHeader prev_block = headers.back();
 
-    if (prev_block.GetHash() == new_block.GetPrevHash()
+    if (prev_block.GetHash() == new_block.hashPrevBlock
         && nZero(new_block.GetHash()) >= 8) {
       LL_DEBUG("can push");
       return true;
@@ -46,14 +46,19 @@ class LatestBlocks {
     return false;
   }
 
-  bool push(const CBlockHeader &new_header) {
-    if (!pushable(new_header)) {
+  bool AppendBlock(const CBlockHeader &new_header) {
+    if (!IsAppendable(new_header)) {
       return false;
     }
 
+    int nPoped = 0;
     while (headers.size() >= WINDOW) {
       headers.pop();
+      nPoped++;
     }
+
+    if (nPoped > 0)
+        LL_NOTICE("removed %d blocks from FIFO", nPoped);
 
     headers.push(new_header);
     return true;

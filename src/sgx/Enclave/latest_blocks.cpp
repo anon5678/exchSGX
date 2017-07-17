@@ -12,7 +12,6 @@
 #include <vector>
 
 constexpr size_t HEADER_SIZE = 80;
-constexpr size_t HASH_SIZE = 32;
 
 LatestBlocks<5> blockchain;
 
@@ -20,9 +19,9 @@ extern "C" {
 void push(const char *);
 }
 
-void push(const char *header_hex) {
+void push(const char *block_hdr_hex) {
   // sanity check
-  if (2 * HEADER_SIZE != strlen(header_hex)) {
+  if (2 * HEADER_SIZE != strlen(block_hdr_hex)) {
     return;
     LL_CRITICAL("invalid header");
   }
@@ -30,7 +29,7 @@ void push(const char *header_hex) {
   CBlockHeader block_header;
 
   // parse hex and unserialize
-  std::vector<unsigned char> header_bin = ParseHex(header_hex);
+  std::vector<unsigned char> header_bin = ParseHex(block_hdr_hex);
   bytestream ibs(header_bin);
   block_header.Unserialize(ibs);
 
@@ -47,11 +46,12 @@ void push(const char *header_hex) {
 
   assert(block_hash == block_header.GetHash());
 
-  // push it to the blockchain
-  if(blockchain.push(block_header)) {
-    LL_NOTICE("block %s pushed", block_hash.GetHex().c_str());
-    LL_NOTICE("%d blocks in queue", blockchain.size());
+  // try to push it to the blockchain
+  if(blockchain.AppendBlock(block_header)) {
+    LL_NOTICE("succeed");
   }
   else
-    LL_NOTICE("faild to push %s", block_hash.GetHex().c_str());
+    LL_CRITICAL("faild to append block %s", block_hash.GetHex().c_str());
+
+  LL_NOTICE("%d blocks in FIFO", blockchain.size());
 }

@@ -34,7 +34,7 @@ bool push_one(sgx_enclave_id_t eid, bitcoindRPCClient &rpc, int blocknum) {
     return true;
   }
   catch (const jsonrpc::JsonRpcException &e) {
-    cerr << e.what() << endl;
+    cerr << "JSONRPC error: " << e.what() << endl;
   }
   catch (const exception &e) {
     cerr << "std exception catched: " << e.what() << endl;
@@ -59,7 +59,19 @@ int main() {
   }
 
   int test_block_1[3] {10000, 10001, 10002};
-  int test_block_2[3] {10000, 10001, 10004};
+  int test_block_2[4] {10003, 10004, 10005, 10007};
+
+
+  cout << "Testing one. Suppose to succeed\n";
+  cout << "===============================" << endl;
+
+  for (auto b : test_block_1) {
+    push_one(eid, rpc, b);
+  }
+
+  cout << endl;
+  cout << "Testing two. Suppose to fail on the last one\n";
+  cout << "============================================" << endl;
 
   for (auto b : test_block_2) {
     push_one(eid, rpc, b);

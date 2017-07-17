@@ -58,7 +58,6 @@ class CBlockHeader {
   }
 
   uint256 GetHash() const;
-  uint256 GetPrevHash() const { return hashPrevBlock; }
 
   int64_t GetBlockTime() const {
     return (int64_t) nTime;
