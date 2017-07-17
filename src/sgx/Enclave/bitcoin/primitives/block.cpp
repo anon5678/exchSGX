@@ -9,10 +9,6 @@
 #include "utilstrencodings.h"
 #include "crypto/common.h"
 
-#include <exception>
-
-uint256 CBlockHeader::GetHash() const
-{
-  throw std::invalid_argument("not implemented");
-//    return SerializeHash(*this);
+uint256 CBlockHeader::GetHash() const {
+  return SerializeHash(*this);
 }

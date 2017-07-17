@@ -9,6 +9,8 @@
 #include "serialize.h"
 #include "uint256.h"
 
+#include "Log.h"
+
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
  * requirements.  When they solve the proof-of-work, they broadcast the block
@@ -16,55 +18,51 @@
  * in the block is a special one that creates a new coin owned by the creator
  * of the block.
  */
-class CBlockHeader
-{
-public:
-    // header
-    int32_t nVersion;
-    uint256 hashPrevBlock;
-    uint256 hashMerkleRoot;
-    uint32_t nTime;
-    uint32_t nBits;
-    uint32_t nNonce;
+class CBlockHeader {
+ public:
+  // header
+  int32_t nVersion;
+  uint256 hashPrevBlock;
+  uint256 hashMerkleRoot;
+  uint32_t nTime;
+  uint32_t nBits;
+  uint32_t nNonce;
 
-    CBlockHeader()
-    {
-        SetNull();
-    }
+  CBlockHeader() {
+    SetNull();
+  }
 
-    ADD_SERIALIZE_METHODS;
+  ADD_SERIALIZE_METHODS;
 
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITE(this->nVersion);
-        READWRITE(hashPrevBlock);
-        READWRITE(hashMerkleRoot);
-        READWRITE(nTime);
-        READWRITE(nBits);
-        READWRITE(nNonce);
-    }
+  template<typename Stream, typename Operation>
+  inline void SerializationOp(Stream &s, Operation ser_action) {
+    READWRITE(this->nVersion);
+    READWRITE(hashPrevBlock);
+    READWRITE(hashMerkleRoot);
+    READWRITE(nTime);
+    READWRITE(nBits);
+    READWRITE(nNonce);
+  }
 
-    void SetNull()
-    {
-        nVersion = 0;
-        hashPrevBlock.SetNull();
-        hashMerkleRoot.SetNull();
-        nTime = 0;
-        nBits = 0;
-        nNonce = 0;
-    }
+  void SetNull() {
+    nVersion = 0;
+    hashPrevBlock.SetNull();
+    hashMerkleRoot.SetNull();
+    nTime = 0;
+    nBits = 0;
+    nNonce = 0;
+  }
 
-    bool IsNull() const
-    {
-        return (nBits == 0);
-    }
+  bool IsNull() const {
+    return (nBits == 0);
+  }
 
-    uint256 GetHash() const;
+  uint256 GetHash() const;
+  uint256 GetPrevHash() const { return hashPrevBlock; }
 
-    int64_t GetBlockTime() const
-    {
-        return (int64_t)nTime;
-    }
+  int64_t GetBlockTime() const {
+    return (int64_t) nTime;
+  }
 };
 
 #endif // BITCOIN_PRIMITIVES_BLOCK_H

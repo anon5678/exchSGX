@@ -6,6 +6,7 @@ set(SOURCE_FILES
         ssl_conn_hdlr.cpp
 
         latest_blocks.cpp
+        bytestream.cpp
 
         bitcoin/uint256.cpp
         bitcoin/hash.cpp

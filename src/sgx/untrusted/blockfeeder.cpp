@@ -27,6 +27,25 @@ string get_blockheader_hex(bitcoindRPCClient &rpc, uint32_t height) {
   return hdr.asString();
 }
 
+bool push_one(sgx_enclave_id_t eid, bitcoindRPCClient &rpc, int blocknum) {
+  try {
+    string hdr_hex = get_blockheader_hex(rpc, blocknum);
+    push(eid, hdr_hex.c_str());
+    return true;
+  }
+  catch (const jsonrpc::JsonRpcException &e) {
+    cerr << e.what() << endl;
+  }
+  catch (const exception &e) {
+    cerr << "std exception catched: " << e.what() << endl;
+  }
+  catch (...) {
+    cerr << "unknown err" << endl;
+  }
+
+  return false;
+}
+
 int main() {
   // note that Bitcoin uses JSON-RPC 1.0
   jsonrpc::HttpClient connector(::cfg::bitcoind_rpc_addr);
@@ -39,16 +58,13 @@ int main() {
     exit(-1);
   }
 
-  try {
-    string hdr_hex = get_blockheader_hex(rpc, 10000);
-    push(eid, hdr_hex.c_str());
+  int test_block_1[3] {10000, 10001, 10002};
+  int test_block_2[3] {10000, 10001, 10004};
+
+  for (auto b : test_block_2) {
+    push_one(eid, rpc, b);
   }
-  catch (const jsonrpc::JsonRpcException &e) {
-    cerr << e.what() << endl;
-  }
-  catch (const exception &e) {
-    cerr << "std exception catched: " << e.what() << endl;
-  }
+
   return 0;
 }
 
