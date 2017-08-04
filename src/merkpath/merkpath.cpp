@@ -108,23 +108,23 @@ void merkGenPath(const std::string * leaf_nodes, int size, int index) {
 }
 
 void merkVerifyPath(const std::string & leaf, const std::string * branch,
-   int size) {
-   unsigned char tmp[1+SHA256_DIGEST_LENGTH];
+   int dirvec) {
    unsigned char curr[SHA256_DIGEST_LENGTH];
+   const char * tmp;
 
    std::memcpy(curr, (base64_decode(leaf)).data(), 32);
    byte_swap(curr, 32);
 
-   for(int i=0; i<size; ++i) {
+   for(int i=0; dirvec>1; ++i,dirvec>>=1) {
       if( (branch[i]).empty() ) {
          sha256double(curr, curr, curr);
          continue;
       }
-      std::memcpy(tmp, (base64_decode(branch[i])).data(), 33);
-      if('L' == tmp[0])
-         sha256double(tmp+1, curr, curr);
+      tmp = (base64_decode(branch[i])).data();
+      if(dirvec & 1)
+         sha256double(curr, tmp, curr);
       else
-         sha256double(curr, tmp+1, curr);
+         sha256double(tmp, curr, curr);
    }
    
    byte_swap(curr, 32);
@@ -223,16 +223,16 @@ int main() {
       "oIGaF3yJsE47uycQ4tiQB9oy8J9wVxjLnoWn3MRk4+Y=",
       "WFrn4zDymhPd7KQ3yUhInejYhf7DJoTyEx0kzYVKBZM=" };
    const std::string path1[3] = {
-      "UubjZMTcp4WeyxhXcJ/wMtoHkNjiECe7O06wiXwXmoGg",
-      "TDltFtR0f4caFSigQl+dtAI6SaqdujNF3s2PvuAYD0cv",
-      "UqO0+wyk8maVvWG1g1RY2cn0v7dWAsIXMhHhnrLwvLKd" };
+      "5uNkxNynhZ7LGFdwn/Ay2geQ2OIQJ7s7TrCJfBeagaA=",
+      "OW0W1HR/hxoVKKBCX520AjpJqp26M0XezY++4BgPRy8=",
+      "o7T7DKTyZpW9YbWDVFjZyfS/t1YCwhcyEeGesvC8sp0=" };
    const std::string path2[3] = {
       std::string(),
       std::string(),
-      "TBCwOKsBxfQEjr57S2be+XJdvSnW9XFHSsDJWUn3QRPT" };
+      "ELA4qwHF9ASOvntLZt75cl29Kdb1cUdKwMlZSfdBE9M=" };
    merkGenPath(inp1,5,2);
-   merkVerifyPath(inp1[2], path1, 3);
-   merkVerifyPath(inp1[4], path2, 3);
+   merkVerifyPath(inp1[2], path1, 13 /* 1RLR=1101 */ );
+   merkVerifyPath(inp1[4], path2, 8 /* 1Lxx=10xx */ );
 #endif
 
 #if 1
