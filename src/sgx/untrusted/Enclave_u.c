@@ -8,9 +8,13 @@ typedef struct ms_ssl_conn_handle_t {
 	thread_info_t* ms_thread_info;
 } ms_ssl_conn_handle_t;
 
-typedef struct ms_push_t {
+typedef struct ms_appendBlockToFIFO_t {
 	char* ms_header;
-} ms_push_t;
+} ms_appendBlockToFIFO_t;
+
+typedef struct ms_enclaveTest_t {
+	int ms_retval;
+} ms_enclaveTest_t;
 
 
 typedef struct ms_ocall_mbedtls_net_connect_t {
@@ -110,6 +114,16 @@ typedef struct ms_sgx_thread_set_multiple_untrusted_events_ocall_t {
 	void** ms_waiters;
 	size_t ms_total;
 } ms_sgx_thread_set_multiple_untrusted_events_ocall_t;
+
+typedef struct ms_ocall_print_to_std_t {
+	int ms_retval;
+	char* ms_str;
+} ms_ocall_print_to_std_t;
+
+typedef struct ms_ocall_print_to_err_t {
+	int ms_retval;
+	char* ms_str;
+} ms_ocall_print_to_err_t;
 
 static sgx_status_t SGX_CDECL Enclave_ocall_mbedtls_net_connect(void* pms)
 {
@@ -239,11 +253,27 @@ static sgx_status_t SGX_CDECL Enclave_sgx_thread_set_multiple_untrusted_events_o
 	return SGX_SUCCESS;
 }
 
+static sgx_status_t SGX_CDECL Enclave_ocall_print_to_std(void* pms)
+{
+	ms_ocall_print_to_std_t* ms = SGX_CAST(ms_ocall_print_to_std_t*, pms);
+	ms->ms_retval = ocall_print_to_std((const char*)ms->ms_str);
+
+	return SGX_SUCCESS;
+}
+
+static sgx_status_t SGX_CDECL Enclave_ocall_print_to_err(void* pms)
+{
+	ms_ocall_print_to_err_t* ms = SGX_CAST(ms_ocall_print_to_err_t*, pms);
+	ms->ms_retval = ocall_print_to_err((const char*)ms->ms_str);
+
+	return SGX_SUCCESS;
+}
+
 static const struct {
 	size_t nr_ocall;
-	void * table[16];
+	void * table[18];
 } ocall_table_Enclave = {
-	16,
+	18,
 	{
 		(void*)Enclave_ocall_mbedtls_net_connect,
 		(void*)Enclave_ocall_mbedtls_net_bind,
@@ -261,6 +291,8 @@ static const struct {
 		(void*)Enclave_sgx_thread_set_untrusted_event_ocall,
 		(void*)Enclave_sgx_thread_setwait_untrusted_events_ocall,
 		(void*)Enclave_sgx_thread_set_multiple_untrusted_events_ocall,
+		(void*)Enclave_ocall_print_to_std,
+		(void*)Enclave_ocall_print_to_err,
 	}
 };
 sgx_status_t ssl_conn_init(sgx_enclave_id_t eid)
@@ -287,19 +319,28 @@ sgx_status_t ssl_conn_handle(sgx_enclave_id_t eid, long int thread_id, thread_in
 	return status;
 }
 
-sgx_status_t push(sgx_enclave_id_t eid, const char* header)
+sgx_status_t appendBlockToFIFO(sgx_enclave_id_t eid, const char* header)
 {
 	sgx_status_t status;
-	ms_push_t ms;
+	ms_appendBlockToFIFO_t ms;
 	ms.ms_header = (char*)header;
 	status = sgx_ecall(eid, 3, &ocall_table_Enclave, &ms);
+	return status;
+}
+
+sgx_status_t enclaveTest(sgx_enclave_id_t eid, int* retval)
+{
+	sgx_status_t status;
+	ms_enclaveTest_t ms;
+	status = sgx_ecall(eid, 4, &ocall_table_Enclave, &ms);
+	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
 
 sgx_status_t dummy(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 4, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 5, &ocall_table_Enclave, NULL);
 	return status;
 }
 

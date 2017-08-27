@@ -19,24 +19,24 @@
 #define ENCLAVE_FILENAME "enclave.signed.so"
 #endif
 
-void print_error_message(sgx_status_t ret);
-int initialize_enclave(sgx_enclave_id_t *eid);
-
-#if defined(_MSC_VER)
-int query_sgx_status();
-#endif
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-//extern sgx_enclave_id_t global_eid;    /* global enclave id */
+int ocall_print_to_std(const char *str);
+int ocall_print_to_err(const char *str);
 
+#if defined(__cplusplus)
+}
+#endif
+
+void print_error_message(sgx_status_t ret);
+int initialize_enclave(sgx_enclave_id_t *eid);
 
 typedef struct _sgx_errlist_t {
-    sgx_status_t err;
-    const char *msg;
-    const char *sug; /* Suggestion */
+  sgx_status_t err;
+  const char *msg;
+  const char *sug; /* Suggestion */
 } sgx_errlist_t;
 
 /* Error code returned by sgx_create_enclave */
@@ -118,6 +118,4 @@ static sgx_errlist_t sgx_errlist[] = {
     },
 };
 
-#if defined(__cplusplus)
-}
-#endif
+

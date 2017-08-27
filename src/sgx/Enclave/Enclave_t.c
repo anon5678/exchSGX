@@ -24,9 +24,13 @@ typedef struct ms_ssl_conn_handle_t {
 	thread_info_t* ms_thread_info;
 } ms_ssl_conn_handle_t;
 
-typedef struct ms_push_t {
+typedef struct ms_appendBlockToFIFO_t {
 	char* ms_header;
-} ms_push_t;
+} ms_appendBlockToFIFO_t;
+
+typedef struct ms_enclaveTest_t {
+	int ms_retval;
+} ms_enclaveTest_t;
 
 
 typedef struct ms_ocall_mbedtls_net_connect_t {
@@ -127,6 +131,16 @@ typedef struct ms_sgx_thread_set_multiple_untrusted_events_ocall_t {
 	size_t ms_total;
 } ms_sgx_thread_set_multiple_untrusted_events_ocall_t;
 
+typedef struct ms_ocall_print_to_std_t {
+	int ms_retval;
+	char* ms_str;
+} ms_ocall_print_to_std_t;
+
+typedef struct ms_ocall_print_to_err_t {
+	int ms_retval;
+	char* ms_str;
+} ms_ocall_print_to_err_t;
+
 static sgx_status_t SGX_CDECL sgx_ssl_conn_init(void* pms)
 {
 	sgx_status_t status = SGX_SUCCESS;
@@ -173,15 +187,15 @@ err:
 	return status;
 }
 
-static sgx_status_t SGX_CDECL sgx_push(void* pms)
+static sgx_status_t SGX_CDECL sgx_appendBlockToFIFO(void* pms)
 {
-	ms_push_t* ms = SGX_CAST(ms_push_t*, pms);
+	ms_appendBlockToFIFO_t* ms = SGX_CAST(ms_appendBlockToFIFO_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
 	char* _tmp_header = ms->ms_header;
 	size_t _len_header = _tmp_header ? strlen(_tmp_header) + 1 : 0;
 	char* _in_header = NULL;
 
-	CHECK_REF_POINTER(pms, sizeof(ms_push_t));
+	CHECK_REF_POINTER(pms, sizeof(ms_appendBlockToFIFO_t));
 	CHECK_UNIQUE_POINTER(_tmp_header, _len_header);
 
 	if (_tmp_header != NULL) {
@@ -194,9 +208,22 @@ static sgx_status_t SGX_CDECL sgx_push(void* pms)
 		memcpy((void*)_in_header, _tmp_header, _len_header);
 		_in_header[_len_header - 1] = '\0';
 	}
-  appendBlockToFIFO((const char *) _in_header);
+	appendBlockToFIFO((const char*)_in_header);
 err:
 	if (_in_header) free((void*)_in_header);
+
+	return status;
+}
+
+static sgx_status_t SGX_CDECL sgx_enclaveTest(void* pms)
+{
+	ms_enclaveTest_t* ms = SGX_CAST(ms_enclaveTest_t*, pms);
+	sgx_status_t status = SGX_SUCCESS;
+
+	CHECK_REF_POINTER(pms, sizeof(ms_enclaveTest_t));
+
+	ms->ms_retval = enclaveTest();
+
 
 	return status;
 }
@@ -211,40 +238,43 @@ static sgx_status_t SGX_CDECL sgx_dummy(void* pms)
 
 SGX_EXTERNC const struct {
 	size_t nr_ecall;
-	struct {void* ecall_addr; uint8_t is_priv;} ecall_table[5];
+	struct {void* ecall_addr; uint8_t is_priv;} ecall_table[6];
 } g_ecall_table = {
-	5,
+	6,
 	{
 		{(void*)(uintptr_t)sgx_ssl_conn_init, 0},
 		{(void*)(uintptr_t)sgx_ssl_conn_teardown, 0},
 		{(void*)(uintptr_t)sgx_ssl_conn_handle, 0},
-		{(void*)(uintptr_t)sgx_push, 0},
+		{(void*)(uintptr_t)sgx_appendBlockToFIFO, 0},
+		{(void*)(uintptr_t)sgx_enclaveTest, 0},
 		{(void*)(uintptr_t)sgx_dummy, 0},
 	}
 };
 
 SGX_EXTERNC const struct {
 	size_t nr_ocall;
-	uint8_t entry_table[16][5];
+	uint8_t entry_table[18][6];
 } g_dyn_entry_table = {
-	16,
+	18,
 	{
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, },
 	}
 };
 
@@ -954,6 +984,82 @@ sgx_status_t SGX_CDECL sgx_thread_set_multiple_untrusted_events_ocall(int* retva
 	
 	ms->ms_total = total;
 	status = sgx_ocall(15, ms);
+
+	if (retval) *retval = ms->ms_retval;
+
+	sgx_ocfree();
+	return status;
+}
+
+sgx_status_t SGX_CDECL ocall_print_to_std(int* retval, const char* str)
+{
+	sgx_status_t status = SGX_SUCCESS;
+	size_t _len_str = str ? strlen(str) + 1 : 0;
+
+	ms_ocall_print_to_std_t* ms = NULL;
+	size_t ocalloc_size = sizeof(ms_ocall_print_to_std_t);
+	void *__tmp = NULL;
+
+	ocalloc_size += (str != NULL && sgx_is_within_enclave(str, _len_str)) ? _len_str : 0;
+
+	__tmp = sgx_ocalloc(ocalloc_size);
+	if (__tmp == NULL) {
+		sgx_ocfree();
+		return SGX_ERROR_UNEXPECTED;
+	}
+	ms = (ms_ocall_print_to_std_t*)__tmp;
+	__tmp = (void *)((size_t)__tmp + sizeof(ms_ocall_print_to_std_t));
+
+	if (str != NULL && sgx_is_within_enclave(str, _len_str)) {
+		ms->ms_str = (char*)__tmp;
+		__tmp = (void *)((size_t)__tmp + _len_str);
+		memcpy((void*)ms->ms_str, str, _len_str);
+	} else if (str == NULL) {
+		ms->ms_str = NULL;
+	} else {
+		sgx_ocfree();
+		return SGX_ERROR_INVALID_PARAMETER;
+	}
+	
+	status = sgx_ocall(16, ms);
+
+	if (retval) *retval = ms->ms_retval;
+
+	sgx_ocfree();
+	return status;
+}
+
+sgx_status_t SGX_CDECL ocall_print_to_err(int* retval, const char* str)
+{
+	sgx_status_t status = SGX_SUCCESS;
+	size_t _len_str = str ? strlen(str) + 1 : 0;
+
+	ms_ocall_print_to_err_t* ms = NULL;
+	size_t ocalloc_size = sizeof(ms_ocall_print_to_err_t);
+	void *__tmp = NULL;
+
+	ocalloc_size += (str != NULL && sgx_is_within_enclave(str, _len_str)) ? _len_str : 0;
+
+	__tmp = sgx_ocalloc(ocalloc_size);
+	if (__tmp == NULL) {
+		sgx_ocfree();
+		return SGX_ERROR_UNEXPECTED;
+	}
+	ms = (ms_ocall_print_to_err_t*)__tmp;
+	__tmp = (void *)((size_t)__tmp + sizeof(ms_ocall_print_to_err_t));
+
+	if (str != NULL && sgx_is_within_enclave(str, _len_str)) {
+		ms->ms_str = (char*)__tmp;
+		__tmp = (void *)((size_t)__tmp + _len_str);
+		memcpy((void*)ms->ms_str, str, _len_str);
+	} else if (str == NULL) {
+		ms->ms_str = NULL;
+	} else {
+		sgx_ocfree();
+		return SGX_ERROR_INVALID_PARAMETER;
+	}
+	
+	status = sgx_ocall(17, ms);
 
 	if (retval) *retval = ms->ms_retval;
 

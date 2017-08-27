@@ -1,9 +1,22 @@
+add_definitions(-DENCLAVE_STD_ALT)
+
+set_directory_properties(PROPERTIES
+        ADDITIONAL_MAKE_CLEAN_FILES "Enclave_t.c; Enclave_t.h")
+
+add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Enclave_t.c
+        COMMAND ${SGX_EDGER8R} --trusted ${CMAKE_CURRENT_SOURCE_DIR}/Enclave.edl
+        --search-path ${SGX_SDK}/include
+        --search-path ${MBEDTLS_SGX_ROOT_DIR}/lib
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 set(SOURCE_FILES
         ecalls.cpp
         Enclave_t.c
         Log.c
         pprint.c
-        ssl_conn_hdlr.cpp
+        tls_server_threaded.cpp
 
         blockfifo.cpp
         bytestream.cpp
@@ -17,20 +30,9 @@ set(SOURCE_FILES
         bitcoin/crypto/hmac_sha512.cpp
         bitcoin/crypto/sha256.cpp
         bitcoin/crypto/sha512.cpp
-        )
 
-add_definitions(-DENCLAVE_STD_ALT)
-
-set_directory_properties(PROPERTIES
-        ADDITIONAL_MAKE_CLEAN_FILES "Enclave_t.c; Enclave_t.h")
-
-add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Enclave_t.c
-        COMMAND ${SGX_EDGER8R} --trusted ${CMAKE_CURRENT_SOURCE_DIR}/Enclave.edl
-        --search-path ${SGX_SDK}/include
-        --search-path ${MBEDTLS_SGX_ROOT_DIR}/lib
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
+        enclave_test.cpp
+        utils.cpp)
 
 add_library(enclave SHARED ${SOURCE_FILES})
 

@@ -30,7 +30,7 @@ string get_blockheader_hex(bitcoindRPCClient &rpc, uint32_t height) {
 bool push_one(sgx_enclave_id_t eid, bitcoindRPCClient &rpc, int blocknum) {
   try {
     string hdr_hex = get_blockheader_hex(rpc, blocknum);
-    push(eid, hdr_hex.c_str());
+    appendBlockToFIFO(eid, hdr_hex.c_str());
     return true;
   }
   catch (const jsonrpc::JsonRpcException &e) {

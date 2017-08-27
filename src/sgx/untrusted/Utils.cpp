@@ -1,18 +1,16 @@
-#include "sgx_urts.h"
-#include "sgx_uae_service.h"
+#include <sgx_urts.h> // sgx_create_enclave
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "Utils.h"
 
-#ifdef _MSC_VER
-# include <Shlobj.h>
-#else
-# include <unistd.h>
-# include <pwd.h>
-# define MAX_PATH FILENAME_MAX
-#endif
+#include <unistd.h>
+#include <pwd.h>
+#define MAX_PATH FILENAME_MAX
+
+#ifndef UTILS_HPP
+#define UTILS_HPP
 
 /* Check error conditions for loading enclave */
 void print_error_message(sgx_status_t ret)
@@ -152,33 +150,24 @@ int initialize_enclave(sgx_enclave_id_t *eid)
     return 0;
 }
 
-#if defined(_MSC_VER)
-/* query and enable SGX device*/
-int query_sgx_status()
+int ocall_print_to_std(const char *str)
 {
-    sgx_device_status_t sgx_device_status;
-    sgx_status_t sgx_ret = sgx_enable_device(&sgx_device_status);
-    if (sgx_ret != SGX_SUCCESS) {
-        printf("Failed to get SGX device status.\n");
-        return -1;
-    }
-    else {
-        switch (sgx_device_status) {
-        case SGX_ENABLED:
-            return 0;
-        case SGX_DISABLED_REBOOT_REQUIRED:
-            printf("SGX device has been enabled. Please reboot your machine.\n");
-            return -1;
-        case SGX_DISABLED_LEGACY_OS:
-            printf("SGX device can't be enabled on an OS that doesn't support EFI interface.\n");
-            return -1;
-        case SGX_DISABLED:
-            printf("SGX device not found.\n");
-            return -1;
-        default:
-            printf("Unexpected error.\n");
-            return -1;
-        }
-    }
+    /* Proxy/Bridge will check the length and null-terminate
+     * the input string to prevent buffer overflow.
+     */
+    int ret = printf("%s", str);
+    fflush(stdout);
+    return ret;
 }
+
+int ocall_print_to_err(const char *str)
+{
+    /* Proxy/Bridge will check the length and null-terminate
+     * the input string to prevent buffer overflow.
+     */
+    int ret = fprintf(stderr, "%s", str);
+    fflush(stdout);
+    return ret;
+}
+
 #endif

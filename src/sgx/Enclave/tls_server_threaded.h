@@ -78,16 +78,20 @@ class TLSConnectionHandler {
    * debug callback
    */
   static void mydebug(void *ctx, int level,
-               const char *file, int line,
-               const char *str);
+                      const char *file, int line,
+                      const char *str);
 
  public:
   TLSConnectionHandler();
-  TLSConnectionHandler(unsigned int debug_level) : debug_level(debug_level) {
-    TLSConnectionHandler();
-  }
+
+  // disable copy and move
+  TLSConnectionHandler(const TLSConnectionHandler &) = delete;
+  TLSConnectionHandler(TLSConnectionHandler &&) = delete;
+  TLSConnectionHandler &operator=(const TLSConnectionHandler &) = delete;
+  TLSConnectionHandler &operator=(TLSConnectionHandler &&)= delete;
+
   ~TLSConnectionHandler();
-  void handle(long int, thread_info_t *);
+  void handle(long int thread_id, thread_info_t *);
 };
 
 #endif //MBEDTLS_SGX_SSL_SERVER_THREAD_H

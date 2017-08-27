@@ -21,23 +21,17 @@ enum HeaderSize {
 // XXX: use a constant difficulty for the moment
 constexpr unsigned int bitcoinDifficulty = 32;
 
+/*
+ * ecall functions
+ */
 extern "C" {
 void appendBlockToFIFO(const char *blockHeaderHex);
 }
 
-inline unsigned int nLeadingZero(uint256 hash) {
-  /*
-   * note that bytes of hash is the reverse of its string representation
-   */
-  unsigned int i = hash.size() - 1;
-  while (hash.begin()[i] == 0 && i >= 0) {
-    i--;
-  }
-  // return the number in bits
-  i = 8*(hash.size() - 1 - i);
-  LL_LOG("hash %s has %d leading zeros bits", hash.GetHex().c_str(), i);
-  return i;
-}
+/*
+ * other functions
+ */
+unsigned int nLeadingZero(const uint256 &hash);
 
 template<unsigned int QUEUE_LENGTH>
 class BlockFIFO {

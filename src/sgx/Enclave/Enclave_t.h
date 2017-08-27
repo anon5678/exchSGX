@@ -22,7 +22,8 @@ extern "C" {
 void ssl_conn_init();
 void ssl_conn_teardown();
 void ssl_conn_handle(long int thread_id, thread_info_t* thread_info);
-void appendBlockToFIFO(const char *blockHeaderHex);
+void appendBlockToFIFO(const char* header);
+int enclaveTest();
 void dummy();
 
 sgx_status_t SGX_CDECL ocall_mbedtls_net_connect(int* retval, mbedtls_net_context* ctx, const char* host, const char* port, int proto);
@@ -41,6 +42,8 @@ sgx_status_t SGX_CDECL sgx_thread_wait_untrusted_event_ocall(int* retval, const 
 sgx_status_t SGX_CDECL sgx_thread_set_untrusted_event_ocall(int* retval, const void* waiter);
 sgx_status_t SGX_CDECL sgx_thread_setwait_untrusted_events_ocall(int* retval, const void* waiter, const void* self);
 sgx_status_t SGX_CDECL sgx_thread_set_multiple_untrusted_events_ocall(int* retval, const void** waiters, size_t total);
+sgx_status_t SGX_CDECL ocall_print_to_std(int* retval, const char* str);
+sgx_status_t SGX_CDECL ocall_print_to_err(int* retval, const char* str);
 
 #ifdef __cplusplus
 }

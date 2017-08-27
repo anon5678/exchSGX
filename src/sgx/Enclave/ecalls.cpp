@@ -1,6 +1,6 @@
 #include "Enclave_t.h"
 #include "Log.h"
-#include "ssl_conn_hdlr.h"
+#include "tls_server_threaded.h"
 
 TLSConnectionHandler* connectionHandler;
 

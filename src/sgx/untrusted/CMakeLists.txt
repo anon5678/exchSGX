@@ -17,6 +17,7 @@ add_custom_command(
 
 add_executable(m_server m_server.cpp mbedtls_net.c mbedtls_error.c Enclave_u.c Utils.cpp)
 add_executable(blockfeeder blockfeeder.cpp Utils.cpp Enclave_u.c)
+add_executable(enclave_test enclave_test.cpp Utils.cpp Enclave_u.c)
 
 find_package(Jsoncpp REQUIRED)
 find_package(JsonCppRpc REQUIRED)
@@ -34,21 +35,19 @@ set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_u.a")
 
 target_link_libraries(blockfeeder
         ${JSONCPP_LIBRARIES} ${CURL_LIBRARIES}
-        # commentted for debugging
         ${JSONRPCCPP_LIBRARIES}
-        # /home/fanz/dev/exchSGX/src/sgx/libjson-rpc-cpp-0.7.0/build/lib/libjsonrpccpp-client.so
-        # /home/fanz/dev/exchSGX/src/sgx/libjson-rpc-cpp-0.7.0/build/lib/libjsonrpccpp-common.so
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
         ${LIB_MBEDTLS_PATH}
-        -Wl,-rpath -Wl,/usr/local/lib
-        -Wl,-rpath -Wl,${SGX_LIBRARY_PATH}
+        -lpthread)
+
+target_link_libraries(enclave_test
+        -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
+        ${LIB_MBEDTLS_PATH}
         -lpthread)
 
 target_link_libraries(m_server
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
         ${LIB_MBEDTLS_PATH}
-        -Wl,-rpath -Wl,/usr/local/lib
-        -Wl,-rpath -Wl,${SGX_LIBRARY_PATH}
         -lpthread)
 
 add_dependencies(m_server enclave)

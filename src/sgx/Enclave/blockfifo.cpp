@@ -1,7 +1,3 @@
-//
-// Created by fanz on 7/13/17.
-//
-
 #include "blockfifo.h"
 #include "pprint.h"
 #include "Log.h"
@@ -12,6 +8,14 @@
 #include <vector>
 
 BlockFIFO<5> bitcoinFIFO;
+
+unsigned int nLeadingZero(const uint256 &hash) {
+  std::size_t foundNonZero = hash.GetHex().find_first_not_of("0", 0);
+  if (foundNonZero == std::string::npos) {
+    return hash.size();
+  }
+  return static_cast<unsigned int>(foundNonZero);
+}
 
 void appendBlockToFIFO(const char *blockHeaderHex) {
   // sanity check
