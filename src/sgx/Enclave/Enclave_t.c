@@ -194,7 +194,7 @@ static sgx_status_t SGX_CDECL sgx_push(void* pms)
 		memcpy((void*)_in_header, _tmp_header, _len_header);
 		_in_header[_len_header - 1] = '\0';
 	}
-	push((const char*)_in_header);
+  appendBlockToFIFO((const char *) _in_header);
 err:
 	if (_in_header) free((void*)_in_header);
 

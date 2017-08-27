@@ -5,7 +5,7 @@ set(SOURCE_FILES
         pprint.c
         ssl_conn_hdlr.cpp
 
-        latest_blocks.cpp
+        blockfifo.cpp
         bytestream.cpp
 
         bitcoin/uint256.cpp

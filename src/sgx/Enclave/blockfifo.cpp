@@ -2,7 +2,7 @@
 // Created by fanz on 7/13/17.
 //
 
-#include "latest_blocks.h"
+#include "blockfifo.h"
 #include "pprint.h"
 #include "Log.h"
 #include "bitcoin/utilstrencodings.h"
@@ -11,17 +11,11 @@
 
 #include <vector>
 
-constexpr size_t HEADER_SIZE = 80;
+BlockFIFO<5> bitcoinFIFO;
 
-LatestBlocks<5> blockchain;
-
-extern "C" {
-void push(const char *);
-}
-
-void push(const char *block_hdr_hex) {
+void appendBlockToFIFO(const char *blockHeaderHex) {
   // sanity check
-  if (2 * HEADER_SIZE != strlen(block_hdr_hex)) {
+  if (2 * HeaderSize::bitcoin != strlen(blockHeaderHex)) {
     return;
     LL_CRITICAL("invalid header");
   }
@@ -29,7 +23,7 @@ void push(const char *block_hdr_hex) {
   CBlockHeader block_header;
 
   // parse hex and unserialize
-  std::vector<unsigned char> header_bin = ParseHex(block_hdr_hex);
+  std::vector<unsigned char> header_bin = ParseHex(blockHeaderHex);
   bytestream ibs(header_bin);
   block_header.Unserialize(ibs);
 
@@ -40,18 +34,17 @@ void push(const char *block_hdr_hex) {
   _hash_ctx.Write(header_bin.data(), header_bin.size());
   _hash_ctx.Finalize((unsigned char *) &block_hash);
 
-  // serialize again to ensure integrity
-  LL_LOG("old hash: %s", block_hash.GetHex().c_str());
-  LL_LOG("rehash: %s", block_header.GetHash().GetHex().c_str());
+  if (block_hash != block_header.GetHash()) {
+    LL_CRITICAL("invalid header: wrong hash");
+    throw invalid_argument("header has wrong hash");
+  }
 
-  assert(block_hash == block_header.GetHash());
-
-  // try to push it to the blockchain
-  if(blockchain.AppendBlock(block_header)) {
+  // try to push it to the FIFO
+  if(bitcoinFIFO.AppendBlock(block_header)) {
     LL_NOTICE("succeed");
   }
   else
     LL_CRITICAL("faild to append block %s", block_hash.GetHex().c_str());
 
-  LL_NOTICE("%d blocks in FIFO", blockchain.size());
+  LL_NOTICE("%d blocks in FIFO", bitcoinFIFO.size());
 }
