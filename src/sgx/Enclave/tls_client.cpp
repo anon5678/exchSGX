@@ -1,18 +1,5 @@
 #include "tls_client.h"
 #include "log.h"
-#include "Enclave_t.h"
-
-#include <mbedtls/certs.h>
-
-#include <algorithm>
-#include <string>
-#include <vector>
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #if !defined(MBEDTLS_CONFIG_FILE)
 #include "mbedtls/config.h"
@@ -30,6 +17,7 @@
 #include "mbedtls/x509.h"
 #include "mbedtls/error.h"
 #include "mbedtls/debug.h"
+#include "pprint.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -141,7 +129,7 @@ void TLSClient::Connect() {
                                  hostname.c_str(),
                                  to_string(port).c_str(),
                                  MBEDTLS_NET_PROTO_TCP)) != 0) {
-    throw std::runtime_error("mbedtls_net_connect returned " + to_string(ret));
+    throw std::runtime_error("can't connect to " + hostname + to_string(port) + ". Is the server running?");
   }
 
   ret = mbedtls_net_set_block(&server_fd);
@@ -221,7 +209,8 @@ void TLSClient::Connect() {
     }
   }
 
-  LL_DEBUG("Hand shake succeeds: [%s, %s]", mbedtls_ssl_get_version(&ssl), mbedtls_ssl_get_ciphersuite(&ssl));
+  LL_NOTICE("session connected: [%s, %s]",
+            mbedtls_ssl_get_version(&ssl), mbedtls_ssl_get_ciphersuite(&ssl));
 
   if ((ret = mbedtls_ssl_get_record_expansion(&ssl)) >= 0) {
     LL_DEBUG("Record expansion is [%d]", ret);
@@ -233,7 +222,6 @@ void TLSClient::Connect() {
            (unsigned int) mbedtls_ssl_get_max_frag_len(&ssl));
 #endif
 
-  LL_LOG("handshake succeed.");
   isConnected = true;
 }
 
@@ -251,7 +239,7 @@ void TLSClient::Send(const vector<uint8_t> &data) {
       }
     }
   }
-
+  hexdump("bytes sent", data.data(), data.size());
 }
 
 

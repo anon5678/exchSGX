@@ -37,7 +37,7 @@ TLSConnectionHandler::TLSConnectionHandler() {
   /*
    * 1. Load the certificates and private RSA key
    */
-  mbedtls_printf("\n  . Loading the server cert. and key...");
+  LL_LOG("Loading the server cert. and key...");
   /*
    * FIXME: This demonstration program uses embedded test certificates.
    * Instead, you may want to use mbedtls_x509_crt_parse_file() to read the
@@ -46,15 +46,13 @@ TLSConnectionHandler::TLSConnectionHandler() {
   ret = mbedtls_x509_crt_parse(&srvcert, (const unsigned char *) mbedtls_test_srv_crt,
                                mbedtls_test_srv_crt_len);
   if (ret != 0) {
-    mbedtls_printf(" failed\n  !  mbedtls_x509_crt_parse returned %d\n\n", ret);
-    throw std::runtime_error("");
+    throw std::runtime_error("mbedtls_x509_crt_parse returned " + to_string(ret));
   }
 
   ret = mbedtls_x509_crt_parse(&cachain, (const unsigned char *) mbedtls_test_cas_pem,
                                mbedtls_test_cas_pem_len);
   if (ret != 0) {
-    mbedtls_printf(" failed\n  !  mbedtls_x509_crt_parse returned %d\n\n", ret);
-    throw std::runtime_error("");
+    throw std::runtime_error("mbedtls_x509_crt_parse returned " + to_string(ret));
   }
 
   mbedtls_pk_init(&pkey);
@@ -65,12 +63,10 @@ TLSConnectionHandler::TLSConnectionHandler() {
     throw std::runtime_error("");
   }
 
-  mbedtls_printf(" ok\n");
-
   /*
    * 1b. Seed the random number generator
    */
-  mbedtls_printf("  . Seeding the random number generator...");
+  LL_LOG("Seeding the random number generator...");
 
   if ((ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy,
                                    (const unsigned char *) pers.c_str(),
@@ -80,12 +76,10 @@ TLSConnectionHandler::TLSConnectionHandler() {
     throw std::runtime_error("");
   }
 
-  mbedtls_printf(" ok\n");
-
   /*
    * 1c. Prepare SSL configuration
    */
-  mbedtls_printf("  . Setting up the SSL data....");
+  LL_LOG("Setting up the SSL data....");
 
   if ((ret = mbedtls_ssl_config_defaults(&conf,
                                          MBEDTLS_SSL_IS_SERVER,
@@ -122,8 +116,6 @@ TLSConnectionHandler::TLSConnectionHandler() {
     mbedtls_printf(" failed\n  ! mbedtls_ssl_conf_own_cert returned %d\n\n", ret);
     throw std::runtime_error("");
   }
-
-  mbedtls_printf(" ok\n");
 }
 
 TLSConnectionHandler::~TLSConnectionHandler() {

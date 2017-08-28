@@ -48,16 +48,13 @@ int tls_server_init(unsigned int port) {
   memset(threads, 0, sizeof(threads));
 
   // bind
-  cout << "binding at localhost: " << port;
   if ((ret = mbedtls_net_bind(&listen_fd, nullptr,
                               to_string(port).c_str(),
                               MBEDTLS_NET_PROTO_TCP)) != 0) {
     cout << " failed! mbedtls_net_bind returned " << ret << endl;
     std::exit(-1);
   }
-
-  cout << "...ok" << endl;
-  cout << "waiting for a remote connection" << endl;
+  cout << "Listening at localhost: " << port << endl;
 
   // non-block accept
   while (true) {
@@ -94,9 +91,6 @@ int tls_server_init(unsigned int port) {
       break;
     }
 
-    mbedtls_printf("  [ main ]  ok\n");
-    mbedtls_printf("  [ main ]  Creating a new thread for client %d\n", client_fd.fd);
-
     if ((ret = thread_create(&client_fd)) != 0) {
       mbedtls_printf("  [ main ]  failed: thread_create returned %d\n", ret);
       mbedtls_net_free(&client_fd);
@@ -114,14 +108,10 @@ void *ecall_handle_ssl_connection(void *data) {
   long int thread_id = pthread_self();
   thread_info_t *thread_info = (thread_info_t *) data;
 
-  cout << "making ecalls" << endl;
-
   int ret = ssl_conn_handle(eid, thread_id, thread_info);
   if (ret != SGX_SUCCESS) {
     cerr << "failed to make ecall " << ret << endl;
   }
-
-  cerr << "thread exiting for thread " << thread_id << endl;
 
   mbedtls_net_free(&thread_info->client_fd);
   return (NULL);

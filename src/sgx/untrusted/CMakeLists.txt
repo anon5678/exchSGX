@@ -15,7 +15,13 @@ add_custom_command(
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_executable(exch exch.cpp Utils.cpp Enclave_u.c tls_server_threaded.cpp mbedtls_error.c mbedtls_net.c)
+add_executable(exch exch.cpp
+        Utils.cpp
+        blockfeeding.cpp
+        tls_server_threaded.cpp
+        Enclave_u.c
+        mbedtls_error.c
+        mbedtls_net.c)
 add_executable(enclave_test enclave_test.cpp Utils.cpp Enclave_u.c)
 
 find_package(Jsoncpp REQUIRED)

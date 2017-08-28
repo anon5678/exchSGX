@@ -19,7 +19,7 @@ enum HeaderSize {
 };
 
 // XXX: use a constant difficulty for the moment
-constexpr unsigned int bitcoinDifficulty = 32;
+constexpr unsigned int bitcoinDifficulty = 8;
 
 /*
  * ecall functions
