@@ -16,7 +16,10 @@ set(SOURCE_FILES
         Enclave_t.c
         Log.c
         pprint.c
+
+        tls_client.cpp
         tls_server_threaded.cpp
+        p2p_tls.cpp
 
         blockfifo.cpp
         bytestream.cpp

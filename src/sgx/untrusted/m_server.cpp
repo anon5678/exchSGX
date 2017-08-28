@@ -100,9 +100,9 @@ static int thread_create(mbedtls_net_context *client_fd) {
 }
 
 std::atomic<bool> quit(false);
-void exitGraceful(int) { quit.store(true); }
+void exitGraceful(int n) { (void)n; quit.store(true); }
 
-int main(void) {
+int main() {
   int ret;
   // register Ctrl-C handler
   std::signal(SIGINT, exitGraceful);
@@ -113,6 +113,7 @@ int main(void) {
   }
 
   mbedtls_net_context listen_fd, client_fd;
+
   // initialize the object
   ssl_conn_init(eid);
   // initialize threads

@@ -22,6 +22,7 @@ extern "C" {
 void ssl_conn_init();
 void ssl_conn_teardown();
 void ssl_conn_handle(long int thread_id, thread_info_t* thread_info);
+int test_tls_client(const char* hostname, unsigned int port);
 void appendBlockToFIFO(const char* header);
 int enclaveTest();
 void dummy();

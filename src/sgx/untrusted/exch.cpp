@@ -46,7 +46,7 @@ bool push_one(sgx_enclave_id_t eid, bitcoindRPCClient &rpc, int blocknum) {
   return false;
 }
 
-int main() {
+int test_feed_blocks() {
   // note that bitcoin uses JSON-RPC 1.0
   jsonrpc::HttpClient connector(::cfg::bitcoind_rpc_addr);
   bitcoindRPCClient rpc(connector, jsonrpc::JSONRPC_CLIENT_V1);
@@ -78,5 +78,9 @@ int main() {
   }
 
   return 0;
+}
+
+int main() {
+
 }
 

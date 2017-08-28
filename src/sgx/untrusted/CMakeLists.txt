@@ -16,7 +16,7 @@ add_custom_command(
 )
 
 add_executable(m_server m_server.cpp mbedtls_net.c mbedtls_error.c Enclave_u.c Utils.cpp)
-add_executable(blockfeeder blockfeeder.cpp Utils.cpp Enclave_u.c)
+add_executable(exch exch.cpp Utils.cpp Enclave_u.c)
 add_executable(enclave_test enclave_test.cpp Utils.cpp Enclave_u.c)
 
 find_package(Jsoncpp REQUIRED)
@@ -33,7 +33,7 @@ include_directories(
 
 set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_u.a")
 
-target_link_libraries(blockfeeder
+target_link_libraries(exch
         ${JSONCPP_LIBRARIES} ${CURL_LIBRARIES}
         ${JSONRPCCPP_LIBRARIES}
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}

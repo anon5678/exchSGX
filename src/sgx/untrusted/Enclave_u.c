@@ -8,6 +8,12 @@ typedef struct ms_ssl_conn_handle_t {
 	thread_info_t* ms_thread_info;
 } ms_ssl_conn_handle_t;
 
+typedef struct ms_test_tls_client_t {
+	int ms_retval;
+	char* ms_hostname;
+	unsigned int ms_port;
+} ms_test_tls_client_t;
+
 typedef struct ms_appendBlockToFIFO_t {
 	char* ms_header;
 } ms_appendBlockToFIFO_t;
@@ -319,12 +325,23 @@ sgx_status_t ssl_conn_handle(sgx_enclave_id_t eid, long int thread_id, thread_in
 	return status;
 }
 
+sgx_status_t test_tls_client(sgx_enclave_id_t eid, int* retval, const char* hostname, unsigned int port)
+{
+	sgx_status_t status;
+	ms_test_tls_client_t ms;
+	ms.ms_hostname = (char*)hostname;
+	ms.ms_port = port;
+	status = sgx_ecall(eid, 3, &ocall_table_Enclave, &ms);
+	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
+	return status;
+}
+
 sgx_status_t appendBlockToFIFO(sgx_enclave_id_t eid, const char* header)
 {
 	sgx_status_t status;
 	ms_appendBlockToFIFO_t ms;
 	ms.ms_header = (char*)header;
-	status = sgx_ecall(eid, 3, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 4, &ocall_table_Enclave, &ms);
 	return status;
 }
 
@@ -332,7 +349,7 @@ sgx_status_t enclaveTest(sgx_enclave_id_t eid, int* retval)
 {
 	sgx_status_t status;
 	ms_enclaveTest_t ms;
-	status = sgx_ecall(eid, 4, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 5, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
@@ -340,7 +357,7 @@ sgx_status_t enclaveTest(sgx_enclave_id_t eid, int* retval)
 sgx_status_t dummy(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 5, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 6, &ocall_table_Enclave, NULL);
 	return status;
 }
 

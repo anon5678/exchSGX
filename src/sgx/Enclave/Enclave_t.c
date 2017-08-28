@@ -24,6 +24,12 @@ typedef struct ms_ssl_conn_handle_t {
 	thread_info_t* ms_thread_info;
 } ms_ssl_conn_handle_t;
 
+typedef struct ms_test_tls_client_t {
+	int ms_retval;
+	char* ms_hostname;
+	unsigned int ms_port;
+} ms_test_tls_client_t;
+
 typedef struct ms_appendBlockToFIFO_t {
 	char* ms_header;
 } ms_appendBlockToFIFO_t;
@@ -187,6 +193,34 @@ err:
 	return status;
 }
 
+static sgx_status_t SGX_CDECL sgx_test_tls_client(void* pms)
+{
+	ms_test_tls_client_t* ms = SGX_CAST(ms_test_tls_client_t*, pms);
+	sgx_status_t status = SGX_SUCCESS;
+	char* _tmp_hostname = ms->ms_hostname;
+	size_t _len_hostname = _tmp_hostname ? strlen(_tmp_hostname) + 1 : 0;
+	char* _in_hostname = NULL;
+
+	CHECK_REF_POINTER(pms, sizeof(ms_test_tls_client_t));
+	CHECK_UNIQUE_POINTER(_tmp_hostname, _len_hostname);
+
+	if (_tmp_hostname != NULL) {
+		_in_hostname = (char*)malloc(_len_hostname);
+		if (_in_hostname == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		memcpy((void*)_in_hostname, _tmp_hostname, _len_hostname);
+		_in_hostname[_len_hostname - 1] = '\0';
+	}
+	ms->ms_retval = test_tls_client((const char*)_in_hostname, ms->ms_port);
+err:
+	if (_in_hostname) free((void*)_in_hostname);
+
+	return status;
+}
+
 static sgx_status_t SGX_CDECL sgx_appendBlockToFIFO(void* pms)
 {
 	ms_appendBlockToFIFO_t* ms = SGX_CAST(ms_appendBlockToFIFO_t*, pms);
@@ -238,13 +272,14 @@ static sgx_status_t SGX_CDECL sgx_dummy(void* pms)
 
 SGX_EXTERNC const struct {
 	size_t nr_ecall;
-	struct {void* ecall_addr; uint8_t is_priv;} ecall_table[6];
+	struct {void* ecall_addr; uint8_t is_priv;} ecall_table[7];
 } g_ecall_table = {
-	6,
+	7,
 	{
 		{(void*)(uintptr_t)sgx_ssl_conn_init, 0},
 		{(void*)(uintptr_t)sgx_ssl_conn_teardown, 0},
 		{(void*)(uintptr_t)sgx_ssl_conn_handle, 0},
+		{(void*)(uintptr_t)sgx_test_tls_client, 0},
 		{(void*)(uintptr_t)sgx_appendBlockToFIFO, 0},
 		{(void*)(uintptr_t)sgx_enclaveTest, 0},
 		{(void*)(uintptr_t)sgx_dummy, 0},
@@ -253,28 +288,28 @@ SGX_EXTERNC const struct {
 
 SGX_EXTERNC const struct {
 	size_t nr_ocall;
-	uint8_t entry_table[18][6];
+	uint8_t entry_table[18][7];
 } g_dyn_entry_table = {
 	18,
 	{
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
 	}
 };
 
