@@ -18,9 +18,6 @@
 #define mbedtls_snprintf   snprintf
 #endif
 
-#include <stdlib.h>
-#include <string.h>
-
 #include "mbedtls/entropy.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/certs.h"
@@ -30,13 +27,18 @@
 #include "mbedtls/net_f.h"
 #include "mbedtls/error.h"
 
-#include <stdio.h>
+#include <vector>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
 #include <string>
+#include <cstdint>
 #include <sgx_thread.h>
 
 #include "../common/ssl_context.h"
 
 using std::string;
+using std::vector;
 
 #if defined(MBEDTLS_SSL_CACHE_C)
 #include "mbedtls/ssl_cache.h"

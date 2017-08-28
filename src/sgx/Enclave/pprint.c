@@ -23,7 +23,7 @@ void string_dump(const char* title, void const* data, size_t len)
 	printf_sgx("\n");
 }
 
-void hexdump(const char* title, void const * data, unsigned int len)
+void hexdump(const char *title, void const *data, size_t len)
 {
     unsigned int i;
     unsigned int r,c;

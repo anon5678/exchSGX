@@ -1,10 +1,10 @@
 #include "tls_client.h"
-#include "Log.h"
+#include "log.h"
 #include "Enclave_t.h"
-#include "ca_bundle.h"
+
+#include <mbedtls/certs.h>
 
 #include <algorithm>
-
 #include <string>
 #include <vector>
 
@@ -75,7 +75,8 @@ static int my_verify(void *data, mbedtls_x509_crt *crt, int depth, uint32_t *fla
 }
 #endif /* MBEDTLS_X509_CRT_PARSE_C */
 
-TLSClient::TLSClient(const string hostname, unsigned int port) : hostname(hostname), port(port){
+TLSClient::TLSClient(const string hostname, unsigned int port)
+    : hostname(hostname), port(port), isConnected(false) {
   // init the return code
   ret = 0;
   
@@ -90,6 +91,7 @@ TLSClient::TLSClient(const string hostname, unsigned int port) : hostname(hostna
   mbedtls_x509_crt_init(&clicert);
   mbedtls_pk_init(&pkey);
 #endif
+  LL_DEBUG("resources allocated and initialized");
 
   // set debug level
 #if defined(MBEDTLS_DEBUG_C)
@@ -97,6 +99,7 @@ TLSClient::TLSClient(const string hostname, unsigned int port) : hostname(hostna
 #endif
 
   mbedtls_entropy_init(&entropy);
+  LL_DEBUG("entropy initialized");
 
   /*
    * 0. Initialize the RNG and the session data
@@ -112,7 +115,9 @@ TLSClient::TLSClient(const string hostname, unsigned int port) : hostname(hostna
    * 1. Load the trusted CA
    */
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
-  ret = mbedtls_x509_crt_parse(&cacert, (const unsigned char *) mozilla_ca_bundle, sizeof(mozilla_ca_bundle));
+  ret = mbedtls_x509_crt_parse(&cacert,
+                               (const unsigned char *) mbedtls_test_cas_pem,
+                               mbedtls_test_cas_pem_len);
   if (ret < 0) {
     throw std::runtime_error("mbedtls_x509_crt_parse failed");
   }
@@ -198,12 +203,12 @@ void TLSClient::Connect() {
       if ((flags = mbedtls_ssl_get_verify_result(&ssl)) != 0) {
         LL_CRITICAL("X.509 certificate failed to verify");
         char temp_buf[1024];
-        if (mbedtls_ssl_get_peer_cert(&ssl) != NULL) {
+        if (mbedtls_ssl_get_peer_cert(&ssl) != nullptr) {
           LL_CRITICAL("Peer certificate information");
           mbedtls_x509_crt_info((char *) temp_buf, sizeof(temp_buf) - 1, "|-", mbedtls_ssl_get_peer_cert(&ssl));
           mbedtls_printf("%s\n", temp_buf);
         } else {
-          LL_CRITICAL("mbedtls_ssl_get_peer_cert returns NULL");
+          LL_CRITICAL("peers has no certificate");
         }
       } else {
         LL_DEBUG("X.509 Verifies");
@@ -212,8 +217,7 @@ void TLSClient::Connect() {
       if (ret == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
         LL_CRITICAL("Unable to verify the server's certificate.");
       }
-
-      throw runtime_error("mbedtls_ssl_handshake failed.");
+      throw runtime_error("mbedtls_ssl_handshake failed with errno " + to_string(ret));
     }
   }
 
@@ -342,5 +346,4 @@ TLSClient::~TLSClient() {
   mbedtls_entropy_free(&entropy);
 }
 
-const string TLSClient::GET_END = "\r\n";
-const char *TLSClient::pers = "Town-Crier";
+const char *TLSClient::pers = "ssl_pthread_server";

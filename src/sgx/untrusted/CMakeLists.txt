@@ -15,13 +15,13 @@ add_custom_command(
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_executable(m_server m_server.cpp mbedtls_net.c mbedtls_error.c Enclave_u.c Utils.cpp)
-add_executable(exch exch.cpp Utils.cpp Enclave_u.c)
+add_executable(exch exch.cpp Utils.cpp Enclave_u.c tls_server_threaded.cpp mbedtls_error.c mbedtls_net.c)
 add_executable(enclave_test enclave_test.cpp Utils.cpp Enclave_u.c)
 
 find_package(Jsoncpp REQUIRED)
 find_package(JsonCppRpc REQUIRED)
 find_package(CURL REQUIRED)
+find_package(Boost QUIET REQUIRED COMPONENTS program_options)
 
 include_directories(
         ${CURL_INCLUDE_DIRS}
@@ -29,12 +29,15 @@ include_directories(
         ${JSONRPCCPP_INCLUDE_DIRS}
         ${SGXSDK_INCLUDE_DIRS}
         ${MBEDTLS_SGX_ROOT_DIR}/include
+        ${Boost_INCLUDE_DIRS}
 )
 
 set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_u.a")
 
 target_link_libraries(exch
-        ${JSONCPP_LIBRARIES} ${CURL_LIBRARIES}
+        ${JSONCPP_LIBRARIES}
+        ${CURL_LIBRARIES}
+        ${Boost_LIBRARIES}
         ${JSONRPCCPP_LIBRARIES}
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
         ${LIB_MBEDTLS_PATH}
@@ -45,9 +48,4 @@ target_link_libraries(enclave_test
         ${LIB_MBEDTLS_PATH}
         -lpthread)
 
-target_link_libraries(m_server
-        -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
-        ${LIB_MBEDTLS_PATH}
-        -lpthread)
-
-add_dependencies(m_server enclave)
+add_dependencies(exch enclave)

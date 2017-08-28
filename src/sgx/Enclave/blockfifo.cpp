@@ -1,6 +1,6 @@
 #include "blockfifo.h"
 #include "pprint.h"
-#include "Log.h"
+#include "log.h"
 #include "bitcoin/utilstrencodings.h"
 #include "bytestream.h"
 #include "hash.h"

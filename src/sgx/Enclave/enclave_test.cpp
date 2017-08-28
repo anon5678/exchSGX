@@ -7,7 +7,7 @@
 #include "bitcoin/uint256.h"
 #include "blockfifo.h"
 
-#include "Log.h"
+#include "log.h"
 
 using namespace std;
 

@@ -21,25 +21,6 @@
 
 using namespace std;
 
-class ReceivingBuffer {
- public:
-  unsigned char *buf;
-  const static size_t cap = 2 * 1024 * 1024; // 2MB
-  size_t length;
-
-  ReceivingBuffer() {
-    length = 0;
-    buf = (unsigned char *) malloc(cap);
-    if (buf == NULL)
-      throw bad_alloc();
-  }
-
-  ~ReceivingBuffer() {
-    length = 0;
-    free(buf);
-  }
-};
-
 class TLSClient {
  private:
   // error number
@@ -48,10 +29,8 @@ class TLSClient {
   const unsigned int port;
 
   static const char *pers;
-  static const string GET_END;
 
   // resources
-  ReceivingBuffer buf;
   mbedtls_net_context server_fd;
   mbedtls_entropy_context entropy;
   mbedtls_ctr_drbg_context ctr_drbg;
@@ -70,7 +49,7 @@ class TLSClient {
 
 
  public:
-  TLSClient(const string hostname, unsigned int port);
+  TLSClient(string hostname, unsigned int port);
   ~TLSClient();
 
   string GetError();

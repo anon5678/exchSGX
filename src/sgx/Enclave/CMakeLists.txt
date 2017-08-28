@@ -14,7 +14,7 @@ add_custom_command(
 set(SOURCE_FILES
         ecalls.cpp
         Enclave_t.c
-        Log.c
+        log.c
         pprint.c
 
         tls_client.cpp
