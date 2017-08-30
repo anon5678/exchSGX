@@ -67,7 +67,7 @@ TLSClient::TLSClient(const string hostname, unsigned int port)
     : hostname(hostname), port(port), isConnected(false) {
   // init the return code
   ret = 0;
-  
+
   // allocate and initialize resources
   mbedtls_net_init(&server_fd);
   mbedtls_ssl_init(&ssl);
@@ -99,6 +99,17 @@ TLSClient::TLSClient(const string hostname, unsigned int port)
     throw std::runtime_error("mbedtls_ctr_drbg_seed failed");
   }
 
+  if ((ret = mbedtls_x509_crt_parse(&clicert, (const unsigned char*) mbedtls_test_cli_crt,
+                  mbedtls_test_cli_crt_len)) != 0) {
+      throw std::runtime_error("failed to load client cert");
+  }
+
+  if ((ret = mbedtls_pk_parse_key(&pkey, (const unsigned char*) mbedtls_test_cli_key,
+                  mbedtls_test_cli_key_len, NULL, 0)) != 0) {
+      throw std::runtime_error("failed to load client cert");
+  }
+
+
   /*
    * 1. Load the trusted CA
    */
@@ -129,7 +140,9 @@ void TLSClient::Connect() {
                                  hostname.c_str(),
                                  to_string(port).c_str(),
                                  MBEDTLS_NET_PROTO_TCP)) != 0) {
-    throw std::runtime_error("can't connect to " + hostname + to_string(port) + ". Is the server running?");
+    throw std::runtime_error(
+            "can't connect to " + hostname + ":" + to_string(port) +
+            ". Is the server running?");
   }
 
   ret = mbedtls_net_set_block(&server_fd);

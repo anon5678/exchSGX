@@ -34,6 +34,8 @@ set(SOURCE_FILES
         bitcoin/crypto/sha256.cpp
         bitcoin/crypto/sha512.cpp
 
+        provision.cpp
+
         enclave_test.cpp
         utils.cpp)
 
