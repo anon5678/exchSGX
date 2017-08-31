@@ -119,6 +119,7 @@ TLSConnectionHandler::TLSConnectionHandler() {
 
   /*
    * make client identity verification mandatory
+   * TODO: maybe make it changable?
    */
   mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_REQUIRED);
 }
@@ -188,12 +189,6 @@ void TLSConnectionHandler::handle(long int thread_id, thread_info_t *thread_info
   }
 
   LL_LOG("[socket %d] handshake succeeds", client_fd->fd);
-
-  /*
-   * in addition to handshake, let's verify the identity as well
-   */
-
-
 
   /*
    * 6. Read the HTTP Request
