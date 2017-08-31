@@ -99,21 +99,29 @@ TLSClient::TLSClient(const string hostname, unsigned int port)
     throw std::runtime_error("mbedtls_ctr_drbg_seed failed");
   }
 
-  if ((ret = mbedtls_x509_crt_parse(&clicert, (const unsigned char*) mbedtls_test_cli_crt,
-                  mbedtls_test_cli_crt_len)) != 0) {
-      throw std::runtime_error("failed to load client cert");
-  }
-
-  if ((ret = mbedtls_pk_parse_key(&pkey, (const unsigned char*) mbedtls_test_cli_key,
-                  mbedtls_test_cli_key_len, NULL, 0)) != 0) {
-      throw std::runtime_error("failed to load client cert");
-  }
-
-
   /*
-   * 1. Load the trusted CA
+   * 1.a load user identity
    */
+  LL_WARNING("using the testing client cert and secret key");
+  if ((ret = mbedtls_x509_crt_parse(&clicert, (const unsigned char *) mbedtls_test_cli_crt,
+                                    mbedtls_test_cli_crt_len)) != 0) {
+    throw std::runtime_error("failed to load client cert");
+  }
+
+  if ((ret = mbedtls_pk_parse_key(&pkey, (const unsigned char *) mbedtls_test_cli_key,
+                                  mbedtls_test_cli_key_len, NULL, 0)) != 0) {
+    throw std::runtime_error("failed to load client cert");
+  }
+
+  if ((ret = mbedtls_ssl_conf_own_cert(&conf, &clicert, &pkey)) != 0) {
+    throw std::runtime_error("failed to set own cert: " + this->GetError());
+  }
+
+    /*
+     * 1.b Load the trusted CA
+     */
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
+  LL_WARNING("using the testing CA");
   ret = mbedtls_x509_crt_parse(&cacert,
                                (const unsigned char *) mbedtls_test_cas_pem,
                                mbedtls_test_cas_pem_len);
@@ -141,7 +149,7 @@ void TLSClient::Connect() {
                                  to_string(port).c_str(),
                                  MBEDTLS_NET_PROTO_TCP)) != 0) {
     throw std::runtime_error(
-            "can't connect to " + hostname + ":" + to_string(port) +
+        "can't connect to " + hostname + ":" + to_string(port) +
             ". Is the server running?");
   }
 
@@ -255,7 +263,6 @@ void TLSClient::Send(const vector<uint8_t> &data) {
   hexdump("bytes sent", data.data(), data.size());
 }
 
-
 void TLSClient::SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &data_out) {
   if (!isConnected) {
     throw runtime_error("not connected yet");
@@ -291,14 +298,11 @@ void TLSClient::SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &da
     if (n_data < 0) {
       ret = n_data;
       switch (n_data) {
-        case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
-          LL_CRITICAL(" connection was closed gracefully");
+        case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:LL_CRITICAL(" connection was closed gracefully");
           throw runtime_error("connection was closed gracefully");
-        case MBEDTLS_ERR_NET_CONN_RESET:
-          LL_CRITICAL(" connection was reset by peer");
+        case MBEDTLS_ERR_NET_CONN_RESET:LL_CRITICAL(" connection was reset by peer");
           throw runtime_error("connected reset");
-        default:
-          LL_CRITICAL(" mbedtls_ssl_read returned 0x%x", n_data);
+        default:LL_CRITICAL(" mbedtls_ssl_read returned 0x%x", n_data);
           throw runtime_error("mbedtls_ssl_read returned non-sense");
       }
     }

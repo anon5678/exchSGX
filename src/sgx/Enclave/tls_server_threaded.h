@@ -72,6 +72,11 @@ class TLSConnectionHandler {
   mbedtls_pk_context pkey;
 
   /*
+   * error message buffer
+   */
+  char error_msg[1024];
+
+  /*
    * configuration
    */
   unsigned int debug_level;
@@ -94,6 +99,7 @@ class TLSConnectionHandler {
 
   ~TLSConnectionHandler();
   void handle(long int thread_id, thread_info_t *);
+  string getError(int errno);
 };
 
 #endif //MBEDTLS_SGX_SSL_SERVER_THREAD_H

@@ -116,6 +116,11 @@ TLSConnectionHandler::TLSConnectionHandler() {
     mbedtls_printf(" failed\n  ! mbedtls_ssl_conf_own_cert returned %d\n\n", ret);
     throw std::runtime_error("");
   }
+
+  /*
+   * make client identity verification mandatory
+   */
+  mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_REQUIRED);
 }
 
 TLSConnectionHandler::~TLSConnectionHandler() {
@@ -177,13 +182,18 @@ void TLSConnectionHandler::handle(long int thread_id, thread_info_t *thread_info
 
   while ((ret = mbedtls_ssl_handshake(&ssl)) != 0) {
     if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
-      LL_DEBUG("  [ #%ld ]  failed: mbedtls_ssl_handshake returned -0x%04x\n",
-                     thread_id, -ret);
+      LL_CRITICAL("%s", this->getError(ret).c_str());
       goto thread_exit;
     }
   }
 
   LL_LOG("[socket %d] handshake succeeds", client_fd->fd);
+
+  /*
+   * in addition to handshake, let's verify the identity as well
+   */
+
+
 
   /*
    * 6. Read the HTTP Request
@@ -284,6 +294,15 @@ int send(long thread_id, mbedtls_ssl_context* ssl, const vector<uint8_t> &data) 
   len = ret;
   LL_DEBUG("  [ #%ld ]  %d bytes written", thread_id, len);
   ret = 0;
+}
+
+string TLSConnectionHandler::getError(int errno) {
+#ifdef MBEDTLS_ERROR_C
+  mbedtls_strerror(errno, this->error_msg, sizeof this->error_msg);
+  return string(this->error_msg);
+#else
+  return "";
+#endif
 }
 
 const string TLSConnectionHandler::pers = "ssl_pthread_server";
