@@ -21,6 +21,11 @@ set(SOURCE_FILES
         tls_server_threaded.cpp
         p2p_tls.cpp
 
+        hybrid_cipher.cpp
+        ../common/base64.cpp
+        key_t.cpp
+        id_t.cpp
+
         blockfifo.cpp
         bytestream.cpp
 

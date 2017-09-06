@@ -7,6 +7,7 @@
 #include "sgx_edger8r.h" /* for sgx_ocall etc. */
 
 #include "../common/ssl_context.h"
+#include "sgx_tseal.h"
 #include "mbedtls/net_v.h"
 #include "mbedtls/timing_v.h"
 
@@ -22,9 +23,14 @@ extern "C" {
 void ssl_conn_init();
 void ssl_conn_teardown();
 void ssl_conn_handle(long int thread_id, thread_info_t* thread_info);
-int test_tls_client(const char* hostname, unsigned int port);
 void appendBlockToFIFO(const char* header);
+int test_tls_client(const char* hostname, unsigned int port);
 int enclaveTest();
+int keygen_in_seal(unsigned char* o_sealed, size_t* olen, unsigned char* o_pubkey);
+int unseal_secret_and_leak_public_key(const sgx_sealed_data_t* secret, size_t secret_len, unsigned char* pubkey);
+int provision_hybrid_key(const sgx_sealed_data_t* secret, size_t secret_len);
+int get_hybrid_pubkey(uint8_t pubkey[65]);
+void provision_rsa_id(const unsigned char* encrypted_rsa_id, size_t buf_len);
 void dummy();
 
 sgx_status_t SGX_CDECL ocall_mbedtls_net_connect(int* retval, mbedtls_net_context* ctx, const char* host, const char* port, int proto);

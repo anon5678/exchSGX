@@ -8,19 +8,49 @@ typedef struct ms_ssl_conn_handle_t {
 	thread_info_t* ms_thread_info;
 } ms_ssl_conn_handle_t;
 
+typedef struct ms_appendBlockToFIFO_t {
+	char* ms_header;
+} ms_appendBlockToFIFO_t;
+
 typedef struct ms_test_tls_client_t {
 	int ms_retval;
 	char* ms_hostname;
 	unsigned int ms_port;
 } ms_test_tls_client_t;
 
-typedef struct ms_appendBlockToFIFO_t {
-	char* ms_header;
-} ms_appendBlockToFIFO_t;
-
 typedef struct ms_enclaveTest_t {
 	int ms_retval;
 } ms_enclaveTest_t;
+
+typedef struct ms_keygen_in_seal_t {
+	int ms_retval;
+	unsigned char* ms_o_sealed;
+	size_t* ms_olen;
+	unsigned char* ms_o_pubkey;
+} ms_keygen_in_seal_t;
+
+typedef struct ms_unseal_secret_and_leak_public_key_t {
+	int ms_retval;
+	sgx_sealed_data_t* ms_secret;
+	size_t ms_secret_len;
+	unsigned char* ms_pubkey;
+} ms_unseal_secret_and_leak_public_key_t;
+
+typedef struct ms_provision_hybrid_key_t {
+	int ms_retval;
+	sgx_sealed_data_t* ms_secret;
+	size_t ms_secret_len;
+} ms_provision_hybrid_key_t;
+
+typedef struct ms_get_hybrid_pubkey_t {
+	int ms_retval;
+	uint8_t* ms_pubkey;
+} ms_get_hybrid_pubkey_t;
+
+typedef struct ms_provision_rsa_id_t {
+	unsigned char* ms_encrypted_rsa_id;
+	size_t ms_buf_len;
+} ms_provision_rsa_id_t;
 
 
 typedef struct ms_ocall_mbedtls_net_connect_t {
@@ -325,23 +355,23 @@ sgx_status_t ssl_conn_handle(sgx_enclave_id_t eid, long int thread_id, thread_in
 	return status;
 }
 
+sgx_status_t appendBlockToFIFO(sgx_enclave_id_t eid, const char* header)
+{
+	sgx_status_t status;
+	ms_appendBlockToFIFO_t ms;
+	ms.ms_header = (char*)header;
+	status = sgx_ecall(eid, 3, &ocall_table_Enclave, &ms);
+	return status;
+}
+
 sgx_status_t test_tls_client(sgx_enclave_id_t eid, int* retval, const char* hostname, unsigned int port)
 {
 	sgx_status_t status;
 	ms_test_tls_client_t ms;
 	ms.ms_hostname = (char*)hostname;
 	ms.ms_port = port;
-	status = sgx_ecall(eid, 3, &ocall_table_Enclave, &ms);
-	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
-	return status;
-}
-
-sgx_status_t appendBlockToFIFO(sgx_enclave_id_t eid, const char* header)
-{
-	sgx_status_t status;
-	ms_appendBlockToFIFO_t ms;
-	ms.ms_header = (char*)header;
 	status = sgx_ecall(eid, 4, &ocall_table_Enclave, &ms);
+	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
 
@@ -354,10 +384,65 @@ sgx_status_t enclaveTest(sgx_enclave_id_t eid, int* retval)
 	return status;
 }
 
+sgx_status_t keygen_in_seal(sgx_enclave_id_t eid, int* retval, unsigned char* o_sealed, size_t* olen, unsigned char* o_pubkey)
+{
+	sgx_status_t status;
+	ms_keygen_in_seal_t ms;
+	ms.ms_o_sealed = o_sealed;
+	ms.ms_olen = olen;
+	ms.ms_o_pubkey = o_pubkey;
+	status = sgx_ecall(eid, 6, &ocall_table_Enclave, &ms);
+	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
+	return status;
+}
+
+sgx_status_t unseal_secret_and_leak_public_key(sgx_enclave_id_t eid, int* retval, const sgx_sealed_data_t* secret, size_t secret_len, unsigned char* pubkey)
+{
+	sgx_status_t status;
+	ms_unseal_secret_and_leak_public_key_t ms;
+	ms.ms_secret = (sgx_sealed_data_t*)secret;
+	ms.ms_secret_len = secret_len;
+	ms.ms_pubkey = pubkey;
+	status = sgx_ecall(eid, 7, &ocall_table_Enclave, &ms);
+	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
+	return status;
+}
+
+sgx_status_t provision_hybrid_key(sgx_enclave_id_t eid, int* retval, const sgx_sealed_data_t* secret, size_t secret_len)
+{
+	sgx_status_t status;
+	ms_provision_hybrid_key_t ms;
+	ms.ms_secret = (sgx_sealed_data_t*)secret;
+	ms.ms_secret_len = secret_len;
+	status = sgx_ecall(eid, 8, &ocall_table_Enclave, &ms);
+	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
+	return status;
+}
+
+sgx_status_t get_hybrid_pubkey(sgx_enclave_id_t eid, int* retval, uint8_t pubkey[65])
+{
+	sgx_status_t status;
+	ms_get_hybrid_pubkey_t ms;
+	ms.ms_pubkey = (uint8_t*)pubkey;
+	status = sgx_ecall(eid, 9, &ocall_table_Enclave, &ms);
+	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
+	return status;
+}
+
+sgx_status_t provision_rsa_id(sgx_enclave_id_t eid, const unsigned char* encrypted_rsa_id, size_t buf_len)
+{
+	sgx_status_t status;
+	ms_provision_rsa_id_t ms;
+	ms.ms_encrypted_rsa_id = (unsigned char*)encrypted_rsa_id;
+	ms.ms_buf_len = buf_len;
+	status = sgx_ecall(eid, 10, &ocall_table_Enclave, &ms);
+	return status;
+}
+
 sgx_status_t dummy(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 6, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 11, &ocall_table_Enclave, NULL);
 	return status;
 }
 

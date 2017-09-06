@@ -22,7 +22,9 @@ add_executable(exch exch.cpp
         Enclave_u.c
         mbedtls_error.c
         mbedtls_net.c)
+
 add_executable(enclave_test enclave_test.cpp Utils.cpp Enclave_u.c)
+add_executable(exch-keygen exch-keygen.cpp key_u.cpp Utils.cpp Enclave_u.c ../common/base64.cpp)
 
 find_package(Jsoncpp REQUIRED)
 find_package(JsonCppRpc REQUIRED)
@@ -45,6 +47,12 @@ target_link_libraries(exch
         ${CURL_LIBRARIES}
         ${Boost_LIBRARIES}
         ${JSONRPCCPP_LIBRARIES}
+        -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
+        ${LIB_MBEDTLS_PATH}
+        -lpthread)
+
+target_link_libraries(exch-keygen
+        ${Boost_LIBRARIES}
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
         ${LIB_MBEDTLS_PATH}
         -lpthread)

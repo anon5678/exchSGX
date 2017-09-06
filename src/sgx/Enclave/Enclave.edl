@@ -4,6 +4,7 @@ enclave {
     from "utils.edl" import *;
 
     include "../common/ssl_context.h"
+    include "sgx_tseal.h"
 
     trusted {
         /* define ECALLs here. */
@@ -11,11 +12,34 @@ enclave {
         public void ssl_conn_teardown(void);
         public void ssl_conn_handle(long int thread_id, [in,out] thread_info_t* thread_info);
 
-        public int test_tls_client([in,string]const char* hostname, unsigned int port);
-
         public void appendBlockToFIFO([in,string] const char* header);
 
+        // testing functions
+        public int test_tls_client([in,string]const char* hostname, unsigned int port);
         public int enclaveTest();
+
+        // key management
+        public int keygen_in_seal(
+            [user_check] unsigned char *o_sealed,
+            [in, out] size_t *olen,
+            [user_check] unsigned char *o_pubkey);
+
+        public int unseal_secret_and_leak_public_key(
+            [in, size=secret_len] const sgx_sealed_data_t *secret,
+            size_t secret_len,
+            [user_check] unsigned char *pubkey);
+
+        public int provision_hybrid_key(
+            [in,size=secret_len] const sgx_sealed_data_t *secret,
+            size_t secret_len);
+
+        public int get_hybrid_pubkey(
+            [user_check] uint8_t pubkey[65]);
+
+        // id management
+        public void provision_rsa_id(
+            [user_check] const unsigned char* encrypted_rsa_id,
+            size_t buf_len);
     };
 
     untrusted {

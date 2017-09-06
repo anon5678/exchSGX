@@ -28,7 +28,7 @@ void print_error_message(sgx_status_t ret)
     }
     
     if (idx == ttl)
-        printf("Error: Unexpected error occurred.\n");
+        printf("Error: Unexpected error %#x occurred.\n", ret);
 }
 
 
