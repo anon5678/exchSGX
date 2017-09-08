@@ -101,8 +101,8 @@ void print_key(sgx_enclave_id_t eid, const string& keyfile) {
 }
 
 void keygen(sgx_enclave_id_t eid, const string& keyfile) {
-  unsigned char secret_sealed[SECRETKEY_SEALED_LEN];
-  unsigned char pubkey[PUBKEY_LEN];
+  unsigned char secret_sealed[10000];
+  unsigned char pubkey[1000];
 
   // call into enclave to fill the above buffers
   size_t buffer_used = 0;
@@ -126,6 +126,6 @@ void keygen(sgx_enclave_id_t eid, const string& keyfile) {
   of.close();
 
   cout << "Secret sealed to " << keyfile << endl;
-  cout << "PublicKey: " << ext::b64_encode(pubkey, sizeof pubkey) << endl;
+  cout << "PublicKey: " << pubkey << endl;
 }
 

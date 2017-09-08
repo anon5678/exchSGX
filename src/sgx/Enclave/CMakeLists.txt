@@ -23,7 +23,7 @@ set(SOURCE_FILES
 
         hybrid_cipher.cpp
         ../common/base64.cpp
-        key_t.cpp
+        key_rsa_t.cpp
         id_t.cpp
 
         blockfifo.cpp
