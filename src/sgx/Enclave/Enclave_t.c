@@ -38,35 +38,33 @@ typedef struct ms_enclaveTest_t {
 	int ms_retval;
 } ms_enclaveTest_t;
 
-typedef struct ms_keygen_in_seal_t {
+typedef struct ms_rsa_keygen_in_seal_t {
 	int ms_retval;
 	unsigned char* ms_o_sealed;
-	size_t* ms_olen;
+	size_t ms_cap_sealed;
 	unsigned char* ms_o_pubkey;
-} ms_keygen_in_seal_t;
+	size_t ms_cap_pubkey;
+} ms_rsa_keygen_in_seal_t;
 
 typedef struct ms_unseal_secret_and_leak_public_key_t {
 	int ms_retval;
 	sgx_sealed_data_t* ms_secret;
 	size_t ms_secret_len;
 	unsigned char* ms_pubkey;
+	size_t ms_cap_pubkey;
 } ms_unseal_secret_and_leak_public_key_t;
 
-typedef struct ms_provision_hybrid_key_t {
-	int ms_retval;
-	sgx_sealed_data_t* ms_secret;
-	size_t ms_secret_len;
-} ms_provision_hybrid_key_t;
-
-typedef struct ms_get_hybrid_pubkey_t {
-	int ms_retval;
-	uint8_t* ms_pubkey;
-} ms_get_hybrid_pubkey_t;
-
 typedef struct ms_provision_rsa_id_t {
+	int ms_retval;
 	unsigned char* ms_encrypted_rsa_id;
-	size_t ms_buf_len;
+	size_t ms_secret_len;
 } ms_provision_rsa_id_t;
+
+typedef struct ms_query_rsa_pubkey_t {
+	int ms_retval;
+	unsigned char* ms_pubkey;
+	size_t ms_cap_pubkey;
+} ms_query_rsa_pubkey_t;
 
 
 typedef struct ms_ocall_mbedtls_net_connect_t {
@@ -292,34 +290,17 @@ static sgx_status_t SGX_CDECL sgx_enclaveTest(void* pms)
 	return status;
 }
 
-static sgx_status_t SGX_CDECL sgx_keygen_in_seal(void* pms)
+static sgx_status_t SGX_CDECL sgx_rsa_keygen_in_seal(void* pms)
 {
-	ms_keygen_in_seal_t* ms = SGX_CAST(ms_keygen_in_seal_t*, pms);
+	ms_rsa_keygen_in_seal_t* ms = SGX_CAST(ms_rsa_keygen_in_seal_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
 	unsigned char* _tmp_o_sealed = ms->ms_o_sealed;
-	size_t* _tmp_olen = ms->ms_olen;
-	size_t _len_olen = sizeof(*_tmp_olen);
-	size_t* _in_olen = NULL;
 	unsigned char* _tmp_o_pubkey = ms->ms_o_pubkey;
 
-	CHECK_REF_POINTER(pms, sizeof(ms_keygen_in_seal_t));
-	CHECK_UNIQUE_POINTER(_tmp_olen, _len_olen);
+	CHECK_REF_POINTER(pms, sizeof(ms_rsa_keygen_in_seal_t));
 
-	if (_tmp_olen != NULL) {
-		_in_olen = (size_t*)malloc(_len_olen);
-		if (_in_olen == NULL) {
-			status = SGX_ERROR_OUT_OF_MEMORY;
-			goto err;
-		}
+	ms->ms_retval = rsa_keygen_in_seal(_tmp_o_sealed, ms->ms_cap_sealed, _tmp_o_pubkey, ms->ms_cap_pubkey);
 
-		memcpy(_in_olen, _tmp_olen, _len_olen);
-	}
-	ms->ms_retval = keygen_in_seal(_tmp_o_sealed, _in_olen, _tmp_o_pubkey);
-err:
-	if (_in_olen) {
-		memcpy(_tmp_olen, _in_olen, _len_olen);
-		free(_in_olen);
-	}
 
 	return status;
 }
@@ -346,51 +327,9 @@ static sgx_status_t SGX_CDECL sgx_unseal_secret_and_leak_public_key(void* pms)
 
 		memcpy((void*)_in_secret, _tmp_secret, _len_secret);
 	}
-	ms->ms_retval = unseal_secret_and_leak_public_key((const sgx_sealed_data_t*)_in_secret, _tmp_secret_len, _tmp_pubkey);
+	ms->ms_retval = unseal_secret_and_leak_public_key((const sgx_sealed_data_t*)_in_secret, _tmp_secret_len, _tmp_pubkey, ms->ms_cap_pubkey);
 err:
 	if (_in_secret) free((void*)_in_secret);
-
-	return status;
-}
-
-static sgx_status_t SGX_CDECL sgx_provision_hybrid_key(void* pms)
-{
-	ms_provision_hybrid_key_t* ms = SGX_CAST(ms_provision_hybrid_key_t*, pms);
-	sgx_status_t status = SGX_SUCCESS;
-	sgx_sealed_data_t* _tmp_secret = ms->ms_secret;
-	size_t _tmp_secret_len = ms->ms_secret_len;
-	size_t _len_secret = _tmp_secret_len;
-	sgx_sealed_data_t* _in_secret = NULL;
-
-	CHECK_REF_POINTER(pms, sizeof(ms_provision_hybrid_key_t));
-	CHECK_UNIQUE_POINTER(_tmp_secret, _len_secret);
-
-	if (_tmp_secret != NULL) {
-		_in_secret = (sgx_sealed_data_t*)malloc(_len_secret);
-		if (_in_secret == NULL) {
-			status = SGX_ERROR_OUT_OF_MEMORY;
-			goto err;
-		}
-
-		memcpy((void*)_in_secret, _tmp_secret, _len_secret);
-	}
-	ms->ms_retval = provision_hybrid_key((const sgx_sealed_data_t*)_in_secret, _tmp_secret_len);
-err:
-	if (_in_secret) free((void*)_in_secret);
-
-	return status;
-}
-
-static sgx_status_t SGX_CDECL sgx_get_hybrid_pubkey(void* pms)
-{
-	ms_get_hybrid_pubkey_t* ms = SGX_CAST(ms_get_hybrid_pubkey_t*, pms);
-	sgx_status_t status = SGX_SUCCESS;
-	uint8_t* _tmp_pubkey = ms->ms_pubkey;
-
-	CHECK_REF_POINTER(pms, sizeof(ms_get_hybrid_pubkey_t));
-
-	ms->ms_retval = get_hybrid_pubkey(_tmp_pubkey);
-
 
 	return status;
 }
@@ -400,10 +339,38 @@ static sgx_status_t SGX_CDECL sgx_provision_rsa_id(void* pms)
 	ms_provision_rsa_id_t* ms = SGX_CAST(ms_provision_rsa_id_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
 	unsigned char* _tmp_encrypted_rsa_id = ms->ms_encrypted_rsa_id;
+	size_t _tmp_secret_len = ms->ms_secret_len;
+	size_t _len_encrypted_rsa_id = _tmp_secret_len;
+	unsigned char* _in_encrypted_rsa_id = NULL;
 
 	CHECK_REF_POINTER(pms, sizeof(ms_provision_rsa_id_t));
+	CHECK_UNIQUE_POINTER(_tmp_encrypted_rsa_id, _len_encrypted_rsa_id);
 
-	provision_rsa_id((const unsigned char*)_tmp_encrypted_rsa_id, ms->ms_buf_len);
+	if (_tmp_encrypted_rsa_id != NULL) {
+		_in_encrypted_rsa_id = (unsigned char*)malloc(_len_encrypted_rsa_id);
+		if (_in_encrypted_rsa_id == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		memcpy((void*)_in_encrypted_rsa_id, _tmp_encrypted_rsa_id, _len_encrypted_rsa_id);
+	}
+	ms->ms_retval = provision_rsa_id((const unsigned char*)_in_encrypted_rsa_id, _tmp_secret_len);
+err:
+	if (_in_encrypted_rsa_id) free((void*)_in_encrypted_rsa_id);
+
+	return status;
+}
+
+static sgx_status_t SGX_CDECL sgx_query_rsa_pubkey(void* pms)
+{
+	ms_query_rsa_pubkey_t* ms = SGX_CAST(ms_query_rsa_pubkey_t*, pms);
+	sgx_status_t status = SGX_SUCCESS;
+	unsigned char* _tmp_pubkey = ms->ms_pubkey;
+
+	CHECK_REF_POINTER(pms, sizeof(ms_query_rsa_pubkey_t));
+
+	ms->ms_retval = query_rsa_pubkey(_tmp_pubkey, ms->ms_cap_pubkey);
 
 
 	return status;
@@ -419,9 +386,9 @@ static sgx_status_t SGX_CDECL sgx_dummy(void* pms)
 
 SGX_EXTERNC const struct {
 	size_t nr_ecall;
-	struct {void* ecall_addr; uint8_t is_priv;} ecall_table[12];
+	struct {void* ecall_addr; uint8_t is_priv;} ecall_table[11];
 } g_ecall_table = {
-	12,
+	11,
 	{
 		{(void*)(uintptr_t)sgx_ssl_conn_init, 0},
 		{(void*)(uintptr_t)sgx_ssl_conn_teardown, 0},
@@ -429,39 +396,38 @@ SGX_EXTERNC const struct {
 		{(void*)(uintptr_t)sgx_appendBlockToFIFO, 0},
 		{(void*)(uintptr_t)sgx_test_tls_client, 0},
 		{(void*)(uintptr_t)sgx_enclaveTest, 0},
-		{(void*)(uintptr_t)sgx_keygen_in_seal, 0},
+		{(void*)(uintptr_t)sgx_rsa_keygen_in_seal, 0},
 		{(void*)(uintptr_t)sgx_unseal_secret_and_leak_public_key, 0},
-		{(void*)(uintptr_t)sgx_provision_hybrid_key, 0},
-		{(void*)(uintptr_t)sgx_get_hybrid_pubkey, 0},
 		{(void*)(uintptr_t)sgx_provision_rsa_id, 0},
+		{(void*)(uintptr_t)sgx_query_rsa_pubkey, 0},
 		{(void*)(uintptr_t)sgx_dummy, 0},
 	}
 };
 
 SGX_EXTERNC const struct {
 	size_t nr_ocall;
-	uint8_t entry_table[18][12];
+	uint8_t entry_table[18][11];
 } g_dyn_entry_table = {
 	18,
 	{
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
 	}
 };
 

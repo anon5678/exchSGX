@@ -2,19 +2,20 @@
 // Created by fanz on 7/11/17.
 //
 
-#include "bitcoindrpcclient.h"
 #include "Enclave_u.h"
-#include "jsonrpccpp/client/connectors/httpclient.h"
 #include "Utils.h"
-#include "tls_server_threaded.h"
+#include "bitcoindrpcclient.h"
 #include "blockfeeding.h"
+#include "jsonrpccpp/client/connectors/httpclient.h"
+#include "tls_server_threaded.h"
 
 #include <sgx_urts.h>
 
+#include <atomic>
+#include <csignal>
+#include <fstream>
 #include <iostream>
 #include <memory>
-#include <csignal>
-#include <atomic>
 #include <thread>
 
 #include <boost/program_options.hpp>
@@ -26,15 +27,29 @@ using namespace std;
 sgx_enclave_id_t eid;
 
 class Config {
- public:
+public:
   bool testBlockFeeding = false;
   bool runServer = false;
   bool runClient = false;
+  string rsa_secret_key = "";
 };
-void config(int argc, const char* argv[], Config& conf);
+void config(int argc, const char *argv[], Config &conf);
 
+#include <stdexcept>
 
-int main(int argc, const char* argv[]) {
+static vector<uint8_t> readBinaryFile(const string &fname) {
+  ifstream in(fname, std::ios::binary);
+  if (!in.is_open()) {
+    throw invalid_argument("cannot open file " + fname);
+  }
+
+  return vector<uint8_t>(istreambuf_iterator<char>(in),
+                         istreambuf_iterator<char>());
+}
+
+#include <boost/algorithm/hex.hpp>
+
+int main(int argc, const char *argv[]) {
   Config conf;
   config(argc, argv, conf);
 
@@ -43,30 +58,57 @@ int main(int argc, const char* argv[]) {
     exit(-1);
   }
 
-  int ret;
+  sgx_status_t st;
+  int ret = 0;
+
+  if (!conf.rsa_secret_key.empty()) {
+    try {
+      cout << "provisioning RSA key from " << conf.rsa_secret_key << "..."
+           << endl;
+      auto sealed = readBinaryFile(conf.rsa_secret_key);
+      st = provision_rsa_id(eid, &ret, sealed.data(), sealed.size());
+      if (st != SGX_SUCCESS || ret != 0) {
+        cerr << "cannot provision rsa id. ret=" << ret << endl;
+      } else {
+        unsigned char pubkey[1024];
+        st = query_rsa_pubkey(eid, &ret, pubkey, sizeof pubkey);
+        if (st != SGX_SUCCESS || ret != 0) {
+          cerr << "cannot query rsa id. ret=" << ret << endl;
+        }
+        cout << "using the following public key..." << endl;
+        cout << (char *)pubkey;
+      }
+
+    } catch (const std::exception &e) {
+      cerr << "cannot provision rsa id: " << e.what() << endl;
+    }
+  }
 
   if (conf.runServer) {
     // prepare tls server
     tls_server_init(4433);
-  }
-  else if (conf.runClient) {
+  } else if (conf.runClient) {
     test_tls_client(eid, &ret, "localhost", 4433);
-  }
-  else if (conf.testBlockFeeding) {
+  } else if (conf.testBlockFeeding) {
     test_feed_blocks();
   }
 
   sgx_destroy_enclave(eid);
 }
 
-void config(int argc, const char* argv[], Config& config) {
+void config(int argc, const char *argv[], Config &config) {
   try {
     po::options_description desc("Allowed options");
-    desc.add_options()
-        ("help,h", "print this message")
-        ("feed,f", po::bool_switch(&config.testBlockFeeding)->default_value(false), "try to feed some blocks")
-        ("server,s", po::bool_switch(&config.runServer)->default_value(false), "run as a tls server")
-        ("client,c", po::bool_switch(&config.runClient)->default_value(false), "run as a tls client");
+    desc.add_options()("help,h", "print this message")(
+        "id,i", po::value<string>(&config.rsa_secret_key)->default_value(""),
+        "run as a tls server")(
+        "feed,f",
+        po::bool_switch(&config.testBlockFeeding)->default_value(false),
+        "try to feed some blocks")(
+        "server,s", po::bool_switch(&config.runServer)->default_value(false),
+        "run as a tls server")(
+        "client,c", po::bool_switch(&config.runClient)->default_value(false),
+        "run as a tls client");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);

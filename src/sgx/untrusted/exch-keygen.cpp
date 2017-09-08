@@ -1,16 +1,17 @@
-#include <sgx_error.h>
-#include <boost/program_options.hpp>
 #include <boost/algorithm/hex.hpp>
+#include <boost/program_options.hpp>
+#include <sgx_error.h>
 
 #include <fstream>
 #include <iostream>
 #include <string>
 
 #include "Enclave_u.h"
+#include "key_u.h"
 #include "Utils.h"
 
-#include "../common/errno.h"
 #include "../common/base64.hxx"
+#include "../common/errno.h"
 
 using namespace std;
 using namespace ext;
@@ -20,8 +21,8 @@ namespace po = boost::program_options;
 #include "Utils.h"
 #include <sgx_urts.h>
 
-void print_key(sgx_enclave_id_t eid, const string& keyfile);
-void keygen(sgx_enclave_id_t eid, const string& keyfile);
+void print_key(sgx_enclave_id_t eid, const string &keyfile);
+void keygen(sgx_enclave_id_t eid, const string &keyfile);
 
 int main(int argc, const char *argv[]) {
   string key_input, key_output;
@@ -30,8 +31,9 @@ int main(int argc, const char *argv[]) {
   try {
     po::options_description desc("Allowed options");
     desc.add_options()("help,h", "print this message")(
-        "enclave,e", po::value(&enclave_path)->required(), "which enclave to use?")(
-        "print,p", po::value(&key_input), "print existing keys")(
+        "enclave,e", po::value(&enclave_path)->required(),
+        "which enclave to use?")("print,p", po::value(&key_input),
+                                 "print existing keys")(
         "keygen,g", po::value(&key_output), "generate a new key");
 
     po::variables_map vm;
@@ -81,51 +83,50 @@ int main(int argc, const char *argv[]) {
   cout << "Info: all enclave closed successfully." << endl;
 }
 
-#include "key_u.h"
 
-void print_key(sgx_enclave_id_t eid, const string& keyfile) {
+void print_key(sgx_enclave_id_t eid, const string &keyfile) {
   cout << "printing key from " << keyfile << endl;
-  ifstream in_keyfile(keyfile);
+  ifstream in_keyfile(keyfile, std::ios::binary);
   if (!in_keyfile.is_open()) {
     cerr << "cannot open key file" << endl;
     exit(-1);
   }
 
-  stringstream buffer;
-  buffer << in_keyfile.rdbuf();
+  vector<unsigned char> sealed_secret((istreambuf_iterator<char>(in_keyfile)),
+                                      istreambuf_iterator<char>());
 
-  cout << "Sealed Secret: " << buffer.str() << endl;
-
-  string pubkey_b64 = unseal_key(eid, buffer.str(), exch::keyUtils::HYBRID_ENCRYPTION_KEY);
-  cout << "PublicKey: " << pubkey_b64 << endl;
+  string pubkey_pem =
+      unseal_key(eid, sealed_secret, exch::keyUtils::HYBRID_ENCRYPTION_KEY);
+  cout << "PublicKey: \n" << pubkey_pem;
 }
 
-void keygen(sgx_enclave_id_t eid, const string& keyfile) {
-  unsigned char secret_sealed[10000];
+void keygen(sgx_enclave_id_t eid, const string &keyfile) {
+  unsigned char secret_sealed[5000];
   unsigned char pubkey[1000];
 
   // call into enclave to fill the above buffers
-  size_t buffer_used = 0;
-  int ret = 0;
-  sgx_status_t ecall_status = keygen_in_seal(eid, &ret, secret_sealed, &buffer_used, pubkey);
-  if (ecall_status != SGX_SUCCESS || ret != 0) {
-    cerr<< "ecall failed" << endl;
+  int buffer_used = 0;
+  sgx_status_t ecall_status =
+      rsa_keygen_in_seal(eid, &buffer_used, secret_sealed, sizeof secret_sealed,
+                         pubkey, sizeof pubkey);
+  if (ecall_status != SGX_SUCCESS || buffer_used < 0) {
+    cerr << "ecall failed" << endl;
     print_error_message(ecall_status);
-    cerr << "ecdsa_keygen_seal returns " << ret << endl;
+    cerr << "rsa_keygen_in_seal returns " << buffer_used << endl;
     std::exit(-1);
   }
 
-  string sealed_secret_b64 = ext::b64_encode(secret_sealed, sizeof secret_sealed);
+  cout << "sealed secret has " << buffer_used << " bytes" << endl;
 
-  std::ofstream of(keyfile);
+  std::ofstream of(keyfile, std::ios::binary);
   if (!of.is_open()) {
     cerr << "cannot open key file: " << keyfile << endl;
     std::exit(-1);
   }
-  of << sealed_secret_b64;
+  of.write((char *)secret_sealed, buffer_used);
+  ;
   of.close();
 
-  cout << "Secret sealed to " << keyfile << endl;
-  cout << "PublicKey: " << pubkey << endl;
+  cout << "secret sealed to " << keyfile << endl;
+  cout << "PublicKey: \n" << pubkey;
 }
-

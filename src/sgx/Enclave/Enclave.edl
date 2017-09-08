@@ -19,31 +19,27 @@ enclave {
         public int enclaveTest();
 
         // key management
-        public int keygen_in_seal(
-            [user_check] unsigned char *o_sealed,
-            [in, out] size_t *olen,
-            [user_check] unsigned char *o_pubkey);
+        public int rsa_keygen_in_seal(
+            [user_check] unsigned char *o_sealed, size_t cap_sealed,
+            [user_check] unsigned char *o_pubkey, size_t cap_pubkey);
 
         public int unseal_secret_and_leak_public_key(
             [in, size=secret_len] const sgx_sealed_data_t *secret,
             size_t secret_len,
-            [user_check] unsigned char *pubkey);
-
-        public int provision_hybrid_key(
-            [in,size=secret_len] const sgx_sealed_data_t *secret,
-            size_t secret_len);
-
-        public int get_hybrid_pubkey(
-            [user_check] uint8_t pubkey[65]);
+            [user_check] unsigned char *pubkey,
+            size_t cap_pubkey);
 
         // id management
-        public void provision_rsa_id(
-            [user_check] const unsigned char* encrypted_rsa_id,
-            size_t buf_len);
+        public int provision_rsa_id(
+            [in, size=secret_len] const unsigned char* encrypted_rsa_id,
+            size_t secret_len);
+
+        public int query_rsa_pubkey(
+            [user_check] unsigned char *pubkey,
+            size_t cap_pubkey);
     };
 
     untrusted {
         /* define OCALLs here. */
-    
     };
 };

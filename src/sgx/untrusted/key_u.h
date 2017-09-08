@@ -3,8 +3,10 @@
 
 #include <sgx_eid.h>
 #include <string>
+#include <vector>
 
 using std::string;
+using std::vector;
 
 namespace exch {
 namespace keyUtils {
@@ -14,7 +16,7 @@ enum KeyType {
 }
 }
 
-string unseal_key(sgx_enclave_id_t eid, const string &sealed_key, exch::keyUtils::KeyType key_type);
+string unseal_key(sgx_enclave_id_t eid, const vector<unsigned char>& sealed_key, exch::keyUtils::KeyType key_type);
 void provision_key(sgx_enclave_id_t eid, const string &sealed_key, exch::keyUtils::KeyType);
 
 #endif  // SRC_APP_KEY_UTILS_H_
