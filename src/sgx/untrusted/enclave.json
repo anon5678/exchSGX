@@ -1,0 +1,7 @@
+[
+    {
+        "name": "appendBlock2FIFO",
+        "params": ["header"],
+        "returns": true
+    }
+]

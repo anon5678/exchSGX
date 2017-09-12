@@ -17,6 +17,8 @@
 #include "blockfeeding.h"
 #include "tls_server_threaded.h"
 
+#include "enclaverpc.h"
+
 namespace po = boost::program_options;
 
 using namespace std;
@@ -43,6 +45,8 @@ static vector<uint8_t> readBinaryFile(const string &fname) {
                          istreambuf_iterator<char>());
 }
 
+#include <jsonrpccpp/server/connectors/httpserver.h>
+#include "enclaverpc.h"
 
 int main(int argc, const char *argv[]) {
   Config conf;
@@ -55,6 +59,13 @@ int main(int argc, const char *argv[]) {
 
   sgx_status_t st;
   int ret = 0;
+
+  jsonrpc::HttpServer httpserver(1234);
+  EnclaveRPC enclaveRPC(eid, httpserver);
+
+  enclaveRPC.StartListening();
+  getchar();
+  enclaveRPC.StopListening();
 
   if (!conf.rsa_secret_key.empty()) {
     try {

@@ -24,9 +24,10 @@ typedef struct ms_ssl_conn_handle_t {
 	thread_info_t* ms_thread_info;
 } ms_ssl_conn_handle_t;
 
-typedef struct ms_appendBlockToFIFO_t {
-	char* ms_header;
-} ms_appendBlockToFIFO_t;
+typedef struct ms_ecall_append_block_to_fifo_t {
+	int ms_retval;
+	char* ms_blockHeaderHex;
+} ms_ecall_append_block_to_fifo_t;
 
 typedef struct ms_test_tls_client_t {
 	int ms_retval;
@@ -221,30 +222,30 @@ err:
 	return status;
 }
 
-static sgx_status_t SGX_CDECL sgx_appendBlockToFIFO(void* pms)
+static sgx_status_t SGX_CDECL sgx_ecall_append_block_to_fifo(void* pms)
 {
-	ms_appendBlockToFIFO_t* ms = SGX_CAST(ms_appendBlockToFIFO_t*, pms);
+	ms_ecall_append_block_to_fifo_t* ms = SGX_CAST(ms_ecall_append_block_to_fifo_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
-	char* _tmp_header = ms->ms_header;
-	size_t _len_header = _tmp_header ? strlen(_tmp_header) + 1 : 0;
-	char* _in_header = NULL;
+	char* _tmp_blockHeaderHex = ms->ms_blockHeaderHex;
+	size_t _len_blockHeaderHex = _tmp_blockHeaderHex ? strlen(_tmp_blockHeaderHex) + 1 : 0;
+	char* _in_blockHeaderHex = NULL;
 
-	CHECK_REF_POINTER(pms, sizeof(ms_appendBlockToFIFO_t));
-	CHECK_UNIQUE_POINTER(_tmp_header, _len_header);
+	CHECK_REF_POINTER(pms, sizeof(ms_ecall_append_block_to_fifo_t));
+	CHECK_UNIQUE_POINTER(_tmp_blockHeaderHex, _len_blockHeaderHex);
 
-	if (_tmp_header != NULL) {
-		_in_header = (char*)malloc(_len_header);
-		if (_in_header == NULL) {
+	if (_tmp_blockHeaderHex != NULL) {
+		_in_blockHeaderHex = (char*)malloc(_len_blockHeaderHex);
+		if (_in_blockHeaderHex == NULL) {
 			status = SGX_ERROR_OUT_OF_MEMORY;
 			goto err;
 		}
 
-		memcpy((void*)_in_header, _tmp_header, _len_header);
-		_in_header[_len_header - 1] = '\0';
+		memcpy((void*)_in_blockHeaderHex, _tmp_blockHeaderHex, _len_blockHeaderHex);
+		_in_blockHeaderHex[_len_blockHeaderHex - 1] = '\0';
 	}
-	appendBlockToFIFO((const char*)_in_header);
+	ms->ms_retval = ecall_append_block_to_fifo((const char*)_in_blockHeaderHex);
 err:
-	if (_in_header) free((void*)_in_header);
+	if (_in_blockHeaderHex) free((void*)_in_blockHeaderHex);
 
 	return status;
 }
@@ -393,7 +394,7 @@ SGX_EXTERNC const struct {
 		{(void*)(uintptr_t)sgx_ssl_conn_init, 0},
 		{(void*)(uintptr_t)sgx_ssl_conn_teardown, 0},
 		{(void*)(uintptr_t)sgx_ssl_conn_handle, 0},
-		{(void*)(uintptr_t)sgx_appendBlockToFIFO, 0},
+		{(void*)(uintptr_t)sgx_ecall_append_block_to_fifo, 0},
 		{(void*)(uintptr_t)sgx_test_tls_client, 0},
 		{(void*)(uintptr_t)sgx_enclaveTest, 0},
 		{(void*)(uintptr_t)sgx_rsa_keygen_in_seal, 0},

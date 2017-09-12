@@ -23,7 +23,7 @@ extern "C" {
 void ssl_conn_init();
 void ssl_conn_teardown();
 void ssl_conn_handle(long int thread_id, thread_info_t* thread_info);
-void appendBlockToFIFO(const char* header);
+int ecall_append_block_to_fifo(const char* blockHeaderHex);
 int test_tls_client(const char* hostname, unsigned int port);
 int enclaveTest();
 int rsa_keygen_in_seal(unsigned char* o_sealed, size_t cap_sealed, unsigned char* o_pubkey, size_t cap_pubkey);

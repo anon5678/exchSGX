@@ -12,6 +12,9 @@
 #include <jsonrpccpp/client.h>
 
 using namespace std;
+using Json::Value;
+using Json::Reader;
+using jsonrpc::Errors;
 
 class bitcoinRPC {
   static const string BITCOIND_RPC_ADDR;
@@ -26,13 +29,9 @@ public:
   int getblockcount();
   string getblockhash(int block_height);
   string getblockheader(const string &block_hash, bool format);
-  Json::Value getblock(const string &block_hash);
-  Json::Value getrawtransaction(const string &tx_hash, bool format);
+  Value getblock(const string &block_hash);
+  Value getrawtransaction(const string &tx_hash, bool format);
 };
-
-using Json::Value;
-using Json::Reader;
-using jsonrpc::Errors;
 
 /**
  * Based on bitcoin-api-cpp

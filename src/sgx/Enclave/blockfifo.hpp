@@ -7,15 +7,15 @@
 #define PROJECT_LATEST_BLOCKS_H
 
 #include <queue>
-#include "bitcoin/primitives/block.h"
 
+#include "bitcoin/primitives/block.h"
 #include "pprint.h"
 
 using namespace std;
 
 // initialized data
 enum HeaderSize {
-  bitcoin=80,
+  bitcoin = 80,
 };
 
 // XXX: use a constant difficulty for the moment
@@ -25,7 +25,7 @@ constexpr unsigned int bitcoinDifficulty = 8;
  * ecall functions
  */
 extern "C" {
-void appendBlockToFIFO(const char *blockHeaderHex);
+int ecall_append_block_to_fifo(const char *blockHeaderHex);
 }
 
 /*
@@ -33,34 +33,33 @@ void appendBlockToFIFO(const char *blockHeaderHex);
  */
 unsigned int nLeadingZero(const uint256 &hash);
 
-template<unsigned int QUEUE_LENGTH>
-class BlockFIFO {
- private:
+template <unsigned int QUEUE_LENGTH> class BlockFIFO {
+private:
   queue<CBlockHeader> _blocks;
 
- public:
-
+public:
   //! validate a block by checking its hash
   //! \param new_block
   //! \return  true = validated
-  bool IsValidSuccessor(const CBlockHeader &new_block) const {
+  bool validateSuccessor(const CBlockHeader &new_block) const {
     if (_blocks.empty())
       return true;
 
     CBlockHeader prev_block = _blocks.back();
 
-    if (prev_block.GetHash() == new_block.hashPrevBlock
-        && nLeadingZero(new_block.GetHash()) >= bitcoinDifficulty) {
+    if (prev_block.GetHash() == new_block.hashPrevBlock &&
+        nLeadingZero(new_block.GetHash()) >= bitcoinDifficulty) {
       LL_DEBUG("can push");
       return true;
     }
 
-    LL_CRITICAL("cannot append block %s", new_block.GetHash().ToString().c_str());
+    LL_CRITICAL("cannot append block %s",
+                new_block.GetHash().ToString().c_str());
     return false;
   }
 
   bool AppendBlock(const CBlockHeader &new_header) {
-    if (!IsValidSuccessor(new_header)) {
+    if (!validateSuccessor(new_header)) {
       return false;
     }
 
@@ -71,15 +70,15 @@ class BlockFIFO {
     }
 
     if (nPoped > 0)
-        LL_NOTICE("removed %d blocks from FIFO", nPoped);
+      LL_NOTICE("removed %d blocks from FIFO", nPoped);
 
     _blocks.push(new_header);
     return true;
   }
 
-  size_t size() const {
-    return _blocks.size();
-  }
+  const queue<CBlockHeader> *getblockchain_const() const { return &_blocks; }
+
+  size_t size() const { return _blocks.size(); }
 };
 
-#endif //PROJECT_LATEST_BLOCKS_H
+#endif // PROJECT_LATEST_BLOCKS_H

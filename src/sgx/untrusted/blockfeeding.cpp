@@ -14,7 +14,8 @@ bool tryAddBlock(sgx_enclave_id_t eid, bitcoinRPC &btc, int blocknum) {
   try {
     string hash = btc.getblockhash(blocknum);
     Json::Value block_header = btc.getblockheader(hash, false);
-    appendBlockToFIFO(eid, block_header.asCString());
+    int ret;
+    ecall_append_block_to_fifo(eid, &ret, block_header.asCString());
     return true;
   } catch (const bitcoinRPCException &e) {
     cerr << "std exception: " << e.what() << endl;

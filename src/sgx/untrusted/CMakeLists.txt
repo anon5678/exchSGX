@@ -17,6 +17,7 @@ add_custom_command(
 
 add_executable(exch exch.cpp
         rpc.cpp
+        enclaverpc.cpp
         blockfeeding.cpp
         merkpath/base64.cpp
         merkpath/merkpath.cpp

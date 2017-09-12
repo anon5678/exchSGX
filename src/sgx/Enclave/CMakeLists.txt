@@ -26,6 +26,7 @@ set(SOURCE_FILES
         key_rsa_t.cpp
 
         blockfifo.cpp
+        blockfifo.hpp
         bytestream.cpp
 
         bitcoin/uint256.cpp
