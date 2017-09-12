@@ -96,10 +96,10 @@ void config(int argc, const char *argv[], Config &config) {
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help,h", "print this message")
-        ("id,i", po::value<string>(&config.rsa_secret_key)->default_value(""), "run as a tls server")
-        ("feed,f", po::bool_switch(&config.testBlockFeeding)->default_value(false), "try to feed some blocks")
-        ("server,s", po::bool_switch(&config.runServer)->default_value(false), "run as a tls server")
-        ("client,c", po::bool_switch(&config.runClient)->default_value(false), "run as a tls client");
+        ("id,i", po::value<string>(&config.rsa_secret_key)->default_value(""), "dry run identity provision and exit.")
+        ("feed,f", po::bool_switch(&config.testBlockFeeding)->default_value(false), "try to feed some blocks.")
+        ("server,s", po::bool_switch(&config.runServer)->default_value(false), "run as a tls server.")
+        ("client,c", po::bool_switch(&config.runClient)->default_value(false), "run as a tls client.");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
