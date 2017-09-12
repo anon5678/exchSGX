@@ -98,7 +98,7 @@ void recursiveMerk(const arrdigest *level, int size, int path) {
     cout << "root: ";
     hexdump(next[0], SHA256_DIGEST_LENGTH);
     byte_swap(next[0], SHA256_DIGEST_LENGTH);
-    cout << "root (RPC): ";
+    cout << "root (byte swapped): ";
     hexdump(next[0], SHA256_DIGEST_LENGTH);
   }
   delete[] next;
