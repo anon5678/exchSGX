@@ -7,6 +7,6 @@
 using std::vector;
 using std::string;
 
-void merkGenPath(const vector<string>& leaf_nodes, int index);
+void merkGenPathHEX(const vector<string>& leaf_nodes, int index);
 
 #endif /* ifndef  EXCH_MERKPATH_H */

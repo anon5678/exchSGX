@@ -20,6 +20,19 @@ std::string base64_decode(const std::string &);
 typedef unsigned long long cointype;
 typedef unsigned char arrdigest[SHA256_DIGEST_LENGTH];
 
+int char2int(char c) {
+  if(c >= '0' && c <= '9') return c - '0';
+  //if(c >= 'A' && c <= 'F') return c - 'A' + 10;
+  if(c >= 'a' && c <= 'f') return c - 'a' + 10;
+  throw std::invalid_argument("bad hex");
+}
+void hex2bin(unsigned char* dest, const char* src) {
+  while(*src && src[1]) {
+    *(dest++) = char2int(*src)*16 + char2int(src[1]);
+    src += 2;
+  }
+}
+
 void hexdump(const unsigned char *data, int len) {
   std::cout << std::hex;
   for (int i = 0; i < len; ++i)
@@ -96,21 +109,20 @@ void recursiveMerk(const arrdigest *level, int size, int path) {
     recursiveMerk(next, k, path / 2);
   else {
     cout << "root: ";
-    hexdump(next[0], SHA256_DIGEST_LENGTH);
     byte_swap(next[0], SHA256_DIGEST_LENGTH);
-    cout << "root (byte swapped): ";
     hexdump(next[0], SHA256_DIGEST_LENGTH);
   }
   delete[] next;
 }
 
-void merkGenPath(const vector<string> &leaf_nodes, int index) {
+void merkGenPathHEX(const vector<string> &leaf_nodes, int index) {
   size_t size = leaf_nodes.size();
   arrdigest *mTree = new arrdigest[size];
 
   for (int i = 0; i < size; ++i) {
     unsigned char *tmp = mTree[i];
-    std::memcpy(tmp, (base64_decode(leaf_nodes[i])).data(), 32);
+    //std::memcpy(tmp, (base64_decode(leaf_nodes[i])).data(), 32);
+    hex2bin(tmp, leaf_nodes[i].c_str());
     // hexdump(tmp, 32);
     byte_swap(tmp, 32);
   }

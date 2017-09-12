@@ -71,7 +71,7 @@ int test_merkle_proof() {
 
     cout << "Generating Merkle branch for " << txid << " (index=" << tx_idx << ") in block #" << block["height"] << endl;
 
-    merkGenPath(merkle_leaves, tx_idx);
+    merkGenPathHEX(merkle_leaves, tx_idx);
 
     cout << "Merkle root of block #" << block["height"] << ": " << block["merkleroot"].asString() << endl;
 
