@@ -3,10 +3,10 @@ INCDIR := $(SSLDIR)/include
 LIBDIR := $(SSLDIR)/lib
 
 merkpath: merkpath.o base64.o
-	g++ -g -o merkpath merkpath.o base64.o -L "$(LIBDIR)" -l:libcrypto.a
+	g++ -o merkpath merkpath.o base64.o -L "$(LIBDIR)" -l:libcrypto.a
 
 merkpath.o: merkpath.cpp
-	g++ -g -c merkpath.cpp -I "$(INCDIR)"
+	g++ -c merkpath.cpp -I "$(INCDIR)"
 
 base64.o: base64.cpp
 	g++ -c base64.cpp

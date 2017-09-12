@@ -16,8 +16,11 @@ add_custom_command(
 )
 
 add_executable(exch exch.cpp
-        Utils.cpp
+        rpc.cpp
         blockfeeding.cpp
+        merkpath/base64.cpp
+        merkpath/merkpath.cpp
+        Utils.cpp
         tls_server_threaded.cpp
         Enclave_u.c
         mbedtls_error.c
@@ -29,7 +32,8 @@ add_executable(exch-keygen exch-keygen.cpp key_u.cpp Utils.cpp Enclave_u.c ../co
 find_package(Jsoncpp REQUIRED)
 find_package(JsonCppRpc REQUIRED)
 find_package(CURL REQUIRED)
-find_package(Boost QUIET REQUIRED COMPONENTS program_options)
+find_package(Boost REQUIRED COMPONENTS program_options)
+find_package(OpenSSL REQUIRED)
 
 include_directories(
         ${CURL_INCLUDE_DIRS}
@@ -38,17 +42,19 @@ include_directories(
         ${SGXSDK_INCLUDE_DIRS}
         ${MBEDTLS_SGX_ROOT_DIR}/include
         ${Boost_INCLUDE_DIRS}
+        ${OPENSSL_INCLUDE_DIR}
 )
 
 set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_u.a")
 
 target_link_libraries(exch
-        ${JSONCPP_LIBRARIES}
         ${CURL_LIBRARIES}
-        ${Boost_LIBRARIES}
+        ${JSONCPP_LIBRARIES}
         ${JSONRPCCPP_LIBRARIES}
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
         ${LIB_MBEDTLS_PATH}
+        ${Boost_LIBRARIES}
+        ${OPENSSL_CRYPTO_LIBRARY}
         -lpthread)
 
 target_link_libraries(exch-keygen

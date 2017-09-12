@@ -1,16 +1,5 @@
-//
-// Created by fanz on 7/11/17.
-//
-
-#include "Enclave_u.h"
-#include "Utils.h"
-#include "bitcoindrpcclient.h"
-#include "blockfeeding.h"
-#include "jsonrpccpp/client/connectors/httpclient.h"
-#include "tls_server_threaded.h"
-
 #include <sgx_urts.h>
-
+#include <stdexcept>
 #include <atomic>
 #include <csignal>
 #include <fstream>
@@ -19,6 +8,14 @@
 #include <thread>
 
 #include <boost/program_options.hpp>
+#include <boost/algorithm/hex.hpp>
+#include <jsonrpccpp/client/connectors/httpclient.h>
+
+#include "Enclave_u.h"
+#include "Utils.h"
+#include "bitcoindrpcclient.h"
+#include "blockfeeding.h"
+#include "tls_server_threaded.h"
 
 namespace po = boost::program_options;
 
@@ -35,7 +32,6 @@ public:
 };
 void config(int argc, const char *argv[], Config &conf);
 
-#include <stdexcept>
 
 static vector<uint8_t> readBinaryFile(const string &fname) {
   ifstream in(fname, std::ios::binary);
@@ -47,7 +43,6 @@ static vector<uint8_t> readBinaryFile(const string &fname) {
                          istreambuf_iterator<char>());
 }
 
-#include <boost/algorithm/hex.hpp>
 
 int main(int argc, const char *argv[]) {
   Config conf;

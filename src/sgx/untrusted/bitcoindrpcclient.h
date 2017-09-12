@@ -43,6 +43,27 @@ class bitcoindRPCClient : public jsonrpc::Client
             else
                 throw jsonrpc::JsonRpcException(jsonrpc::Errors::ERROR_CLIENT_INVALID_RESPONSE, result.toStyledString());
         }
+        Json::Value getblock(const std::string& param1) throw (jsonrpc::JsonRpcException)
+        {
+            Json::Value p;
+            p.append(param1);
+            Json::Value result = this->CallMethod("getblock",p);
+            if (result.isObject())
+                return result;
+            else
+                throw jsonrpc::JsonRpcException(jsonrpc::Errors::ERROR_CLIENT_INVALID_RESPONSE, result.toStyledString());
+        }
+        Json::Value getrawtransaction(const std::string& param1, bool param2) throw (jsonrpc::JsonRpcException)
+        {
+            Json::Value p;
+            p.append(param1);
+            p.append(param2);
+            Json::Value result = this->CallMethod("getrawtransaction",p);
+            if (result.isObject())
+                return result;
+            else
+                throw jsonrpc::JsonRpcException(jsonrpc::Errors::ERROR_CLIENT_INVALID_RESPONSE, result.toStyledString());
+        }
 };
 
 #endif //JSONRPC_CPP_STUB_BITCOINDRPCCLIENT_H_

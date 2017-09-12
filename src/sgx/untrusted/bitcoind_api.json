@@ -13,5 +13,15 @@
     "method": "getblockheader",
     "params": [ "0xheader hash", true],
     "returns": "binary string"
+  },
+  {
+      "method": "getblock",
+      "params": ["hash"],
+      "returns": {}
+  },
+  {
+      "method": "getrawtransaction",
+      "params": ["txid", true],
+      "returns": {}
   }
 ]
