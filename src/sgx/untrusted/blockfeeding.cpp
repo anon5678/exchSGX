@@ -27,6 +27,7 @@ bool tryAddBlock(sgx_enclave_id_t eid, bitcoinRPC &btc, int blocknum) {
 #include "merkpath/merkpath.h"
 
 int test_merkle_proof() {
+  testMerk(); //return 0;
   bitcoinRPC rpc;
 
   // testing. Will be removed later
@@ -72,7 +73,7 @@ int test_merkle_proof() {
 
     cout << "Generating Merkle branch for " << txid << " (index=" << tx_idx << ") in block #" << block["height"] << endl;
 
-    merkGenPath(merkle_leaves, tx_idx);
+    merkGenPathHEX(merkle_leaves, tx_idx);
 
     cout << "Merkle root of block #" << block["height"] << ": " << block["merkleroot"].asString() << endl;
 
