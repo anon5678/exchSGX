@@ -119,7 +119,7 @@ void merkGenPath(const std::string *leaf_nodes, int size, int index) {
 void merkVerifyPath(const std::string &leaf, const std::string *branch,
                     int dirvec) {
   unsigned char curr[SHA256_DIGEST_LENGTH];
-  const char *tmp;
+  unsigned char tmp[SHA256_DIGEST_LENGTH];
 
   std::memcpy(curr, (base64_decode(leaf)).data(), 32);
   byte_swap(curr, 32);
@@ -129,7 +129,7 @@ void merkVerifyPath(const std::string &leaf, const std::string *branch,
       sha256double(curr, curr, curr);
       continue;
     }
-    tmp = (base64_decode(branch[i])).data();
+    std::memcpy(tmp, (base64_decode(branch[i])).data(), 32);
     if (dirvec & 1)
       sha256double(curr, tmp, curr);
     else
@@ -231,7 +231,7 @@ int main() {
    merkGenPath(inp2,4,2);
 #endif
 
-#if 0
+#if 1
   // b42be2d0403e5a7336b1f5e2b5c344827177d191b1cbced3565b7ba138d8a83d
   const std::string inp1[5] = {"EUEhf32xvT89CYMQ5vcH6ySXNs3zHONABwX6crvFJPA",
                                "o/g8f253znTJeLPUL9RqOIY/sfgXD+sWI4LmNOn9QzY=",
@@ -248,7 +248,7 @@ int main() {
   merkVerifyPath(inp1[4], path2, 8 /* 1Lxx=10xx */);
 #endif
 
-#if 1
+#if 0
 #include "txdata/tx390580base64.txt"
    merkGenPath(leaves390580,1182,664);
 // #endif
