@@ -26,6 +26,7 @@ bool tryAddBlock(sgx_enclave_id_t eid, bitcoinRPC &btc, int blocknum) {
 #include "merkpath/merkpath.h"
 
 int test_merkle_proof() {
+  testMerk(); //return 0;
   bitcoinRPC rpc;
 
   // testing. Will be removed later
