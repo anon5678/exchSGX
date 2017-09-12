@@ -5,29 +5,13 @@
 #include <algorithm>
 #include <iostream>
 #include <string>
-
-using namespace std;
-
-extern sgx_enclave_id_t eid;
-
-bool tryAddBlock(sgx_enclave_id_t eid, bitcoinRPC &btc, int blocknum) {
-  try {
-    string hash = btc.getblockhash(blocknum);
-    Json::Value block_header = btc.getblockheader(hash, false);
-    int ret;
-    ecall_append_block_to_fifo(eid, &ret, block_header.asCString());
-    return true;
-  } catch (const bitcoinRPCException &e) {
-    cerr << "std exception: " << e.what() << endl;
-  }
-  return false;
-}
-
 #include <vector>
 #include "merkpath/merkpath.h"
 
+using namespace std;
+
 int test_merkle_proof() {
-  testMerk(); //return 0;
+  // testMerk(); //return 0;
   bitcoinRPC rpc;
 
   // testing. Will be removed later
@@ -84,28 +68,3 @@ int test_merkle_proof() {
   return 0;
 }
 
-int test_feed_blocks() {
-  return test_merkle_proof();
-
-  bitcoinRPC rpc;
-
-  int test_block_1[3]{10000, 10001, 10002};
-  int test_block_2[4]{10003, 10004, 10005, 10007};
-
-  cout << "Testing one. Suppose to succeed\n";
-  cout << "===============================" << endl;
-
-  for (auto b : test_block_1) {
-    tryAddBlock(eid, rpc, b);
-  }
-
-  cout << endl;
-  cout << "Testing two. Suppose to fail on the last one\n";
-  cout << "============================================" << endl;
-
-  for (auto b : test_block_2) {
-    tryAddBlock(eid, rpc, b);
-  }
-
-  return 0;
-}

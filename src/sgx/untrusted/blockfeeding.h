@@ -5,6 +5,6 @@
 #ifndef PROJECT_BLOCKFEEDING_H
 #define PROJECT_BLOCKFEEDING_H
 
-int test_feed_blocks();
+int test_merkle_proof();
 
 #endif //PROJECT_BLOCKFEEDING_H

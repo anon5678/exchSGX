@@ -96,7 +96,7 @@ int main(int argc, const char *argv[]) {
   } else if (conf.runClient) {
     test_tls_client(eid, &ret, "localhost", 4433);
   } else if (conf.testBlockFeeding) {
-    test_feed_blocks();
+    test_merkle_proof();
   }
 
   sgx_destroy_enclave(eid);
