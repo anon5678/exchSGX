@@ -17,6 +17,8 @@ unsigned int nLeadingZero(const uint256 &hash) {
   return static_cast<unsigned int>(foundNonZero);
 }
 
+#include <iostream>
+
 int ecall_append_block_to_fifo(const char *blockHeaderHex) {
   try {
     // sanity check
@@ -31,6 +33,8 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex) {
     std::vector<unsigned char> header_bin = ParseHex(blockHeaderHex);
     bytestream ibs(header_bin);
     block_header.Unserialize(ibs);
+
+    int a = 1000;
 
     LL_DEBUG("done unserilize");
 

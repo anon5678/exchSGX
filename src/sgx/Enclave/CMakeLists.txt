@@ -13,6 +13,7 @@ add_custom_command(
 
 set(SOURCE_FILES
         ecalls.cpp
+        
         Enclave_t.c
         log.c
         pprint.c

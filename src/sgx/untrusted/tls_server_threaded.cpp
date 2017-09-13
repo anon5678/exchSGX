@@ -19,6 +19,7 @@
 
 #include <sgx_urts.h>
 #include <thread>
+#include <mbedtls/net_v.h>
 
 #include "tls_server_threaded.h"
 
@@ -27,8 +28,8 @@ extern sgx_enclave_id_t eid;
 static pthread_info_t threads[MAX_NUM_THREADS];
 
 // thread function
-void *ecall_handle_ssl_connection(void *data);
-static int thread_create(mbedtls_net_context *client_fd);
+void *ecall_handle_tls_conn(void *data);
+static int serve_tls_conn_in_thread(mbedtls_net_context *client_fd);
 mbedtls_net_context listen_fd, client_fd;
 
 std::atomic<bool> quit(false);
@@ -65,6 +66,35 @@ int tls_server_init(unsigned int port) {
       break;
     }
 
+    /*
+     * 3. Wait until a client connects
+     */
+    if (0 != mbedtls_net_set_nonblock(&listen_fd)) {
+      cerr << "can't set nonblock for the listen socket" << endl;
+    }
+
+    ret = mbedtls_net_accept(&listen_fd, &client_fd, NULL, 0, NULL);
+
+    if (ret == MBEDTLS_ERR_SSL_WANT_READ) {
+      // it means accept would block
+      // let's don't block and continue!
+      ret = 0;
+      continue;
+    }
+
+    if (ret != 0) {
+      fprintf(stderr, "  [ main ] failed: mbedtls_net_accept returned -0x%04x\n", ret);
+      break;
+    }
+
+    std::cout << "serving " << client_fd.fd << std::endl;
+
+    if ((ret = serve_tls_conn_in_thread(&client_fd)) != 0) {
+      fprintf(stderr, "  [ main ]  failed: thread_create returned %d\n", ret);
+      mbedtls_net_free(&client_fd);
+      continue;
+    }
+
 #ifdef MBEDTLS_ERROR_C
     if (ret != 0) {
       char error_buf[100];
@@ -73,29 +103,6 @@ int tls_server_init(unsigned int port) {
     }
 #endif
 
-    /*
-     * 3. Wait until a client connects
-     */
-
-    if (0 != mbedtls_net_set_nonblock(&listen_fd)) {
-      cerr << "can't set nonblock for the listen socket" << endl;
-    }
-    ret = mbedtls_net_accept(&listen_fd, &client_fd, NULL, 0, NULL);
-    if (ret == MBEDTLS_ERR_SSL_WANT_READ) {
-      ret = 0;
-      continue;
-    }
-
-    if (ret != 0) {
-      mbedtls_printf("  [ main ] failed: mbedtls_net_accept returned -0x%04x\n", ret);
-      break;
-    }
-
-    if ((ret = thread_create(&client_fd)) != 0) {
-      mbedtls_printf("  [ main ]  failed: thread_create returned %d\n", ret);
-      mbedtls_net_free(&client_fd);
-      continue;
-    }
     ret = 0;
   } // while (true)
 
@@ -104,7 +111,7 @@ int tls_server_init(unsigned int port) {
 }
 
 // thread function
-void *ecall_handle_ssl_connection(void *data) {
+void *ecall_handle_tls_conn(void *data) {
   long int thread_id = pthread_self();
   thread_info_t *thread_info = (thread_info_t *) data;
 
@@ -117,7 +124,7 @@ void *ecall_handle_ssl_connection(void *data) {
   return (NULL);
 }
 
-static int thread_create(mbedtls_net_context *client_fd) {
+static int serve_tls_conn_in_thread(mbedtls_net_context *client_fd) {
   int ret, i;
 
   for (i = 0; i < MAX_NUM_THREADS; i++) {
@@ -140,7 +147,7 @@ static int thread_create(mbedtls_net_context *client_fd) {
   threads[i].data.thread_complete = 0;
   memcpy(&threads[i].data.client_fd, client_fd, sizeof(mbedtls_net_context));
 
-  if ((ret = pthread_create(&threads[i].thread, NULL, ecall_handle_ssl_connection, &threads[i].data)) != 0) {
+  if ((ret = pthread_create(&threads[i].thread, NULL, ecall_handle_tls_conn, &threads[i].data)) != 0) {
     return (ret);
   }
 

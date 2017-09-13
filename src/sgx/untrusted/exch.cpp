@@ -6,6 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <thread>
+#include <chrono>
 
 #include <boost/program_options.hpp>
 #include <boost/algorithm/hex.hpp>
