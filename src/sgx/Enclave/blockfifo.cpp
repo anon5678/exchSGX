@@ -1,4 +1,4 @@
-#include "blockfifo.hpp"
+#include "blockfifo.h"
 #include "bitcoin/utilstrencodings.h"
 #include "bytestream.h"
 #include "hash.h"

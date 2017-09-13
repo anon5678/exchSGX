@@ -5,7 +5,7 @@
 #include "lest.hpp"
 
 #include "bitcoin/uint256.h"
-#include "blockfifo.hpp"
+#include "blockfifo.h"
 
 #include "log.h"
 

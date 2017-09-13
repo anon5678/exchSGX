@@ -6,21 +6,23 @@
 #include <string>
 #include <vector>
 
-#include "../common/errno.h"
-#include "log.h"
-
 #include "mbedtls/bignum.h"
 #include "mbedtls/config.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/entropy.h"
 #include "mbedtls/error.h"
 #include "mbedtls/rsa.h"
+#include "mbedtls/pk.h"
 
+#include "log.h"
 #include "glue.h"
-
-#define ECPARAMS MBEDTLS_ECP_DP_SECP256K1
+#include "pprint.h"
+#include "../common/errno.h"
 
 using namespace std;
+
+#define KEY_SIZE 2048
+#define EXPONENT 65537
 
 /*!
  * generate a new pair of RSA keys and return the sealed secret key, the public
@@ -30,12 +32,6 @@ using namespace std;
  * @param o_pubkey
  * @return
  */
-
-#define KEY_SIZE 2048
-#define EXPONENT 65537
-
-#include "mbedtls/pk.h"
-#include "pprint.h"
 
 int rsa_keygen_in_seal(unsigned char *o_sealed, size_t cap_sealed,
                        unsigned char *o_pubkey, size_t cap_pubkey) {
