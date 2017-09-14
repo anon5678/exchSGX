@@ -65,7 +65,7 @@ int main(int argc, const char *argv[]) {
   sgx_status_t st;
   int ret;
 
-  ret = initialize_enclave(&eid);
+  ret = initialize_enclave(enclave_path, &eid);
   if (ret != 0) {
     cerr << "Failed to init the enclave" << endl;
     std::exit(-1);
@@ -82,7 +82,6 @@ int main(int argc, const char *argv[]) {
   sgx_destroy_enclave(eid);
   cout << "Info: all enclave closed successfully." << endl;
 }
-
 
 void print_key(sgx_enclave_id_t eid, const string &keyfile) {
   cout << "printing key from " << keyfile << endl;

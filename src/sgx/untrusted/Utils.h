@@ -1,7 +1,10 @@
-#pragma once
+#ifndef EXCH_UTILS_H
+#define EXCH_UTILS_H
 
 #include "sgx_error.h"
 #include "sgx_eid.h"     /* sgx_enclave_id_t */
+
+#include <string>
 
 #ifndef TRUE
 # define TRUE 1
@@ -32,6 +35,7 @@ int ocall_print_to_err(const char *str);
 
 void print_error_message(sgx_status_t ret);
 int initialize_enclave(sgx_enclave_id_t *eid);
+int initialize_enclave(std::string enclave_path, sgx_enclave_id_t *eid);
 
 typedef struct _sgx_errlist_t {
   sgx_status_t err;
@@ -118,4 +122,4 @@ static sgx_errlist_t sgx_errlist[] = {
     },
 };
 
-
+#endif
