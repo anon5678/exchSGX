@@ -13,11 +13,13 @@
 #include "mbedtls/error.h"
 #include "mbedtls/rsa.h"
 #include "mbedtls/pk.h"
+#include "mbedtls/x509_csr.h"
 
 #include "log.h"
 #include "glue.h"
 #include "pprint.h"
 #include "../common/errno.h"
+#include "utils.h"
 
 using namespace std;
 
@@ -33,8 +35,10 @@ using namespace std;
  * @return
  */
 
-int rsa_keygen_in_seal(unsigned char *o_sealed, size_t cap_sealed,
-                       unsigned char *o_pubkey, size_t cap_pubkey) {
+int rsa_keygen_in_seal(const char* subject_name,
+                       unsigned char *o_sealed, size_t cap_sealed,
+                       unsigned char *o_pubkey, size_t cap_pubkey,
+                       unsigned char *o_csr, size_t cap_csr) {
   int ret = 0;
 
   mbedtls_pk_context rsa_pk;
@@ -46,9 +50,7 @@ int rsa_keygen_in_seal(unsigned char *o_sealed, size_t cap_sealed,
     return -1;
   }
 
-  if ((ret =
-           mbedtls_rsa_gen_key(mbedtls_pk_rsa(rsa_pk), mbedtls_sgx_drbg_random,
-                               nullptr, KEY_SIZE, EXPONENT)) != 0) {
+  if ((ret = mbedtls_rsa_gen_key(mbedtls_pk_rsa(rsa_pk), mbedtls_sgx_drbg_random, nullptr, KEY_SIZE, EXPONENT)) != 0) {
     LL_CRITICAL("failed to gen key: %#x", ret);
     return -1;
   }
@@ -68,9 +70,23 @@ int rsa_keygen_in_seal(unsigned char *o_sealed, size_t cap_sealed,
     return -1;
   }
 
-  size_t prikey_pem_len =
-      strlen((const char *)prikey_pem) +
-      1; // note that the lenght include the terminating null
+  mbedtls_x509write_csr csr;
+  mbedtls_x509write_csr_init(&csr);
+  mbedtls_x509write_csr_set_md_alg(&csr, MBEDTLS_MD_SHA256);
+  if( ( ret = mbedtls_x509write_csr_set_subject_name( &csr, subject_name) ) != 0 )
+  {
+    LL_CRITICAL("%s", utils::mbedtls_error(ret).c_str());
+    return ret;
+  }
+
+  mbedtls_x509write_csr_set_key(&csr, &rsa_pk);
+  if( ( ret = mbedtls_x509write_csr_pem(&csr, o_csr, cap_csr, mbedtls_sgx_drbg_random, nullptr) ) < 0 ) {
+    LL_CRITICAL("%s", utils::mbedtls_error(ret).c_str());
+    return( ret );
+  }
+
+  // note that the length include the terminating null
+  size_t prikey_pem_len = strlen((const char *)prikey_pem) + 1;
 
   // seal the data
   size_t sealed_len = 0;
@@ -153,10 +169,11 @@ int unseal_secret_and_leak_public_key(const sgx_sealed_data_t *secret,
 
 mbedtls_pk_context g_rsa_sk;
 
-int provision_rsa_id(const sgx_sealed_data_t *secret, size_t secret_len) {
+int provision_rsa_id(const unsigned char *secret, size_t secret_len) {
+  auto sealed_secret = (const sgx_sealed_data_t*) secret;
   int ret;
   try {
-    vector<uint8_t> unsealed = _sgx_unseal_data_cpp(secret, secret_len);
+    vector<uint8_t> unsealed = _sgx_unseal_data_cpp(sealed_secret, secret_len);
     LL_LOG("unsealed secret");
 
     mbedtls_pk_init(&g_rsa_sk);

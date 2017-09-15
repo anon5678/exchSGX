@@ -27,3 +27,18 @@ int utils::printf_err(const char *fmt, ...)
   ocall_print_to_err(&ret, buf);
   return ret;
 }
+
+#include "mbedtls/error.h"
+#include <string>
+
+std::string utils::mbedtls_error(int ret) {
+  if (ret == 0) return "";
+  char buffer[1024];
+  char buffer2[1024];
+
+  mbedtls_strerror(ret, buffer, sizeof buffer);
+  snprintf(buffer2, sizeof buffer2, "Error: %#x. %s", -ret, buffer);
+
+  return std::string(buffer2);
+}
+

@@ -8,11 +8,13 @@
 #include "Enclave_t.h"
 
 #include <cstdio>
+#include <string>
 
 namespace utils {
 
 int printf_std(const char *fmt, ...);
 int printf_err(const char *fmt, ...);
+std::string mbedtls_error(int ret);
 
 }
 #endif //PROJECT_UTILS_H

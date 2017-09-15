@@ -41,10 +41,13 @@ typedef struct ms_enclaveTest_t {
 
 typedef struct ms_rsa_keygen_in_seal_t {
 	int ms_retval;
+	char* ms_subject_name;
 	unsigned char* ms_o_sealed;
 	size_t ms_cap_sealed;
 	unsigned char* ms_o_pubkey;
 	size_t ms_cap_pubkey;
+	unsigned char* ms_o_csr;
+	size_t ms_cap_csr;
 } ms_rsa_keygen_in_seal_t;
 
 typedef struct ms_unseal_secret_and_leak_public_key_t {
@@ -295,13 +298,29 @@ static sgx_status_t SGX_CDECL sgx_rsa_keygen_in_seal(void* pms)
 {
 	ms_rsa_keygen_in_seal_t* ms = SGX_CAST(ms_rsa_keygen_in_seal_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
+	char* _tmp_subject_name = ms->ms_subject_name;
+	size_t _len_subject_name = _tmp_subject_name ? strlen(_tmp_subject_name) + 1 : 0;
+	char* _in_subject_name = NULL;
 	unsigned char* _tmp_o_sealed = ms->ms_o_sealed;
 	unsigned char* _tmp_o_pubkey = ms->ms_o_pubkey;
+	unsigned char* _tmp_o_csr = ms->ms_o_csr;
 
 	CHECK_REF_POINTER(pms, sizeof(ms_rsa_keygen_in_seal_t));
+	CHECK_UNIQUE_POINTER(_tmp_subject_name, _len_subject_name);
 
-	ms->ms_retval = rsa_keygen_in_seal(_tmp_o_sealed, ms->ms_cap_sealed, _tmp_o_pubkey, ms->ms_cap_pubkey);
+	if (_tmp_subject_name != NULL) {
+		_in_subject_name = (char*)malloc(_len_subject_name);
+		if (_in_subject_name == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
 
+		memcpy((void*)_in_subject_name, _tmp_subject_name, _len_subject_name);
+		_in_subject_name[_len_subject_name - 1] = '\0';
+	}
+	ms->ms_retval = rsa_keygen_in_seal((const char*)_in_subject_name, _tmp_o_sealed, ms->ms_cap_sealed, _tmp_o_pubkey, ms->ms_cap_pubkey, _tmp_o_csr, ms->ms_cap_csr);
+err:
+	if (_in_subject_name) free((void*)_in_subject_name);
 
 	return status;
 }

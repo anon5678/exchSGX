@@ -45,7 +45,7 @@ sgx_status_t ssl_conn_handle(sgx_enclave_id_t eid, long int thread_id, thread_in
 sgx_status_t ecall_append_block_to_fifo(sgx_enclave_id_t eid, int* retval, const char* blockHeaderHex);
 sgx_status_t test_tls_client(sgx_enclave_id_t eid, int* retval, const char* hostname, unsigned int port);
 sgx_status_t enclaveTest(sgx_enclave_id_t eid, int* retval);
-sgx_status_t rsa_keygen_in_seal(sgx_enclave_id_t eid, int* retval, unsigned char* o_sealed, size_t cap_sealed, unsigned char* o_pubkey, size_t cap_pubkey);
+sgx_status_t rsa_keygen_in_seal(sgx_enclave_id_t eid, int* retval, const char* subject_name, unsigned char* o_sealed, size_t cap_sealed, unsigned char* o_pubkey, size_t cap_pubkey, unsigned char* o_csr, size_t cap_csr);
 sgx_status_t unseal_secret_and_leak_public_key(sgx_enclave_id_t eid, int* retval, const sgx_sealed_data_t* secret, size_t secret_len, unsigned char* pubkey, size_t cap_pubkey);
 sgx_status_t provision_rsa_id(sgx_enclave_id_t eid, int* retval, const unsigned char* encrypted_rsa_id, size_t secret_len);
 sgx_status_t query_rsa_pubkey(sgx_enclave_id_t eid, int* retval, unsigned char* pubkey, size_t cap_pubkey);

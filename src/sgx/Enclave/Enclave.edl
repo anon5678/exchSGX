@@ -20,8 +20,10 @@ enclave {
 
         // key management
         public int rsa_keygen_in_seal(
+            [in,string] const char* subject_name,
             [user_check] unsigned char *o_sealed, size_t cap_sealed,
-            [user_check] unsigned char *o_pubkey, size_t cap_pubkey);
+            [user_check] unsigned char *o_pubkey, size_t cap_pubkey,
+            [user_check] unsigned char *o_csr, size_t cap_csr);
 
         public int unseal_secret_and_leak_public_key(
             [in, size=secret_len] const sgx_sealed_data_t *secret,

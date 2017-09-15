@@ -1,10 +1,12 @@
 #include "tls_server_threaded.h"
 #include "log.h"
 #include "pprint.h"
+#include "exch_ca.h"
 
-#include "mbedtls/debug.h"
 #include <vector>
-#include <mbedtls/net_v.h>
+#include "mbedtls/debug.h"
+#include "mbedtls/net_v.h"
+
 
 using namespace std;
 
@@ -49,8 +51,7 @@ TLSConnectionHandler::TLSConnectionHandler() {
     throw std::runtime_error("mbedtls_x509_crt_parse returned " + to_string(ret));
   }
 
-  ret = mbedtls_x509_crt_parse(&cachain, (const unsigned char *) mbedtls_test_cas_pem,
-                               mbedtls_test_cas_pem_len);
+  ret = mbedtls_x509_crt_parse(&cachain, (const unsigned char*) exch_dummy_ca, strlen(exch_dummy_ca));
   if (ret != 0) {
     throw std::runtime_error("mbedtls_x509_crt_parse returned " + to_string(ret));
   }

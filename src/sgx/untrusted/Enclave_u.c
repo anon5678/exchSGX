@@ -25,10 +25,13 @@ typedef struct ms_enclaveTest_t {
 
 typedef struct ms_rsa_keygen_in_seal_t {
 	int ms_retval;
+	char* ms_subject_name;
 	unsigned char* ms_o_sealed;
 	size_t ms_cap_sealed;
 	unsigned char* ms_o_pubkey;
 	size_t ms_cap_pubkey;
+	unsigned char* ms_o_csr;
+	size_t ms_cap_csr;
 } ms_rsa_keygen_in_seal_t;
 
 typedef struct ms_unseal_secret_and_leak_public_key_t {
@@ -384,14 +387,17 @@ sgx_status_t enclaveTest(sgx_enclave_id_t eid, int* retval)
 	return status;
 }
 
-sgx_status_t rsa_keygen_in_seal(sgx_enclave_id_t eid, int* retval, unsigned char* o_sealed, size_t cap_sealed, unsigned char* o_pubkey, size_t cap_pubkey)
+sgx_status_t rsa_keygen_in_seal(sgx_enclave_id_t eid, int* retval, const char* subject_name, unsigned char* o_sealed, size_t cap_sealed, unsigned char* o_pubkey, size_t cap_pubkey, unsigned char* o_csr, size_t cap_csr)
 {
 	sgx_status_t status;
 	ms_rsa_keygen_in_seal_t ms;
+	ms.ms_subject_name = (char*)subject_name;
 	ms.ms_o_sealed = o_sealed;
 	ms.ms_cap_sealed = cap_sealed;
 	ms.ms_o_pubkey = o_pubkey;
 	ms.ms_cap_pubkey = cap_pubkey;
+	ms.ms_o_csr = o_csr;
+	ms.ms_cap_csr = cap_csr;
 	status = sgx_ecall(eid, 6, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
