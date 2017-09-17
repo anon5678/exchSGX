@@ -33,7 +33,7 @@ add_executable(exch-keygen exch-keygen.cpp key_u.cpp Utils.cpp Enclave_u.c ../co
 find_package(Jsoncpp REQUIRED)
 find_package(JsonCppRpc REQUIRED)
 find_package(CURL REQUIRED)
-find_package(Boost REQUIRED COMPONENTS program_options)
+find_package(Boost REQUIRED COMPONENTS program_options filesystem)
 find_package(OpenSSL REQUIRED)
 
 include_directories(

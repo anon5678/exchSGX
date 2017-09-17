@@ -17,6 +17,9 @@
 } while (0)
 
 
+typedef struct ms_ssl_conn_init_t {
+	int ms_retval;
+} ms_ssl_conn_init_t;
 
 
 typedef struct ms_ssl_conn_handle_t {
@@ -60,14 +63,17 @@ typedef struct ms_unseal_secret_and_leak_public_key_t {
 
 typedef struct ms_provision_rsa_id_t {
 	int ms_retval;
-	unsigned char* ms_encrypted_rsa_id;
+	unsigned char* ms_sealed_rsa_secret_key;
 	size_t ms_secret_len;
+	char* ms_cert_pem;
 } ms_provision_rsa_id_t;
 
 typedef struct ms_query_rsa_pubkey_t {
 	int ms_retval;
 	unsigned char* ms_pubkey;
 	size_t ms_cap_pubkey;
+	char* ms_cert_pem;
+	size_t ms_cap_cert_pem;
 } ms_query_rsa_pubkey_t;
 
 
@@ -181,9 +187,14 @@ typedef struct ms_ocall_print_to_err_t {
 
 static sgx_status_t SGX_CDECL sgx_ssl_conn_init(void* pms)
 {
+	ms_ssl_conn_init_t* ms = SGX_CAST(ms_ssl_conn_init_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
-	if (pms != NULL) return SGX_ERROR_INVALID_PARAMETER;
-	ssl_conn_init();
+
+	CHECK_REF_POINTER(pms, sizeof(ms_ssl_conn_init_t));
+
+	ms->ms_retval = ssl_conn_init();
+
+
 	return status;
 }
 
@@ -358,26 +369,41 @@ static sgx_status_t SGX_CDECL sgx_provision_rsa_id(void* pms)
 {
 	ms_provision_rsa_id_t* ms = SGX_CAST(ms_provision_rsa_id_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
-	unsigned char* _tmp_encrypted_rsa_id = ms->ms_encrypted_rsa_id;
+	unsigned char* _tmp_sealed_rsa_secret_key = ms->ms_sealed_rsa_secret_key;
 	size_t _tmp_secret_len = ms->ms_secret_len;
-	size_t _len_encrypted_rsa_id = _tmp_secret_len;
-	unsigned char* _in_encrypted_rsa_id = NULL;
+	size_t _len_sealed_rsa_secret_key = _tmp_secret_len;
+	unsigned char* _in_sealed_rsa_secret_key = NULL;
+	char* _tmp_cert_pem = ms->ms_cert_pem;
+	size_t _len_cert_pem = _tmp_cert_pem ? strlen(_tmp_cert_pem) + 1 : 0;
+	char* _in_cert_pem = NULL;
 
 	CHECK_REF_POINTER(pms, sizeof(ms_provision_rsa_id_t));
-	CHECK_UNIQUE_POINTER(_tmp_encrypted_rsa_id, _len_encrypted_rsa_id);
+	CHECK_UNIQUE_POINTER(_tmp_sealed_rsa_secret_key, _len_sealed_rsa_secret_key);
+	CHECK_UNIQUE_POINTER(_tmp_cert_pem, _len_cert_pem);
 
-	if (_tmp_encrypted_rsa_id != NULL) {
-		_in_encrypted_rsa_id = (unsigned char*)malloc(_len_encrypted_rsa_id);
-		if (_in_encrypted_rsa_id == NULL) {
+	if (_tmp_sealed_rsa_secret_key != NULL) {
+		_in_sealed_rsa_secret_key = (unsigned char*)malloc(_len_sealed_rsa_secret_key);
+		if (_in_sealed_rsa_secret_key == NULL) {
 			status = SGX_ERROR_OUT_OF_MEMORY;
 			goto err;
 		}
 
-		memcpy((void*)_in_encrypted_rsa_id, _tmp_encrypted_rsa_id, _len_encrypted_rsa_id);
+		memcpy((void*)_in_sealed_rsa_secret_key, _tmp_sealed_rsa_secret_key, _len_sealed_rsa_secret_key);
 	}
-	ms->ms_retval = provision_rsa_id((const unsigned char*)_in_encrypted_rsa_id, _tmp_secret_len);
+	if (_tmp_cert_pem != NULL) {
+		_in_cert_pem = (char*)malloc(_len_cert_pem);
+		if (_in_cert_pem == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		memcpy((void*)_in_cert_pem, _tmp_cert_pem, _len_cert_pem);
+		_in_cert_pem[_len_cert_pem - 1] = '\0';
+	}
+	ms->ms_retval = provision_rsa_id((const unsigned char*)_in_sealed_rsa_secret_key, _tmp_secret_len, (const char*)_in_cert_pem);
 err:
-	if (_in_encrypted_rsa_id) free((void*)_in_encrypted_rsa_id);
+	if (_in_sealed_rsa_secret_key) free((void*)_in_sealed_rsa_secret_key);
+	if (_in_cert_pem) free((void*)_in_cert_pem);
 
 	return status;
 }
@@ -387,10 +413,11 @@ static sgx_status_t SGX_CDECL sgx_query_rsa_pubkey(void* pms)
 	ms_query_rsa_pubkey_t* ms = SGX_CAST(ms_query_rsa_pubkey_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
 	unsigned char* _tmp_pubkey = ms->ms_pubkey;
+	char* _tmp_cert_pem = ms->ms_cert_pem;
 
 	CHECK_REF_POINTER(pms, sizeof(ms_query_rsa_pubkey_t));
 
-	ms->ms_retval = query_rsa_pubkey(_tmp_pubkey, ms->ms_cap_pubkey);
+	ms->ms_retval = query_rsa_pubkey(_tmp_pubkey, ms->ms_cap_pubkey, _tmp_cert_pem, ms->ms_cap_cert_pem);
 
 
 	return status;

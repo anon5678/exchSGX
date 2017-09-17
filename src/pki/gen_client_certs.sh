@@ -7,4 +7,6 @@ for i in `seq 1 5`; do
     openssl x509 -req -in $id.csr \
         -CA CA1.crt -CAkey CA1.key -CAcreateserial \
         -out $id.crt -days 365 -sha256
+
+    sleep 2
 done

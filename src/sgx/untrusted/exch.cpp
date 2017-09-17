@@ -10,6 +10,7 @@
 
 #include <boost/program_options.hpp>
 #include <boost/algorithm/hex.hpp>
+#include <boost/filesystem.hpp>
 #include <jsonrpccpp/client/connectors/httpclient.h>
 
 #include "Enclave_u.h"
@@ -19,8 +20,11 @@
 #include "tls_server_threaded.h"
 
 #include "enclaverpc.h"
+#include <jsonrpccpp/server/connectors/httpserver.h>
+#include "enclaverpc.h"
 
 namespace po = boost::program_options;
+namespace fs = boost::filesystem;
 
 using namespace std;
 
@@ -31,8 +35,10 @@ public:
   bool testBlockFeeding = false;
   bool runServer = false;
   bool runClient = false;
-  string rsa_secret_key = "";
+  string identity;
+  string identity_dir;
 };
+
 void config(int argc, const char *argv[], Config &conf);
 
 
@@ -46,8 +52,15 @@ static vector<uint8_t> readBinaryFile(const string &fname) {
                          istreambuf_iterator<char>());
 }
 
-#include <jsonrpccpp/server/connectors/httpserver.h>
-#include "enclaverpc.h"
+static string readTextFile(const string &fname) {
+  ifstream in(fname);
+  if (!in.is_open()) {
+    throw invalid_argument("cannot open file " + fname);
+  }
+
+  return string(istreambuf_iterator<char>(in), istreambuf_iterator<char>());
+}
+
 
 int main(int argc, const char *argv[]) {
   Config conf;
@@ -68,24 +81,31 @@ int main(int argc, const char *argv[]) {
   getchar();
   enclaveRPC.StopListening();
 
-  if (!conf.rsa_secret_key.empty()) {
+  if (!conf.identity.empty()) {
     try {
-      cout << "provisioning RSA key from " << conf.rsa_secret_key << "..."
-           << endl;
-      auto sealed = readBinaryFile(conf.rsa_secret_key);
-      st = provision_rsa_id(eid, &ret, sealed.data(), sealed.size());
+      fs::path identity_dir(conf.identity_dir);
+
+      cout << "using identity " << conf.identity << "..." << endl;
+
+      auto sealed = readBinaryFile((identity_dir / (conf.identity + ".priv")).string());
+      auto cert = readTextFile((identity_dir / (conf.identity + ".crt")).string());
+
+      st = provision_rsa_id(eid, &ret, sealed.data(), sealed.size(), cert.c_str());
       if (st != SGX_SUCCESS || ret != 0) {
         cerr << "cannot provision rsa id. ret=" << ret << endl;
-      } else {
+      }
+      else {
         unsigned char pubkey[1024];
-        st = query_rsa_pubkey(eid, &ret, pubkey, sizeof pubkey);
+        char cert_pem[2048];
+        cout << "querying pubkey" << endl;
+        st = query_rsa_pubkey(eid, &ret, pubkey, sizeof pubkey, cert_pem, sizeof cert_pem);
         if (st != SGX_SUCCESS || ret != 0) {
           cerr << "cannot query rsa id. ret=" << ret << endl;
         }
         cout << "using the following public key..." << endl;
         cout << (char *)pubkey;
+        cout << cert_pem;
       }
-
     } catch (const std::exception &e) {
       cerr << "cannot provision rsa id: " << e.what() << endl;
     }
@@ -108,7 +128,8 @@ void config(int argc, const char *argv[], Config &config) {
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help,h", "print this message")
-        ("id,i", po::value<string>(&config.rsa_secret_key)->default_value(""), "dry run identity provision and exit.")
+        ("id,i", po::value(&config.identity)->required(), "dry run identity provision and exit.")
+        ("id_dir", po::value(&config.identity_dir)->required(), "path to the dir where priv and crt files are stored.")
         ("feed,f", po::bool_switch(&config.testBlockFeeding)->default_value(false), "try to feed some blocks.")
         ("server,s", po::bool_switch(&config.runServer)->default_value(false), "run as a tls server.")
         ("client,c", po::bool_switch(&config.runClient)->default_value(false), "run as a tls client.");

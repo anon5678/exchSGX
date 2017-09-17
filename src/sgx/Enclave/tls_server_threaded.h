@@ -79,14 +79,12 @@ class TLSConnectionHandler {
   /*
    * configuration
    */
-  unsigned int debug_level;
+  static unsigned int debug_level;
 
   /*
    * debug callback
    */
-  static void mydebug(void *ctx, int level,
-                      const char *file, int line,
-                      const char *str);
+  static void mydebug(void *ctx, int level, const char *file, int line, const char *str);
 
  public:
   TLSConnectionHandler();

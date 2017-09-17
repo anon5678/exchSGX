@@ -30,6 +30,17 @@ class TLSClient {
 
   static const char *pers;
 
+  // predefined set of allowed peers.
+  // Names are used for cert verification.
+  const string allowed_peers[5] =
+  {
+      "exch-enclave-1",
+      "exch-enclave-2",
+      "exch-enclave-3",
+      "exch-enclave-4",
+      "exch-enclave-5",
+  };
+
   // resources
   mbedtls_net_context server_fd;
   mbedtls_entropy_context entropy;
@@ -41,7 +52,7 @@ class TLSClient {
   uint32_t flags;
   mbedtls_x509_crt cacert;
   mbedtls_x509_crt clicert;
-  mbedtls_pk_context pkey;
+  mbedtls_pk_context* pkey;
 #endif
 
  private:

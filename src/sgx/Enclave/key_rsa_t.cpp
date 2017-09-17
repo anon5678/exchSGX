@@ -168,21 +168,30 @@ int unseal_secret_and_leak_public_key(const sgx_sealed_data_t *secret,
 }
 
 mbedtls_pk_context g_rsa_sk;
+string g_cert_pem;
 
-int provision_rsa_id(const unsigned char *secret, size_t secret_len) {
-  auto sealed_secret = (const sgx_sealed_data_t*) secret;
+int provision_rsa_id(const unsigned char *secret_key, size_t secret_key_len, const char *cert_pem) {
+  auto sealed_secret = (const sgx_sealed_data_t*) secret_key;
   int ret;
   try {
-    vector<uint8_t> unsealed = _sgx_unseal_data_cpp(sealed_secret, secret_len);
+    vector<uint8_t> unsealed = _sgx_unseal_data_cpp(sealed_secret, secret_key_len);
     LL_LOG("unsealed secret");
 
     mbedtls_pk_init(&g_rsa_sk);
-    ret = mbedtls_pk_parse_key(&g_rsa_sk, unsealed.data(), unsealed.size(),
-                               nullptr, 0);
+    ret = mbedtls_pk_parse_key(&g_rsa_sk, unsealed.data(), unsealed.size(), nullptr, 0);
     if (ret != 0) {
       LL_CRITICAL("cannot parse secret key: %#x", -ret);
       return -1;
     }
+
+    LL_LOG("key provisioned");
+
+    g_cert_pem.clear();
+    g_cert_pem += cert_pem;
+
+    // PEM length includes the terminating null
+    if (g_cert_pem.back() != '\0')
+      g_cert_pem += '\0';
 
     return 0;
   } catch (const std::exception &e) {
@@ -191,16 +200,23 @@ int provision_rsa_id(const unsigned char *secret, size_t secret_len) {
   }
 }
 
-int query_rsa_pubkey(unsigned char *pubkey, size_t cap_pubkey) {
+int query_rsa_pubkey(unsigned char *o_pubkey, size_t cap_pubkey, char* o_cert_pem, size_t cap_cert_pem) {
   if (0 == mbedtls_pk_can_do(&g_rsa_sk, MBEDTLS_PK_RSA)) {
     LL_CRITICAL("key is not ready");
     return RSA_KEY_NOT_PROVISIONED;
   }
 
-  int ret = mbedtls_pk_write_pubkey_pem(&g_rsa_sk, pubkey, cap_pubkey);
+  int ret = mbedtls_pk_write_pubkey_pem(&g_rsa_sk, o_pubkey, cap_pubkey);
   if (ret != 0) {
     LL_CRITICAL("cannot write pubkey to PEM: %#x", -ret);
     return -ret;
+  }
+
+  if (g_cert_pem.empty()) {
+    LL_CRITICAL("cert is not provisioned");
+  }
+  else {
+    strncpy(o_cert_pem, g_cert_pem.c_str(), cap_cert_pem);
   }
 
   return 0;

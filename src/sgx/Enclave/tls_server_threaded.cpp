@@ -1,9 +1,12 @@
 #include "tls_server_threaded.h"
 #include "log.h"
 #include "pprint.h"
-#include "exch_ca.h"
+#include "tls_exch_ca.h"
+#include "key_rsa_t.h"
+#include "utils.h"
 
 #include <vector>
+#include <mbedtls/pk.h>
 #include "mbedtls/debug.h"
 #include "mbedtls/net_v.h"
 
@@ -13,21 +16,6 @@ using namespace std;
 TLSConnectionHandler::TLSConnectionHandler() {
   int ret;
 
-#if defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C)
-  unsigned char alloc_buf[100000];
-#endif
-#if defined(MBEDTLS_SSL_CACHE_C)
-  mbedtls_ssl_cache_context cache;
-#endif
-
-#if defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C)
-  mbedtls_memory_buffer_alloc_init( alloc_buf, sizeof(alloc_buf) );
-#endif
-
-#if defined(MBEDTLS_SSL_CACHE_C)
-  mbedtls_ssl_cache_init( &cache );
-#endif
-
   mbedtls_x509_crt_init(&srvcert);
   mbedtls_x509_crt_init(&cachain);
 
@@ -35,73 +23,49 @@ TLSConnectionHandler::TLSConnectionHandler() {
   mbedtls_ctr_drbg_init(&ctr_drbg);
 
   mbedtls_entropy_init(&entropy);
-
   /*
    * 1. Load the certificates and private RSA key
    */
   LL_LOG("Loading the server cert. and key...");
-  /*
-   * FIXME: This demonstration program uses embedded test certificates.
-   * Instead, you may want to use mbedtls_x509_crt_parse_file() to read the
-   * server and CA certificates, as well as mbedtls_pk_parse_keyfile().
-   */
-  ret = mbedtls_x509_crt_parse(&srvcert, (const unsigned char *) mbedtls_test_srv_crt,
-                               mbedtls_test_srv_crt_len);
+  if (g_cert_pem.empty()) {
+    throw runtime_error("no cert provisioned");
+  }
+
+  ret = mbedtls_x509_crt_parse(&srvcert, (unsigned char*) g_cert_pem.data(), g_cert_pem.size());
+  if (ret != 0) {
+    throw runtime_error(utils::mbedtls_error(ret));
+  }
+  LL_LOG("done loading server cert");
+
+  // length includes the terminating null
+  ret = mbedtls_x509_crt_parse(&cachain, (const unsigned char*) exch_dummy_ca, exch_dummy_ca_len);
   if (ret != 0) {
     throw std::runtime_error("mbedtls_x509_crt_parse returned " + to_string(ret));
   }
+  LL_DEBUG("done loading CA certs");
 
-  ret = mbedtls_x509_crt_parse(&cachain, (const unsigned char*) exch_dummy_ca, strlen(exch_dummy_ca));
-  if (ret != 0) {
-    throw std::runtime_error("mbedtls_x509_crt_parse returned " + to_string(ret));
+  if (0 == mbedtls_pk_can_do(&g_rsa_sk, MBEDTLS_PK_RSA)){
+    throw runtime_error("RSA key is not provisioned");
   }
 
-  mbedtls_pk_init(&pkey);
-  ret = mbedtls_pk_parse_key(&pkey, (const unsigned char *) mbedtls_test_srv_key,
-                             mbedtls_test_srv_key_len, NULL, 0);
-  if (ret != 0) {
-    mbedtls_printf(" failed\n  !  mbedtls_pk_parse_key returned %d\n\n", ret);
-    throw std::runtime_error("");
-  }
-
-  /*
-   * 1b. Seed the random number generator
-   */
-  LL_LOG("Seeding the random number generator...");
-
-  if ((ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy,
-                                   (const unsigned char *) pers.c_str(),
-                                   pers.length())) != 0) {
-    mbedtls_printf(" failed: mbedtls_ctr_drbg_seed returned -0x%04x\n",
-                   -ret);
-    throw std::runtime_error("");
-  }
-
-  /*
-   * 1c. Prepare SSL configuration
-   */
-  LL_LOG("Setting up the SSL data....");
+  mbedtls_pk_context* pkey = &g_rsa_sk;
 
   if ((ret = mbedtls_ssl_config_defaults(&conf,
                                          MBEDTLS_SSL_IS_SERVER,
                                          MBEDTLS_SSL_TRANSPORT_STREAM,
                                          MBEDTLS_SSL_PRESET_DEFAULT)) != 0) {
-    mbedtls_printf(" failed: mbedtls_ssl_config_defaults returned -0x%04x\n",
-                   -ret);
+    mbedtls_printf(" failed: mbedtls_ssl_config_defaults returned -0x%04x\n", -ret);
     throw std::runtime_error("");
   }
 
-  mbedtls_ssl_conf_rng(&conf, mbedtls_ctr_drbg_random, &ctr_drbg);
+  mbedtls_ssl_conf_rng(&conf, mbedtls_sgx_drbg_random, nullptr);
 
   /*
    * setup debug
    */
   mbedtls_ssl_conf_dbg(&conf, mydebug, NULL);
   // if debug_level is not set (could be set via other constructors), set it to 0
-  if (debug_level < 0) {
-    debug_level = 0;
-  }
-  mbedtls_debug_set_threshold(debug_level);
+  mbedtls_debug_set_threshold(TLSConnectionHandler::debug_level);
 
   /* mbedtls_ssl_cache_get() and mbedtls_ssl_cache_set() are thread-safe if
    * MBEDTLS_THREADING_C is set.
@@ -113,7 +77,7 @@ TLSConnectionHandler::TLSConnectionHandler() {
 #endif
 
   mbedtls_ssl_conf_ca_chain(&conf, &cachain, NULL);
-  if ((ret = mbedtls_ssl_conf_own_cert(&conf, &srvcert, &pkey)) != 0) {
+  if ((ret = mbedtls_ssl_conf_own_cert(&conf, &srvcert, pkey)) != 0) {
     mbedtls_printf(" failed\n  ! mbedtls_ssl_conf_own_cert returned %d\n\n", ret);
     throw std::runtime_error("");
   }
@@ -127,7 +91,8 @@ TLSConnectionHandler::TLSConnectionHandler() {
 
 TLSConnectionHandler::~TLSConnectionHandler() {
   mbedtls_x509_crt_free(&srvcert);
-  mbedtls_pk_free(&pkey);
+  // FIXME
+  // mbedtls_pk_free(&pkey);
 #if defined(MBEDTLS_SSL_CACHE_C)
   mbedtls_ssl_cache_free( &cache );
 #endif
@@ -212,18 +177,15 @@ void TLSConnectionHandler::handle(long int thread_id, thread_info_t *thread_info
           LL_DEBUG("EOF reached");
           goto thread_exit;
         case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
-          LL_DEBUG("  [ #%ld ]  connection was closed gracefully\n",
-                         thread_id);
+          LL_DEBUG("  [ #%ld ]  connection was closed gracefully", thread_id);
           goto thread_exit;
 
         case MBEDTLS_ERR_NET_CONN_RESET:
-          LL_DEBUG("  [ #%ld ]  connection was reset by peer\n",
-                         thread_id);
-          goto thread_exit;
+          LL_DEBUG("  [ #%ld ]  connection was reset by peer", thread_id);
+          goto exit_without_notify;
 
         default:
-          LL_DEBUG("  [ #%ld ]  mbedtls_ssl_read returned -0x%04x\n",
-                         thread_id, -ret);
+          LL_DEBUG("  [ #%ld ]  mbedtls_ssl_read returned -0x%04x", thread_id, -ret);
           goto thread_exit;
       }
     }
@@ -245,10 +207,12 @@ thread_exit:
     if (ret != MBEDTLS_ERR_SSL_WANT_READ &&
         ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
       LL_DEBUG("  [ #%ld ]  failed: mbedtls_ssl_close_notify returned -0x%04x", thread_id, ret);
-      goto thread_exit;
+      break;
     }
   }
   LL_LOG("socket %d closed", client_fd->fd);
+
+exit_without_notify:
 
 #ifdef MBEDTLS_ERROR_C
   if (ret != 0) {
@@ -303,16 +267,17 @@ string TLSConnectionHandler::getError(int errno) {
 
 const string TLSConnectionHandler::pers = "ssl_pthread_server";
 sgx_thread_mutex_t TLSConnectionHandler::mutex = SGX_THREAD_MUTEX_INITIALIZER;
+unsigned int TLSConnectionHandler::debug_level = 0;
 
 void TLSConnectionHandler::mydebug(void *ctx, int level,
                                    const char *file, int line,
                                    const char *str) {
   (void) ctx;
   (void) level;
+  if (level > debug_level) return;
   long int thread_id = 0;
+
   sgx_thread_mutex_lock(&mutex);
-
   mbedtls_printf("%s:%04d: [ #%ld ] %s", file, line, thread_id, str);
-
   sgx_thread_mutex_unlock(&mutex);
 }

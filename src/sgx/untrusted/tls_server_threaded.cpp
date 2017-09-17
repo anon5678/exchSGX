@@ -40,7 +40,7 @@ int tls_server_init(unsigned int port) {
   int ret = 0;
 
   // initialize
-  if (ssl_conn_init(eid) != SGX_SUCCESS) {
+  if (ssl_conn_init(eid, &ret) != SGX_SUCCESS || ret != 0) {
     cerr << "failed to initialize ssl" << endl;
     exit(-1);
   }

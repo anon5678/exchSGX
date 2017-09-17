@@ -17,7 +17,7 @@ int test_tls_client(const char* hostname, unsigned int port) {
     tlsClient.Send(dummy);
   }
   catch (const std::exception& e) {
-    LL_CRITICAL("exception: %s", e.what());
+    LL_CRITICAL("tls client error: %s", e.what());
   }
   catch (...) {
     LL_CRITICAL("something stupid");

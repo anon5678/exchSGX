@@ -1,6 +1,9 @@
 #include "Enclave_u.h"
 #include <errno.h>
 
+typedef struct ms_ssl_conn_init_t {
+	int ms_retval;
+} ms_ssl_conn_init_t;
 
 
 typedef struct ms_ssl_conn_handle_t {
@@ -44,14 +47,17 @@ typedef struct ms_unseal_secret_and_leak_public_key_t {
 
 typedef struct ms_provision_rsa_id_t {
 	int ms_retval;
-	unsigned char* ms_encrypted_rsa_id;
+	unsigned char* ms_sealed_rsa_secret_key;
 	size_t ms_secret_len;
+	char* ms_cert_pem;
 } ms_provision_rsa_id_t;
 
 typedef struct ms_query_rsa_pubkey_t {
 	int ms_retval;
 	unsigned char* ms_pubkey;
 	size_t ms_cap_pubkey;
+	char* ms_cert_pem;
+	size_t ms_cap_cert_pem;
 } ms_query_rsa_pubkey_t;
 
 
@@ -333,10 +339,12 @@ static const struct {
 		(void*)Enclave_ocall_print_to_err,
 	}
 };
-sgx_status_t ssl_conn_init(sgx_enclave_id_t eid)
+sgx_status_t ssl_conn_init(sgx_enclave_id_t eid, int* retval)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 0, &ocall_table_Enclave, NULL);
+	ms_ssl_conn_init_t ms;
+	status = sgx_ecall(eid, 0, &ocall_table_Enclave, &ms);
+	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
 
@@ -416,23 +424,26 @@ sgx_status_t unseal_secret_and_leak_public_key(sgx_enclave_id_t eid, int* retval
 	return status;
 }
 
-sgx_status_t provision_rsa_id(sgx_enclave_id_t eid, int* retval, const unsigned char* encrypted_rsa_id, size_t secret_len)
+sgx_status_t provision_rsa_id(sgx_enclave_id_t eid, int* retval, const unsigned char* sealed_rsa_secret_key, size_t secret_len, const char* cert_pem)
 {
 	sgx_status_t status;
 	ms_provision_rsa_id_t ms;
-	ms.ms_encrypted_rsa_id = (unsigned char*)encrypted_rsa_id;
+	ms.ms_sealed_rsa_secret_key = (unsigned char*)sealed_rsa_secret_key;
 	ms.ms_secret_len = secret_len;
+	ms.ms_cert_pem = (char*)cert_pem;
 	status = sgx_ecall(eid, 8, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
 
-sgx_status_t query_rsa_pubkey(sgx_enclave_id_t eid, int* retval, unsigned char* pubkey, size_t cap_pubkey)
+sgx_status_t query_rsa_pubkey(sgx_enclave_id_t eid, int* retval, unsigned char* pubkey, size_t cap_pubkey, char* cert_pem, size_t cap_cert_pem)
 {
 	sgx_status_t status;
 	ms_query_rsa_pubkey_t ms;
 	ms.ms_pubkey = pubkey;
 	ms.ms_cap_pubkey = cap_pubkey;
+	ms.ms_cert_pem = cert_pem;
+	ms.ms_cap_cert_pem = cap_cert_pem;
 	status = sgx_ecall(eid, 9, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;

@@ -12,7 +12,7 @@ add_custom_command(
 )
 
 set(SOURCE_FILES
-        ecalls.cpp
+        tls_ecall_interface.cpp
         
         Enclave_t.c
         log.c
@@ -20,6 +20,7 @@ set(SOURCE_FILES
 
         tls_client.cpp
         tls_server_threaded.cpp
+        tls_exch_ca.cpp
         p2p_tls.cpp
 
         hybrid_cipher.cpp
