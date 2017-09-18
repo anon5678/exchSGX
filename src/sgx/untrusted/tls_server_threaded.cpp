@@ -1,82 +1,96 @@
-#include <stdio.h>
+#include "tls_server_threaded.h"
+
+#include <cstdio>
 #define mbedtls_fprintf    fprintf
 #define mbedtls_printf     printf
 #define mbedtls_snprintf   snprintf
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <pthread.h>
 #include <iostream>
 #include <atomic>
 #include <csignal>
+#include <thread>
 
 #include "mbedtls/ssl.h"
 #include "mbedtls/net_v.h"
 #include "mbedtls/net_f.h"
 #include "mbedtls/error.h"
 #include "Enclave_u.h"
-#include "Utils.h"
-
-#include <sgx_urts.h>
-#include <thread>
-#include <mbedtls/net_v.h>
-
-#include "tls_server_threaded.h"
 
 extern sgx_enclave_id_t eid;
 
-static pthread_info_t threads[MAX_NUM_THREADS];
-
-// thread function
-void *ecall_handle_tls_conn(void *data);
-static int serve_tls_conn_in_thread(mbedtls_net_context *client_fd);
-mbedtls_net_context listen_fd, client_fd;
-
 std::atomic<bool> quit(false);
-void exitGraceful(int n) { (void)n; quit.store(true); }
+void exitGraceful(int n) {
+  (void) n;
+  quit.store(true);
+}
 
-int tls_server_init(unsigned int port) {
-  std::signal(SIGINT, exitGraceful);
-  int ret = 0;
-
-  // initialize
+TLSService::TLSService(const string &hostname,
+                       const string &port, TLSService::Role role, size_t n_threads) :
+    hostname(hostname), port(port), role(role), ret(0) {
+  // initialize the enclave TLS resources
   if (ssl_conn_init(eid, &ret) != SGX_SUCCESS || ret != 0) {
     cerr << "failed to initialize ssl" << endl;
     exit(-1);
   }
 
-  // initialize threads
-  memset(threads, 0, sizeof(threads));
+  // allocate threads
+  threads.resize(n_threads);
+  for (auto t : threads) {
+    memset(&t, 0, sizeof(pthread_info_t));
+  }
 
-  // bind
-  if ((ret = mbedtls_net_bind(&listen_fd, nullptr,
-                              to_string(port).c_str(),
+  cout << threads.size() << " threads initialized" << endl;
+}
+
+TLSService::TLSService(TLSService &&other) noexcept {
+  hostname = move(other.hostname);
+  port = move(other.port);
+  role = other.role;
+  ret = 0;
+
+  threads = move(other.threads);
+
+  other.moved_away = true;
+}
+
+TLSService::~TLSService() {
+  if (!moved_away) {
+    ssl_conn_teardown(eid);
+  }
+}
+
+void TLSService::operator()() {
+  // bind to localhost:port
+  if ((ret = mbedtls_net_bind(&server_socket,
+                              hostname.c_str(), port.c_str(),
                               MBEDTLS_NET_PROTO_TCP)) != 0) {
     cout << " failed! mbedtls_net_bind returned " << ret << endl;
     std::exit(-1);
   }
-  cout << "Listening at localhost: " << port << endl;
+  cout << "Listening at " << hostname << ": " << port << endl;
 
   // non-block accept
+  std::signal(SIGINT, exitGraceful);
   while (true) {
     // check for Ctrl-C flag
-    std::this_thread::sleep_for (std::chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     if (quit.load()) {
       cerr << "Ctrl-C pressed. Quiting..." << endl;
       break;
     }
 
-    /*
-     * 3. Wait until a client connects
-     */
-    if (0 != mbedtls_net_set_nonblock(&listen_fd)) {
+    // Wait for a client connects
+    if (0 != mbedtls_net_set_nonblock(&server_socket)) {
       cerr << "can't set nonblock for the listen socket" << endl;
     }
 
-    ret = mbedtls_net_accept(&listen_fd, &client_fd, NULL, 0, NULL);
+    ret = mbedtls_net_accept(&server_socket, &client_fd, NULL, 0, NULL);
 
     if (ret == MBEDTLS_ERR_SSL_WANT_READ) {
-      // it means accept would block
+      // it means accept would block (i.e. no connection so far)
       // let's don't block and continue!
       ret = 0;
       continue;
@@ -106,14 +120,13 @@ int tls_server_init(unsigned int port) {
     ret = 0;
   } // while (true)
 
-  sgx_destroy_enclave(eid);
-  return (ret);
+  cout << "exiting the loop" << endl;
 }
 
 // thread function
 void *ecall_handle_tls_conn(void *data) {
   long int thread_id = pthread_self();
-  thread_info_t *thread_info = (thread_info_t *) data;
+  auto *thread_info = (thread_info_t *) data;
 
   int ret = ssl_conn_handle(eid, thread_id, thread_info);
   if (ret != SGX_SUCCESS) {
@@ -124,10 +137,10 @@ void *ecall_handle_tls_conn(void *data) {
   return (NULL);
 }
 
-static int serve_tls_conn_in_thread(mbedtls_net_context *client_fd) {
+int TLSService::serve_tls_conn_in_thread(const mbedtls_net_context *client_fd) {
   int ret, i;
 
-  for (i = 0; i < MAX_NUM_THREADS; i++) {
+  for (i = 0; i < threads.size(); i++) {
     if (threads[i].active == 0)
       break;
 
@@ -139,8 +152,10 @@ static int serve_tls_conn_in_thread(mbedtls_net_context *client_fd) {
     }
   }
 
-  if (i == MAX_NUM_THREADS)
+  if (i == threads.size()) {
+    cerr << "all threads in use. try again later" << endl;
     return (-1);
+  }
 
   threads[i].active = 1;
   threads[i].data.config = NULL;

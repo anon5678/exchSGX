@@ -9,7 +9,6 @@ TLSConnectionHandler* connectionHandler;
 int ssl_conn_init(void) {
   try {
     connectionHandler = new TLSConnectionHandler();
-    return 0;
   }
   catch (const std::exception& e) {
     LL_CRITICAL("cannot init tls: %s", e.what());
@@ -19,6 +18,8 @@ int ssl_conn_init(void) {
     LL_CRITICAL("cannot init tls: %s", "unknown error");
     return -1;
   }
+
+  return 0;
 }
 
 void ssl_conn_handle(long int thread_id, thread_info_t* thread_info) {

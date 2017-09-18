@@ -74,50 +74,66 @@ int main(int argc, const char *argv[]) {
   sgx_status_t st;
   int ret = 0;
 
-  jsonrpc::HttpServer httpserver(1234);
+  int RPCSrvPort = 1234;
+  bool RPCSrvRunning = false;
+  jsonrpc::HttpServer httpserver(RPCSrvPort);
   EnclaveRPC enclaveRPC(eid, httpserver);
-
-  enclaveRPC.StartListening();
-  getchar();
-  enclaveRPC.StopListening();
-
-  if (!conf.identity.empty()) {
-    try {
-      fs::path identity_dir(conf.identity_dir);
-
-      cout << "using identity " << conf.identity << "..." << endl;
-
-      auto sealed = readBinaryFile((identity_dir / (conf.identity + ".priv")).string());
-      auto cert = readTextFile((identity_dir / (conf.identity + ".crt")).string());
-
-      st = provision_rsa_id(eid, &ret, sealed.data(), sealed.size(), cert.c_str());
-      if (st != SGX_SUCCESS || ret != 0) {
-        cerr << "cannot provision rsa id. ret=" << ret << endl;
-      }
-      else {
-        unsigned char pubkey[1024];
-        char cert_pem[2048];
-        cout << "querying pubkey" << endl;
-        st = query_rsa_pubkey(eid, &ret, pubkey, sizeof pubkey, cert_pem, sizeof cert_pem);
-        if (st != SGX_SUCCESS || ret != 0) {
-          cerr << "cannot query rsa id. ret=" << ret << endl;
-        }
-        cout << "using the following public key..." << endl;
-        cout << (char *)pubkey;
-        cout << cert_pem;
-      }
-    } catch (const std::exception &e) {
-      cerr << "cannot provision rsa id: " << e.what() << endl;
-    }
+  if(enclaveRPC.StartListening()) {
+    RPCSrvRunning = true;
+    cout << "RPC server listening at " << RPCSrvPort << endl;
   }
 
+  try {
+    cout << "using identity " << conf.identity << "..." << endl;
+
+    fs::path identity_dir(conf.identity_dir);
+
+    auto sealed_secret_path = (identity_dir / (conf.identity + ".priv"));
+    auto cert_path = (identity_dir / (conf.identity + ".crt"));
+
+    auto sealed = readBinaryFile(sealed_secret_path.string());
+    auto cert = readTextFile(cert_path.string());
+
+    st = provision_rsa_id(eid, &ret, sealed.data(), sealed.size(), cert.c_str());
+    // die if failed to provision id
+    if (st != SGX_SUCCESS || ret != 0) {
+      cerr << "cannot provision rsa id. ret=" << ret << endl;
+      exit(-1);
+    }
+
+    // print out the provisioned id
+    unsigned char pubkey[1024];
+    char cert_pem[2048];
+    st = query_rsa_pubkey(eid, &ret, pubkey, sizeof pubkey, cert_pem, sizeof cert_pem);
+    if (st != SGX_SUCCESS || ret != 0) {
+      cerr << "error in provisioning the id" << ret << endl;
+      exit(-1);
+    }
+    cout << "using the following public key..." << endl;
+    cout << (char *)pubkey;
+    cout << cert_pem;
+  } catch (const std::exception &e) {
+    cerr << "cannot provision rsa id: " << e.what() << endl;
+  }
+
+
+  thread fairnessProtocolServer;
   if (conf.runServer) {
     // prepare tls server
-    tls_server_init(4433);
+    fairnessProtocolServer = thread(TLSService("localhost", "4433", TLSService::FAIRNESS_SERVER, 5));
   } else if (conf.runClient) {
     test_tls_client(eid, &ret, "localhost", 4433);
   } else if (conf.testBlockFeeding) {
     test_merkle_proof();
+  }
+
+  if (fairnessProtocolServer.joinable()) {
+    fairnessProtocolServer.join();
+  }
+
+  if (RPCSrvRunning)
+  {
+    enclaveRPC.StopListening();
   }
 
   sgx_destroy_enclave(eid);
