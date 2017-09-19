@@ -19,9 +19,9 @@
 #include "blockfeeding.h"
 #include "tls_server_threaded.h"
 
-#include "enclaverpc.h"
+#include "enclave_rpc.h"
 #include <jsonrpccpp/server/connectors/httpserver.h>
-#include "enclaverpc.h"
+#include "enclave_rpc.h"
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;

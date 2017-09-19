@@ -1,4 +1,4 @@
-#include "enclaverpc.h"
+#include "enclave_rpc.h"
 #include "Enclave_u.h"
 
 #include "sgx_error.h"

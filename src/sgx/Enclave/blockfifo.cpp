@@ -61,3 +61,18 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex) {
     return -1;
   }
 }
+
+int ecall_get_latest_block_hash(unsigned char* o_buf, size_t cap_obuf) {
+  CBlockHeader last = bitcoinFIFO.getblockchain_const()->back();
+  if (cap_obuf < last.GetHash().size()) {
+    LL_CRITICAL("buffer too small");
+    return -1;
+  }
+  memcpy(o_buf, last.GetHash().begin(), last.GetHash().size());
+  return 0;
+}
+
+int ecall_submit_fork(const char* prev_hash, const char* block_hdrs[], size_t n) {
+  LL_CRITICAL("not implemented");
+  return 0;
+}

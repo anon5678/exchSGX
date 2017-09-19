@@ -33,7 +33,8 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex);
  */
 unsigned int nLeadingZero(const uint256 &hash);
 
-template <unsigned int QUEUE_LENGTH> class BlockFIFO {
+template <unsigned int QUEUE_LENGTH>
+class BlockFIFO {
 private:
   queue<CBlockHeader> _blocks;
 

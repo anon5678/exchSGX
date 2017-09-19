@@ -49,7 +49,7 @@ extern const char *log_level_strings[];
     if ( LOG_SHOULD_I(level) ) { \
         printf_sgx("[%s] (%s:%d) " fmt "\n", log_level_strings[level], strrchr(__FILE__, '/')+1,__LINE__, ##arg); \
     } \
-} while(0)
+} while(1)
 #endif
 
 #if (defined(WIN32) || defined(_WIN32))
