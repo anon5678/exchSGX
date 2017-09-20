@@ -19,7 +19,6 @@ add_executable(exch exch.cpp
         rpc.cpp
         enclave_rpc.cpp
         blockfeeding.cpp
-        merkpath/base64.cpp
         merkpath/merkpath.cpp
         Utils.cpp
         tls_server_threaded.cpp

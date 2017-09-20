@@ -101,6 +101,8 @@ int main(int argc, const char *argv[]) {
       exit(-1);
     }
 
+    cout << "RSA id provisioned" << endl;
+
     // print out the provisioned id
     unsigned char pubkey[1024];
     char cert_pem[2048];
