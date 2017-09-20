@@ -33,6 +33,12 @@ extern const char *log_level_strings[];
 // The BUILD_LOG_LEVEL defines what will be compiled in the executable, in production
 // it should be set to LVL_NOTICE
 
+#ifdef __cplusplus
+#define _FALSE false
+#else
+#define _FALSE true
+#endif
+
 #define LOG_SHOULD_I(level) ( level <= LOG_BUILD_LEVEL && level <= log_run_level )
 
 #if (defined(WIN32) || defined(_WIN32))
@@ -49,7 +55,7 @@ extern const char *log_level_strings[];
     if ( LOG_SHOULD_I(level) ) { \
         printf_sgx("[%s] (%s:%d) " fmt "\n", log_level_strings[level], strrchr(__FILE__, '/')+1,__LINE__, ##arg); \
     } \
-} while(1)
+} while(_FALSE)
 #endif
 
 #if (defined(WIN32) || defined(_WIN32))
