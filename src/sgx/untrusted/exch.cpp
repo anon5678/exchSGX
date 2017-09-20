@@ -125,8 +125,6 @@ int main(int argc, const char *argv[]) {
     fairnessProtocolServer = thread(TLSService("localhost", "4433", TLSService::FAIRNESS_SERVER, 5));
   } else if (conf.runClient) {
     test_tls_client(eid, &ret, "localhost", 4433);
-  } else if (conf.testBlockFeeding) {
-    test_merkle_proof();
   }
 
   if (fairnessProtocolServer.joinable()) {

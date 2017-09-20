@@ -1,4 +1,4 @@
-add_definitions(-DENCLAVE_STD_ALT)
+add_definitions(-DIN_ENCLAVE)
 
 set_directory_properties(PROPERTIES
         ADDITIONAL_MAKE_CLEAN_FILES "Enclave_t.c; Enclave_t.h")
@@ -30,6 +30,8 @@ set(SOURCE_FILES
         blockfifo.cpp
         bytestream.cpp
 
+        merkle_bitcoin.cpp
+
         bitcoin/uint256.cpp
         bitcoin/hash.cpp
         bitcoin/utilstrencodings.cpp
@@ -41,6 +43,8 @@ set(SOURCE_FILES
         bitcoin/crypto/sha512.cpp
 
         provision.cpp
+
+        ../common/utils.cpp
 
         enclave_test.cpp
         utils.cpp)

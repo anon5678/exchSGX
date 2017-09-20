@@ -6,21 +6,10 @@
 
 #include <string>
 
-#ifndef TRUE
-# define TRUE 1
-#endif
-
-#ifndef FALSE
-# define FALSE 0
-#endif
-
-#if defined(_MSC_VER)
-#define TOKEN_FILENAME   "Enclave.token"
-#define ENCLAVE_FILENAME "Enclave.signed.dll"
-#elif defined(__GNUC__)
 #define TOKEN_FILENAME   "enclave.token"
 #define ENCLAVE_FILENAME "enclave.signed.so"
-#endif
+
+#define LOGGING_CONF "logging.conf"
 
 #if defined(__cplusplus)
 extern "C" {

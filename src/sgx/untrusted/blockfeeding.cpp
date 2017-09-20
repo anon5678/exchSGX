@@ -10,6 +10,7 @@
 
 using namespace std;
 
+#if false
 int test_merkle_proof() {
   // testMerk(); //return 0;
   bitcoinRPC rpc;
@@ -68,3 +69,4 @@ int test_merkle_proof() {
   return 0;
 }
 
+#endif
