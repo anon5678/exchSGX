@@ -3,5 +3,10 @@
         "name": "appendBlock2FIFO",
         "params": ["header"],
         "returns": true
+    },
+    {
+        "name": "deposit",
+        "params": ["merkle proof", "public key"],
+        "returns": true
     }
 ]

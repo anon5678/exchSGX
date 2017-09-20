@@ -19,3 +19,12 @@ bool EnclaveRPC::appendBlock2FIFO(const std::string &block_header) {
   }
   return true;
 }
+
+bool EnclaveRPC::deposit(const string &merkle_proof, const string &public_key) {
+  int ret;
+  cout << "depositing" << endl;
+  cout << "proof: " << merkle_proof << endl;
+  cout << "public key: " << public_key << endl;
+
+  return true;
+}

@@ -133,9 +133,14 @@ int main(int argc, const char *argv[]) {
     fairnessProtocolServer.join();
   }
 
+  // stop the main thread
+  // for debug only. replaced with barrier later.
+  getchar();
+
   if (RPCSrvRunning)
   {
     enclaveRPC.StopListening();
+    cout << "RPC server shutdown" << endl;
   }
 
   sgx_destroy_enclave(eid);

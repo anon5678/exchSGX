@@ -7,15 +7,16 @@
 #include <string>
 #include <sgx_urts.h>
 
+using namespace std;
 
-class EnclaveRPC: public AbstractEnclaveRPC {
-    private:
-        sgx_enclave_id_t eid;
+class EnclaveRPC : public AbstractEnclaveRPC {
+ private:
+  sgx_enclave_id_t eid;
 
-    public:
-        EnclaveRPC(sgx_enclave_id_t eid, jsonrpc::AbstractServerConnector& conn);
-
-        virtual bool appendBlock2FIFO(const std::string& block_header);
+ public:
+  EnclaveRPC(sgx_enclave_id_t eid, jsonrpc::AbstractServerConnector &conn);
+  bool appendBlock2FIFO(const std::string &block_header) override;
+  bool deposit(const string &merkle_proof, const string &public_key) override;
 };
 
 #endif /* ifndef ENCLAVE_RPC_H */
