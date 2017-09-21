@@ -1,15 +1,18 @@
-//
-// Created by fanz on 9/20/17.
-//
-
 #include "utils.h"
 #include <stdexcept>
+#include <string>
+#include <stdio.h>
+
+#include "portable.h"
+
+using std::to_string;
 
 int char2int(char c) {
   if (c >= '0' && c <= '9') return c - '0';
-  //if(c >= 'A' && c <= 'F') return c - 'A' + 10;
+  if(c >= 'A' && c <= 'F') return c - 'A' + 10;
   if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-  throw std::invalid_argument("bad hex");
+  printf_sgx("%d is a bad hex", c);
+  throw std::invalid_argument(std::to_string(c) + " is a bad hex");
 }
 
 void hex2bin(unsigned char *dest, const char *src) {
@@ -32,13 +35,6 @@ void byte_swap(unsigned char *data, int len) {
     c++;
   }
 }
-
-#ifdef IN_ENCLAVE
-extern "C" int printf_sgx(const char *fmt, ...);
-#else
-#include <stdio.h>
-#define printf_sgx printf
-#endif
 
 void hd(const char *title, void const *data, size_t len)
 {
@@ -82,4 +78,25 @@ void hd(const char *title, void const *data, size_t len)
 
     printf_sgx("\n");
   }
+}
+
+// make sure the output array is large enough
+#include <string>
+
+std::string bin2hex(const unsigned char *bin, size_t len)
+{
+  char          hex_str[]= "0123456789abcdef";
+  unsigned int  i;
+
+  std::string result;
+  result.resize(2*len + 1);
+  result[2*len] = 0;
+
+  for (i = 0; i < len; i++)
+  {
+    result[i * 2 + 0] = hex_str[(bin[i] >> 4) & 0x0F];
+    result[i * 2 + 1] = hex_str[(bin[i]     ) & 0x0F];
+  }
+
+  return result;
 }

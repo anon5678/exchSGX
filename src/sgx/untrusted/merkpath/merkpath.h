@@ -28,35 +28,27 @@ class MerkleProof {
   static constexpr const char* END = "---END MERKLEPROOF---";
 
   string tx;
+  string block_hash;
   vector<string> branch;
   int direction;
 
-  merkle_proof_t serialized;
-
  public:
-
   MerkleProof(const string& tx, const vector<string>& branch, int dirvec)
   : tx(tx), branch(branch), direction(dirvec){
-    memset(&serialized, 0x00, sizeof (merkle_proof_t));
   }
 
-  ~MerkleProof(){
-    if (!serialized.merkle_branch)
-      return;
-    for (int i =0; i < serialized.merkle_branch_len; i++) {
-      if (serialized.merkle_branch[i]) {
-        free(serialized.merkle_branch[i]);
-      }
-    }
+  ~MerkleProof() = default;
+
+  size_t proof_size() {
+    return branch.size();
   }
 
-  const merkle_proof_t* getSerialized() {
-    return &serialized;
-  }
+  void set_block_hash(const string& block_hash) { this->block_hash = block_hash; }
 
-  void output(ostream& out) {
+  void output(ostream& out) const {
     if (direction < 0) {
       out << "error" << endl;
+      return;
     }
     out << BEGIN << endl;
     for (auto& s : branch) {
@@ -67,9 +59,11 @@ class MerkleProof {
     out << END << endl;
   }
 
-  void serialize();
-
-  bool verify();
+  void serialize(merkle_proof_t *o) const;
+  bool verify() const;
 };
+
+void testMerk();
+MerkleProof loopMerkleProof(const vector<string> &leaf_nodes, long index);
 
 #endif /* ifndef  EXCH_MERKPATH_H */

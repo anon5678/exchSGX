@@ -1,38 +1,53 @@
+#include "merkle_bitcoin.h"
+
 #include <string>
 #include "../common/merkle_data.h"
 #include "../common/utils.h"
+#include "pprint.h"
 #include "log.h"
 
+#include "bitcoin/crypto/sha256.h"
 
 using namespace std;
 
-bool verify_merkle_proof(const string& root, const merkle_proof_t* proof){
-  bitcoin_hash_t curr;
-  bitcoin_hash_t tmp;
+// s1+s2 are the 32+32 bytes input, dst is 32 bytes output
+// dst = hash(hash(s1 || s2))
+static void sha256double(
+    const unsigned char* s1,
+    const unsigned char* s2,
+    unsigned char* dst) {
+  CSHA256 h1, h2;
+  unsigned char tmp[BITCOIN_HASH_LENGTH];
 
-  LL_CRITICAL("length is %d", sizeof curr);
+  h1.Write(s1, BITCOIN_HASH_LENGTH);
+  h1.Write(s2, BITCOIN_HASH_LENGTH);
+  h1.Finalize(tmp);
+
+  h2.Write(tmp, sizeof tmp);
+  h2.Finalize(dst);
+}
+
+int merkle_proof_verify(const char *root, const merkle_proof_t *proof){
+  bitcoin_hash_t curr;
+
   memcpy(curr, proof->tx, sizeof curr);
   byte_swap(curr, sizeof curr);
 
   int direction = proof->dirvec;
 
-#if 0
-
-  for (int i = 0; direction > 1; ++i, direction >>= 1) {
-    if ((branch[i]).empty()) {
-      sha256double(curr.data(), curr.data(), curr.data());
+  for (int i = 0; direction > 1 && i < proof->merkle_branch_len; ++i, direction >>= 1) {
+    if (proof->merkle_branch[i] == nullptr) {
+      sha256double(curr, curr, curr);
       continue;
     }
-    //std::memcpy(tmp, (base64_decode(branch[i])).data(), 32);
-    hex2bin(tmp.data(), branch[i].c_str());
     if (direction & 1)
-      sha256double(curr.data(), tmp.data(), curr.data());
+      sha256double(curr, *proof->merkle_branch[i], curr);
     else
-      sha256double(tmp.data(), curr.data(), curr.data());
+      sha256double(*proof->merkle_branch[i], curr, curr);
   }
 
-  cout << "verify: ";
-  byte_swap(curr.data(), 32);
-  hexdump(curr.data(), 32);
-#endif
+  byte_swap(curr, 32);
+  printf_sgx("root: %s\n", bin2hex(curr, 32).c_str());
+
+  return 0;
 }

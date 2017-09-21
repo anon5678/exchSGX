@@ -4,6 +4,7 @@ enclave {
     from "utils.edl" import *;
 
     include "../common/ssl_context.h"
+    include "../common/merkle_data.h"
     include "sgx_tseal.h"
 
     trusted {
@@ -42,6 +43,11 @@ enclave {
             size_t cap_pubkey,
             [user_check] char* cert_pem,
             size_t cap_cert_pem);
+
+        // merkle proof test
+        public int merkle_proof_verify(
+            [in, string]const char* root,
+            [user_check] const merkle_proof_t* proof);
     };
 
     untrusted {

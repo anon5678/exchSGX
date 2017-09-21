@@ -4,9 +4,7 @@
 extern "C" {
 #endif
 
-#pragma warning (disable: 4273)
 extern int printf_sgx(const char *fmt, ...);
-#pragma warning (default: 4273)
 
 enum {
   LOG_LVL_NONE, // 0

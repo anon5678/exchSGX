@@ -16,10 +16,15 @@
 #include <log4cxx/propertyconfigurator.h>
 
 using namespace std;
-
 typedef unsigned long long cointype;
 
-log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("merkleproof"));
+namespace exch {
+namespace merkpath {
+log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("merkpath.merkpath"));
+}
+}
+
+using exch::merkpath::logger;
 
 void hexdump(const unsigned char *data, int len) {
   std::cout << std::hex;
@@ -65,6 +70,7 @@ void hash160(void const *const src, int len, void *const dst) {
   RIPEMD160_Update(&h2, tmp, SHA256_DIGEST_LENGTH);
   RIPEMD160_Final((unsigned char *) dst, &h2);
 }
+
 
 MerkleProof loopMerkleProof(const vector<string> &leaf_nodes, long index) {
   LOG4CXX_ASSERT(logger, leaf_nodes.size() > 1, "need at least two transactions");
@@ -134,29 +140,27 @@ MerkleProof loopMerkleProof(const vector<string> &leaf_nodes, long index) {
   return proof;
 }
 
-void MerkleProof::serialize() {
+void MerkleProof::serialize(merkle_proof_t *o) const {
   // 1. put in the tx
-  hex2bin(serialized.tx, tx.c_str());
+  hex2bin(o->tx, tx.c_str());
 
   // 2. put in the merkle branch
-  serialized.merkle_branch_len = BITCOIN_HASH_LENGTH * branch.size();
-
-  for (auto i = 0; i < branch.size(); i++) {
-    printf("serialize: %p\n", serialized.merkle_branch);
-    serialized.merkle_branch[i] = (bitcoin_hash_t*) malloc(BITCOIN_HASH_LENGTH);
-    printf("serialize: %p\n", serialized.merkle_branch[i]);
-    if (branch[i].empty()) {
-      cerr << "dealing with empty" << endl;
-      memset(serialized.merkle_branch[i], 0x00, BITCOIN_HASH_LENGTH);
-    }
-    else
-      hex2bin((unsigned char*) serialized.merkle_branch[i], branch[i].c_str());
+  if (o->merkle_branch_len != branch.size()) {
+    throw runtime_error("output buffer too small");
   }
 
-  printf("done\n");
+  for (int i = 0; i < branch.size(); i++) {
+    if (branch[i].empty()) {
+      o->merkle_branch[i] = nullptr;
+    }
+    else {
+      o->merkle_branch[i] = (bitcoin_hash_t*) malloc(BITCOIN_HASH_LENGTH);
+      hex2bin((unsigned char*) o->merkle_branch[i], branch[i].c_str());
+    }
+  }
 
   // 3. put in the dir vec
-  serialized.dirvec = direction;
+  o->dirvec = direction;
 
   // 4. put in the block hash. TODO
 }
@@ -219,29 +223,34 @@ void merkGenPath(const vector<string> &leaf_nodes, int index) {
 }
 #endif
 
-bool MerkleProof::verify(){
+bool MerkleProof::verify() const{
   sha256buf curr;
   sha256buf tmp;
 
   hex2bin(curr.data(),  tx.c_str());
   byte_swap(curr.data(), 32);
 
-  for (int i = 0; direction > 1; ++i, direction >>= 1) {
+  // make a copy of direction
+  int dirvec = direction;
+
+  for (int i = 0; dirvec > 1; ++i, dirvec >>= 1) {
     if ((branch[i]).empty()) {
       sha256double(curr.data(), curr.data(), curr.data());
       continue;
     }
     //std::memcpy(tmp, (base64_decode(branch[i])).data(), 32);
     hex2bin(tmp.data(), branch[i].c_str());
-    if (direction & 1)
+    LOG4CXX_DEBUG(logger, "branch " << i << " is: " << branch[i]);
+    if (dirvec & 1)
       sha256double(curr.data(), tmp.data(), curr.data());
     else
       sha256double(tmp.data(), curr.data(), curr.data());
   }
 
-  cout << "verify: ";
   byte_swap(curr.data(), 32);
-  hexdump(curr.data(), 32);
+
+  LOG4CXX_INFO(logger, "expected: " << block_hash);
+  LOG4CXX_INFO(logger, "calculated root: " << tohex(curr));
 }
 
 #if 0
@@ -302,36 +311,8 @@ cointype validateDeposit(const unsigned char *tx, const char *RTEpubkey,
 }
 #endif
 
-#include "../rpc.h"
-#include "../Utils.h"
 
-void verify_merkle_proof(const std::string &leaf, const vector<string>& branch, int dirvec) {
-  unsigned char curr[SHA256_DIGEST_LENGTH];
-  unsigned char tmp[SHA256_DIGEST_LENGTH];
-
-  //std::memcpy(curr, (base64_decode(leaf)).data(), 32);
-  hex2bin(curr, leaf.c_str());
-  byte_swap(curr, 32);
-
-  for (int i = 0; dirvec > 1; ++i, dirvec >>= 1) {
-    if ((branch[i]).empty()) {
-      sha256double(curr, curr, curr);
-      continue;
-    }
-    //std::memcpy(tmp, (base64_decode(branch[i])).data(), 32);
-    hex2bin(tmp, branch[i].c_str());
-    if (dirvec & 1)
-      sha256double(curr, tmp, curr);
-    else
-      sha256double(tmp, curr, curr);
-  }
-
-  byte_swap(curr, 32);
-  hexdump(curr, 32);
-}
-
-
-static void testMerk() {
+void testMerk() {
   // b42be2d0403e5a7336b1f5e2b5c344827177d191b1cbced3565b7ba138d8a83d
   const vector<string> inp1 {
       "1141217f7db1bd3f3d098310e6f707eb249736cdf31ce3400705fa72bbc524f0",
@@ -347,69 +328,26 @@ static void testMerk() {
                               string(),
                               "10b038ab01c5f4048ebe7b4b66def9725dbd29d6f571474ac0c95949f74113d3"};
   // merkGenPath(inp1, 2);
-  loopMerkleProof(inp1, 4).output(cout);
-  verify_merkle_proof(inp1[2], path1, 13 /* 1RLR=1101 */);
-  verify_merkle_proof(inp1[4], path2, 8 /* 1Lxx=10xx */);
+  MerkleProof proof = loopMerkleProof(inp1, 4);
+  proof.output(cout);
+
+  auto p = merkle_proof_init(proof.proof_size());
+
+  proof.serialize(p);
+  hd("tx", p->tx, sizeof p->tx);
+  hd("block_hash", p->block_hash, sizeof p->block_hash);
+  for (int i = 0; i < p->merkle_branch_len; i++) {
+    hd("branch", p->merkle_branch[i], BITCOIN_HASH_LENGTH);
+  }
+
+  merkle_proof_free(p);
+
+  MerkleProof proof2(inp1[2], path1, 13 /* 1RLR=1101 */);
+  proof2.verify();
+
+  MerkleProof proof3(inp1[4], path2, 8 /* 1Lxx=10xx */);
+  proof3.verify();
 }
 
 
-int main(int argc, const char *argv[]) {
-  if (argc < 2) {
-    cout << "Usage: " << argv[0] << " txid" << endl;
-    exit(-1);
-  }
-
-  testMerk();
-
-  log4cxx::PropertyConfigurator::configure(LOGGING_CONF);
-  LOG4CXX_INFO(logger, "starting merkle proof");
-
-  bitcoinRPC rpc;
-
-  string txid = string(argv[1]);
-
-  try {
-    Json::Value txn = rpc.getrawtransaction(txid, true);
-
-    if (!txn.isMember("blockhash")) {
-      throw runtime_error("invalid txn");
-    }
-
-    string block_hash = txn["blockhash"].asString();
-    Json::Value block = rpc.getblock(block_hash);
-    vector<string> merkle_leaves;
-
-    if (!block.isMember("tx")) {
-      throw runtime_error("invalid txn");
-    }
-    for (auto tx : block["tx"]) {
-      merkle_leaves.push_back(tx.asString());
-    }
-
-    auto tx_idx = distance(
-        merkle_leaves.begin(),
-        find(merkle_leaves.begin(), merkle_leaves.end(), txid));
-
-    if (tx_idx >= merkle_leaves.size()) {
-      throw runtime_error("invalid block");
-    };
-
-    LOG4CXX_INFO(logger, "Generating proof for tx (index="
-                           << tx_idx
-                           << ") in block #"
-                           << block["height"]);
-
-    MerkleProof proof = loopMerkleProof(merkle_leaves, tx_idx);
-
-    proof.output(cout);
-    proof.verify();
-    proof.serialize();
-
-    LOG4CXX_INFO(logger, "Merkle root of block #" << block["height"] << ": " << block["merkleroot"].asString());
-  } catch (const bitcoinRPCException &e) {
-    LOG4CXX_ERROR(logger, e.what());
-    return -1;
-  }
-  return 0;
-}
 

@@ -25,9 +25,19 @@ add_executable(exch exch.cpp
         mbedtls_error.c
         mbedtls_net.c)
 
-add_executable(enclave_test enclave_test.cpp Utils.cpp Enclave_u.c)
+add_executable(enclave_test
+        enclave_test.cpp Utils.cpp Enclave_u.c
+        merkpath/merkpath.cpp
+        merkle_data.cpp
+        ../common/utils.cpp
+        )
 add_executable(exch-keygen exch-keygen.cpp key_u.cpp Utils.cpp Enclave_u.c ../common/base64.cpp)
-add_executable(exch-merkleproof merkpath/merkpath.cpp rpc.cpp ../common/utils.cpp)
+add_executable(exch-merkleproof
+        exch-merkleproof.cpp
+        merkpath/merkpath.cpp
+        rpc.cpp
+        ../common/utils.cpp
+        merkle_data.cpp)
 
 find_package(Jsoncpp REQUIRED)
 find_package(JsonCppRpc REQUIRED)
@@ -74,6 +84,8 @@ target_link_libraries(exch-merkleproof
         ${OPENSSL_CRYPTO_LIBRARY})
 
 target_link_libraries(enclave_test
+        ${LOG4CXX_LIBRARY}
+        ${OPENSSL_CRYPTO_LIBRARY}
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
         ${LIB_MBEDTLS_PATH}
         -lpthread)

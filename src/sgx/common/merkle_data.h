@@ -1,5 +1,5 @@
-#ifndef PROJECT_MERKLE_H
-#define PROJECT_MERKLE_H
+#ifndef PROJECT_MERKLE_DATA_H
+#define PROJECT_MERKLE_DATA_H
 
 #include <stdlib.h>
 
@@ -16,5 +16,11 @@ typedef struct {
   size_t merkle_branch_len;
   bitcoin_hash_t* merkle_branch[];
 } merkle_proof_t;
+
+#ifndef IN_ENCLAVE
+merkle_proof_t* merkle_proof_init(size_t n);
+void merkle_proof_dump(const merkle_proof_t* p);
+void merkle_proof_free(merkle_proof_t* p);
+#endif
 
 #endif //PROJECT_MERKLE_H

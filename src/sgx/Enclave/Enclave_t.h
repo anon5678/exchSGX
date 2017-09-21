@@ -7,6 +7,7 @@
 #include "sgx_edger8r.h" /* for sgx_ocall etc. */
 
 #include "../common/ssl_context.h"
+#include "../common/merkle_data.h"
 #include "sgx_tseal.h"
 #include "mbedtls/net_v.h"
 #include "mbedtls/timing_v.h"
@@ -30,6 +31,7 @@ int rsa_keygen_in_seal(const char* subject_name, unsigned char* o_sealed, size_t
 int unseal_secret_and_leak_public_key(const sgx_sealed_data_t* secret, size_t secret_len, unsigned char* pubkey, size_t cap_pubkey);
 int provision_rsa_id(const unsigned char* sealed_rsa_secret_key, size_t secret_len, const char* cert_pem);
 int query_rsa_pubkey(unsigned char* pubkey, size_t cap_pubkey, char* cert_pem, size_t cap_cert_pem);
+int merkle_proof_verify(const char* root, const merkle_proof_t* proof);
 void dummy();
 
 sgx_status_t SGX_CDECL ocall_mbedtls_net_connect(int* retval, mbedtls_net_context* ctx, const char* host, const char* port, int proto);
