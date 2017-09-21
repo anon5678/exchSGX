@@ -3,6 +3,7 @@
 #include "Enclave_u.h"
 
 #include <iostream>
+#include <utility>
 #include "merkpath/merkpath.h"
 #include "../common/utils.h"
 
@@ -34,19 +35,18 @@ void test_merkle_verify(sgx_enclave_id_t eid) {
   merkle_proof_dump(p);
 
   int ret;
-  merkle_proof_verify(eid, &ret, "root", p);
+  merkle_proof_verify(eid, &ret, p);
 
   merkle_proof_free(p);
 
   MerkleProof proof2(inp1[2], path1, 13 /* 1RLR=1101 */);
-  // proof2.output(cout);
-  proof2.verify();
-
-  cout << "here" << endl;
+  proof2.output(cout);
+  cout << "root: " << proof2.verify() << endl;
 
   MerkleProof proof3(inp1[4], path2, 8 /* 1Lxx=10xx */);
-  // proof3.output(cout);
+  proof3.output(cout);
   proof3.verify();
+  cout << "root: " << proof3.verify() << endl;
 }
 
 #include <log4cxx/logger.h>

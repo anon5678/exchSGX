@@ -12,7 +12,7 @@ add_custom_command(
 )
 
 set(SOURCE_FILES
-        tls_ecall_interface.cpp
+        state_TLS.cpp
         
         Enclave_t.c
         log.c
@@ -23,14 +23,16 @@ set(SOURCE_FILES
         tls_exch_ca.cpp
         p2p_tls.cpp
 
-        hybrid_cipher.cpp
         ../common/base64.cpp
         key_rsa_t.cpp
 
-        blockfifo.cpp
         bytestream.cpp
 
-        merkle_bitcoin.cpp
+        state_balance.cpp
+        blockfifo.hpp
+
+        state.cpp
+        state_blockfifo.cpp
 
         bitcoin/uint256.cpp
         bitcoin/hash.cpp
@@ -41,8 +43,6 @@ set(SOURCE_FILES
         bitcoin/crypto/hmac_sha512.cpp
         bitcoin/crypto/sha256.cpp
         bitcoin/crypto/sha512.cpp
-
-        provision.cpp
 
         ../common/utils.cpp
 

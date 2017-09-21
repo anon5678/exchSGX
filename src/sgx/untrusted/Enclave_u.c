@@ -62,7 +62,6 @@ typedef struct ms_query_rsa_pubkey_t {
 
 typedef struct ms_merkle_proof_verify_t {
 	int ms_retval;
-	char* ms_root;
 	merkle_proof_t* ms_proof;
 } ms_merkle_proof_verify_t;
 
@@ -455,11 +454,10 @@ sgx_status_t query_rsa_pubkey(sgx_enclave_id_t eid, int* retval, unsigned char* 
 	return status;
 }
 
-sgx_status_t merkle_proof_verify(sgx_enclave_id_t eid, int* retval, const char* root, const merkle_proof_t* proof)
+sgx_status_t merkle_proof_verify(sgx_enclave_id_t eid, int* retval, const merkle_proof_t* proof)
 {
 	sgx_status_t status;
 	ms_merkle_proof_verify_t ms;
-	ms.ms_root = (char*)root;
 	ms.ms_proof = (merkle_proof_t*)proof;
 	status = sgx_ecall(eid, 10, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;

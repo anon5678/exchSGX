@@ -32,8 +32,6 @@
 #  LOG4CXX_LIBRARIES          The Log4cxx libraries
 #  LOG4CXX_INCLUDE_DIRS       The location of Log4cxx headers
 
-message ("\nLooking for log4cxx headers and libraries")
-
 if (LOG4CXX_ROOT_DIR)
     message (STATUS "Root dir: ${LOG4CXX_ROOT_DIR}")
 endif ()

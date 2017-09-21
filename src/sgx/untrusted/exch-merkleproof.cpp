@@ -2,14 +2,15 @@
 // Created by fanz on 9/20/17.
 //
 #include "merkpath/merkpath.h"
-#include <log4cxx/logger.h>
-#include <log4cxx/propertyconfigurator.h>
 #include "Utils.h"
 #include "rpc.h"
 #include "Enclave_u.h"
 
 #include <algorithm>
+#include <fstream>
 
+#include <log4cxx/logger.h>
+#include <log4cxx/propertyconfigurator.h>
 log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("merkleproof"));
 
 int main(int argc, const char *argv[]) {
@@ -19,7 +20,6 @@ int main(int argc, const char *argv[]) {
   }
 
   log4cxx::PropertyConfigurator::configure(LOGGING_CONF);
-  LOG4CXX_INFO(logger, "starting merkle proof");
 
   bitcoinRPC rpc;
 
@@ -51,18 +51,31 @@ int main(int argc, const char *argv[]) {
       throw runtime_error("invalid block");
     };
 
-    LOG4CXX_INFO(logger, "Generating proof for tx (index="
-        << tx_idx
-        << ") in block #"
-        << block["height"]);
+    LOG4CXX_INFO(logger, "Generating proof for tx (index=" << tx_idx << ") in block #" << block["height"]);
+    LOG4CXX_INFO(logger, "block hash=" << block_hash);
 
     MerkleProof proof = loopMerkleProof(merkle_leaves, tx_idx);
 
-    proof.output(cout);
-    proof.verify();
-    proof.serialize(nullptr);
+    proof.set_block(block_hash);
+    string calc_root = proof.verify();
 
-    LOG4CXX_INFO(logger, "Merkle root of block #" << block["height"] << ": " << block["merkleroot"].asString());
+    if (calc_root == block["merkleroot"].asString()) {
+      LOG4CXX_INFO(logger, "succeed. Merkle root is: " << calc_root);
+
+      proof.dumpJSON(cout);
+      cout << endl;
+
+      string filename = txid.substr(0, 6) + ".merkle";
+      ofstream out(filename);
+      proof.dumpJSON(out);
+      out.close();
+
+      LOG4CXX_INFO(logger, "Proof is dumped to " << filename);
+    }
+    else {
+      LOG4CXX_ERROR(logger, "failed to generate a valid proof. Try again later.");
+      return -1;
+    }
   } catch (const bitcoinRPCException &e) {
     LOG4CXX_ERROR(logger, e.what());
     return -1;

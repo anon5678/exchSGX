@@ -1,12 +1,14 @@
-#include "merkle_bitcoin.h"
+//
+// Created by fanz on 9/21/17.
+//
 
-#include <string>
-#include "../common/merkle_data.h"
+#include "state.h"
 #include "../common/utils.h"
 #include "pprint.h"
 #include "log.h"
-
 #include "bitcoin/crypto/sha256.h"
+
+#include <string>
 
 using namespace std;
 
@@ -27,7 +29,7 @@ static void sha256double(
   h2.Finalize(dst);
 }
 
-int merkle_proof_verify(const char *root, const merkle_proof_t *proof){
+int merkle_proof_verify(const merkle_proof_t *proof){
   bitcoin_hash_t curr;
 
   memcpy(curr, proof->tx, sizeof curr);
@@ -50,4 +52,8 @@ int merkle_proof_verify(const char *root, const merkle_proof_t *proof){
   printf_sgx("root: %s\n", bin2hex(curr, 32).c_str());
 
   return 0;
+}
+
+int ecall_deposit(const merkle_proof_t* merkle_proof, const bitcoin_hash_t* block, const char* public_key_pem) {
+
 }

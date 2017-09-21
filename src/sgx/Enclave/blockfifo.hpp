@@ -22,13 +22,6 @@ enum HeaderSize {
 constexpr unsigned int bitcoinDifficulty = 8;
 
 /*
- * ecall functions
- */
-extern "C" {
-int ecall_append_block_to_fifo(const char *blockHeaderHex);
-}
-
-/*
  * other functions
  */
 unsigned int nLeadingZero(const uint256 &hash);
@@ -42,7 +35,7 @@ public:
   //! validate a block by checking its hash
   //! \param new_block
   //! \return  true = validated
-  bool validateSuccessor(const CBlockHeader &new_block) const {
+  bool is_valid_successor(const CBlockHeader &new_block) const {
     if (_blocks.empty())
       return true;
 
@@ -54,13 +47,12 @@ public:
       return true;
     }
 
-    LL_CRITICAL("cannot append block %s",
-                new_block.GetHash().ToString().c_str());
+    LL_LOG("cannot append block %s", new_block.GetHash().ToString().c_str());
     return false;
   }
 
-  bool AppendBlock(const CBlockHeader &new_header) {
-    if (!validateSuccessor(new_header)) {
+  bool enqueue(const CBlockHeader &new_header) {
+    if (!is_valid_successor(new_header)) {
       return false;
     }
 
@@ -71,13 +63,13 @@ public:
     }
 
     if (nPoped > 0)
-      LL_NOTICE("removed %d blocks from FIFO", nPoped);
+      LL_LOG("removed %d blocks from FIFO", nPoped);
 
     _blocks.push(new_header);
     return true;
   }
 
-  const queue<CBlockHeader> *getblockchain_const() const { return &_blocks; }
+  uint256 last_block() const { return _blocks.back().GetHash(); }
 
   size_t size() const { return _blocks.size(); }
 };

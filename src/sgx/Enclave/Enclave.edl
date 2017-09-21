@@ -46,7 +46,6 @@ enclave {
 
         // merkle proof test
         public int merkle_proof_verify(
-            [in, string]const char* root,
             [user_check] const merkle_proof_t* proof);
     };
 

@@ -141,6 +141,7 @@ MerkleProof loopMerkleProof(const vector<string> &leaf_nodes, long index) {
 }
 
 void MerkleProof::serialize(merkle_proof_t *o) const {
+  if (!o) return;
   // 1. put in the tx
   hex2bin(o->tx, tx.c_str());
 
@@ -161,8 +162,6 @@ void MerkleProof::serialize(merkle_proof_t *o) const {
 
   // 3. put in the dir vec
   o->dirvec = direction;
-
-  // 4. put in the block hash. TODO
 }
 
 #if 0
@@ -223,7 +222,7 @@ void merkGenPath(const vector<string> &leaf_nodes, int index) {
 }
 #endif
 
-bool MerkleProof::verify() const{
+string MerkleProof::verify() const{
   sha256buf curr;
   sha256buf tmp;
 
@@ -238,9 +237,7 @@ bool MerkleProof::verify() const{
       sha256double(curr.data(), curr.data(), curr.data());
       continue;
     }
-    //std::memcpy(tmp, (base64_decode(branch[i])).data(), 32);
     hex2bin(tmp.data(), branch[i].c_str());
-    LOG4CXX_DEBUG(logger, "branch " << i << " is: " << branch[i]);
     if (dirvec & 1)
       sha256double(curr.data(), tmp.data(), curr.data());
     else
@@ -249,8 +246,7 @@ bool MerkleProof::verify() const{
 
   byte_swap(curr.data(), 32);
 
-  LOG4CXX_INFO(logger, "expected: " << block_hash);
-  LOG4CXX_INFO(logger, "calculated root: " << tohex(curr));
+  return tohex(curr);
 }
 
 #if 0
@@ -330,22 +326,14 @@ void testMerk() {
   // merkGenPath(inp1, 2);
   MerkleProof proof = loopMerkleProof(inp1, 4);
   proof.output(cout);
-
-  auto p = merkle_proof_init(proof.proof_size());
-
-  proof.serialize(p);
-  hd("tx", p->tx, sizeof p->tx);
-  hd("block_hash", p->block_hash, sizeof p->block_hash);
-  for (int i = 0; i < p->merkle_branch_len; i++) {
-    hd("branch", p->merkle_branch[i], BITCOIN_HASH_LENGTH);
-  }
-
-  merkle_proof_free(p);
+  proof.verify();
 
   MerkleProof proof2(inp1[2], path1, 13 /* 1RLR=1101 */);
+  proof2.output(cout);
   proof2.verify();
 
   MerkleProof proof3(inp1[4], path2, 8 /* 1Lxx=10xx */);
+  proof3.output(cout);
   proof3.verify();
 }
 

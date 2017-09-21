@@ -12,9 +12,7 @@ import json
 url = "http://localhost:1234"
 headers = {'content-type': 'application/json'}
 
-def deposit():
-    merkle_proof = 'merkle proof placeholder'
-    public_key = 'pubkey to be registered'
+def deposit(merkle_proof, public_key):
     try:
         payload = {
                 'method': 'deposit',
@@ -27,8 +25,13 @@ def deposit():
 
         print resp
 
-    except JSONRPCException as e:
+    except Exception as e:
         print e.message
 
 
-deposit()
+import sys
+
+with open(sys.argv[1]) as _proof:
+    proof = json.load(_proof);
+
+deposit(proof, "key")

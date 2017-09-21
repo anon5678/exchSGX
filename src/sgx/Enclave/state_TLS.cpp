@@ -1,14 +1,18 @@
-#include <mbedtls/net_v.h>
-#include "Enclave_t.h"
-#include "log.h"
-#include "tls_server_threaded.h"
-#include "../common/ssl_context.h"
+#include "state.h"
 
-TLSConnectionHandler* connectionHandler;
+
+#include "log.h"
+#include "../common/ssl_context.h"
+#include "Enclave_t.h"
+#include "tls_server_threaded.h"
+
+#include <mbedtls/net_v.h>
+
+using namespace exch::enclave;
 
 int ssl_conn_init(void) {
   try {
-    connectionHandler = new TLSConnectionHandler();
+    state::connectionHandler = new TLSConnectionHandler();
   }
   catch (const std::exception& e) {
     LL_CRITICAL("cannot init tls: %s", e.what());
@@ -24,9 +28,9 @@ int ssl_conn_init(void) {
 
 void ssl_conn_handle(long int thread_id, thread_info_t* thread_info) {
   LL_LOG("delegating socket %d to handler", thread_info->client_fd.fd);
-  connectionHandler->handle(thread_id, thread_info);
+  state::connectionHandler->handle(thread_id, thread_info);
 }
 
 void ssl_conn_teardown(void) {
-  delete connectionHandler;
+  delete state::connectionHandler;
 }

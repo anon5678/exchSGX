@@ -1,13 +1,16 @@
-#include "blockfifo.h"
+#include "state.h"
+
+#include "blockfifo.hpp"
 #include "bitcoin/utilstrencodings.h"
 #include "bytestream.h"
 #include "hash.h"
+#include "state.h"
 #include "log.h"
 #include "pprint.h"
 
 #include <vector>
 
-BlockFIFO<5> bitcoinFIFO;
+using namespace exch::enclave;
 
 unsigned int nLeadingZero(const uint256 &hash) {
   std::size_t foundNonZero = hash.GetHex().find_first_not_of("0", 0);
@@ -16,8 +19,6 @@ unsigned int nLeadingZero(const uint256 &hash) {
   }
   return static_cast<unsigned int>(foundNonZero);
 }
-
-#include <iostream>
 
 int ecall_append_block_to_fifo(const char *blockHeaderHex) {
   try {
@@ -49,11 +50,11 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex) {
     }
 
     // try to push it to the FIFO
-    if (bitcoinFIFO.AppendBlock(block_header)) {
-      LL_NOTICE("succeed");
+    if (state::blockFIFO.enqueue(block_header)) {
+      LL_NOTICE("succeed.");
       return 0;
     } else {
-      LL_CRITICAL("faild to append block %s", block_hash.GetHex().c_str());
+      LL_CRITICAL("failed to append block %s", block_hash.GetHex().c_str());
       return -1;
     }
   } catch (const std::exception &e) {
@@ -63,12 +64,12 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex) {
 }
 
 int ecall_get_latest_block_hash(unsigned char* o_buf, size_t cap_obuf) {
-  CBlockHeader last = bitcoinFIFO.getblockchain_const()->back();
-  if (cap_obuf < last.GetHash().size()) {
+  uint256 last = state::blockFIFO.last_block();
+  if (cap_obuf < last.size()) {
     LL_CRITICAL("buffer too small");
     return -1;
   }
-  memcpy(o_buf, last.GetHash().begin(), last.GetHash().size());
+  memcpy(o_buf, last.begin(), last.size());
   return 0;
 }
 

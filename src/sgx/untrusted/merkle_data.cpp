@@ -22,7 +22,6 @@ merkle_proof_t* merkle_proof_init(size_t n) {
 void merkle_proof_dump(const merkle_proof_t* p) {
   printf("tx: %s\n", bin2hex(p->tx, sizeof p->tx).c_str());
   printf("direction: %d\n", p->dirvec);
-  printf("block_hash: %s\n", bin2hex(p->block_hash, sizeof p->block_hash).c_str());
   for (int i = 0; i < p->merkle_branch_len; i++) {
     if (p->merkle_branch[i] == nullptr) {
       printf("branch %d: NULL\n", i);

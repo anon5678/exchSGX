@@ -1,4 +1,4 @@
-#include "tls_server_threaded.h"
+#include "tls_service_pthread.h"
 
 #include <cstdio>
 #define mbedtls_fprintf    fprintf
@@ -18,21 +18,28 @@
 #include "mbedtls/net_f.h"
 #include "mbedtls/error.h"
 #include "Enclave_u.h"
+#include "interrupt.h"
 
 extern sgx_enclave_id_t eid;
 
-std::atomic<bool> quit(false);
-void exitGraceful(int n) {
-  (void) n;
-  quit.store(true);
+#include <log4cxx/logger.h>
+#include <log4cxx/propertyconfigurator.h>
+#include <mbedtls/net_v.h>
+
+namespace exch{
+namespace tls {
+log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.TLSService"));
 }
+}
+
+using exch::tls::logger;
 
 TLSService::TLSService(const string &hostname,
                        const string &port, TLSService::Role role, size_t n_threads) :
     hostname(hostname), port(port), role(role), ret(0) {
   // initialize the enclave TLS resources
   if (ssl_conn_init(eid, &ret) != SGX_SUCCESS || ret != 0) {
-    cerr << "failed to initialize ssl" << endl;
+    LOG4CXX_ERROR(logger, "failed to init TLSService");
     exit(-1);
   }
 
@@ -42,7 +49,7 @@ TLSService::TLSService(const string &hostname,
     memset(&t, 0, sizeof(pthread_info_t));
   }
 
-  cout << threads.size() << " threads initialized" << endl;
+  LOG4CXX_INFO(logger, "" << threads.size() << " threads initialized");
 }
 
 TLSService::TLSService(TLSService &&other) noexcept {
@@ -67,24 +74,17 @@ void TLSService::operator()() {
   if ((ret = mbedtls_net_bind(&server_socket,
                               hostname.c_str(), port.c_str(),
                               MBEDTLS_NET_PROTO_TCP)) != 0) {
-    cout << " failed! mbedtls_net_bind returned " << ret << endl;
+    LOG4CXX_ERROR(logger, "failed! mbedtls_net_bind returns " << ret);
     std::exit(-1);
   }
-  cout << "Listening at " << hostname << ": " << port << endl;
+  LOG4CXX_INFO(logger, "TLSService listening at " << hostname << ":" << port);
 
-  // non-block accept
-  std::signal(SIGINT, exitGraceful);
-  while (true) {
-    // check for Ctrl-C flag
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    if (quit.load()) {
-      cerr << "Ctrl-C pressed. Quiting..." << endl;
-      break;
-    }
+  while (!exch::interrupt::quit.load()) {
+    this_thread::sleep_for(chrono::seconds(1));
 
     // Wait for a client connects
     if (0 != mbedtls_net_set_nonblock(&server_socket)) {
-      cerr << "can't set nonblock for the listen socket" << endl;
+      LOG4CXX_ERROR(logger, "can't set nonblock for the listen socket")
     }
 
     ret = mbedtls_net_accept(&server_socket, &client_fd, NULL, 0, NULL);
@@ -97,14 +97,14 @@ void TLSService::operator()() {
     }
 
     if (ret != 0) {
-      fprintf(stderr, "  [ main ] failed: mbedtls_net_accept returned -0x%04x\n", ret);
+      LOG4CXX_ERROR(logger, "mbedtls_net_accept returns " << ret);
       break;
     }
 
-    std::cout << "serving " << client_fd.fd << std::endl;
+    LOG4CXX_INFO(logger, "serving " << client_fd.fd)
 
     if ((ret = serve_tls_conn_in_thread(&client_fd)) != 0) {
-      fprintf(stderr, "  [ main ]  failed: thread_create returned %d\n", ret);
+      LOG4CXX_ERROR(logger, "failed to create threads: " << ret);
       mbedtls_net_free(&client_fd);
       continue;
     }
@@ -113,14 +113,14 @@ void TLSService::operator()() {
     if (ret != 0) {
       char error_buf[100];
       mbedtls_strerror(ret, error_buf, 100);
-      mbedtls_printf("  [ main ]  Last error was: -0x%04x - %s\n", -ret, error_buf);
+      LOG4CXX_ERROR(logger, "last error was: " << error_buf);
     }
 #endif
 
     ret = 0;
   } // while (true)
 
-  cout << "exiting the loop" << endl;
+  LOG4CXX_INFO(logger, "shutting down the TLS server...");
 }
 
 // thread function
@@ -130,7 +130,7 @@ void *ecall_handle_tls_conn(void *data) {
 
   int ret = ssl_conn_handle(eid, thread_id, thread_info);
   if (ret != SGX_SUCCESS) {
-    cerr << "failed to make ecall " << ret << endl;
+    LOG4CXX_ERROR(logger, "failed to make ecall");
   }
 
   mbedtls_net_free(&thread_info->client_fd);
@@ -145,7 +145,7 @@ int TLSService::serve_tls_conn_in_thread(const mbedtls_net_context *client_fd) {
       break;
 
     if (threads[i].data.thread_complete == 1) {
-      mbedtls_printf("  [ main ]  Cleaning up thread %d\n", i);
+      LOG4CXX_INFO(logger, "cleaning up thread " << i);
       pthread_join(threads[i].thread, NULL);
       memset(&threads[i], 0, sizeof(pthread_info_t));
       break;
@@ -153,7 +153,7 @@ int TLSService::serve_tls_conn_in_thread(const mbedtls_net_context *client_fd) {
   }
 
   if (i == threads.size()) {
-    cerr << "all threads in use. try again later" << endl;
+    LOG4CXX_ERROR(logger, "all threads are in use. try again later.")
     return (-1);
   }
 

@@ -13,7 +13,7 @@ class AbstractEnclaveRPC : public jsonrpc::AbstractServer<AbstractEnclaveRPC>
         AbstractEnclaveRPC(jsonrpc::AbstractServerConnector &conn, jsonrpc::serverVersion_t type = jsonrpc::JSONRPC_SERVER_V2) : jsonrpc::AbstractServer<AbstractEnclaveRPC>(conn, type)
         {
             this->bindAndAddMethod(jsonrpc::Procedure("appendBlock2FIFO", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_BOOLEAN, "param1",jsonrpc::JSON_STRING, NULL), &AbstractEnclaveRPC::appendBlock2FIFOI);
-            this->bindAndAddMethod(jsonrpc::Procedure("deposit", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_BOOLEAN, "param1",jsonrpc::JSON_STRING,"param2",jsonrpc::JSON_STRING, NULL), &AbstractEnclaveRPC::depositI);
+            this->bindAndAddMethod(jsonrpc::Procedure("deposit", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_BOOLEAN, "param1",jsonrpc::JSON_OBJECT,"param2",jsonrpc::JSON_STRING, NULL), &AbstractEnclaveRPC::depositI);
         }
 
         inline virtual void appendBlock2FIFOI(const Json::Value &request, Json::Value &response)
@@ -22,10 +22,10 @@ class AbstractEnclaveRPC : public jsonrpc::AbstractServer<AbstractEnclaveRPC>
         }
         inline virtual void depositI(const Json::Value &request, Json::Value &response)
         {
-            response = this->deposit(request[0u].asString(), request[1u].asString());
+            response = this->deposit(request[0u], request[1u].asString());
         }
         virtual bool appendBlock2FIFO(const std::string& param1) = 0;
-        virtual bool deposit(const std::string& param1, const std::string& param2) = 0;
+        virtual bool deposit(const Json::Value& param1, const std::string& param2) = 0;
 };
 
 #endif //JSONRPC_CPP_STUB_ABSTRACTENCLAVERPC_H_

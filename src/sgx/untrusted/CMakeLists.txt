@@ -16,11 +16,14 @@ add_custom_command(
 )
 
 add_executable(exch exch.cpp
+        interrupt.cpp
         rpc.cpp
         enclave_rpc.cpp
-        blockfeeding.cpp
+        merkpath/merkpath.cpp
+        merkle_data.cpp
+        ../common/utils.cpp
         Utils.cpp
-        tls_server_threaded.cpp
+        tls_service_pthread.cpp
         Enclave_u.c
         mbedtls_error.c
         mbedtls_net.c)
@@ -63,10 +66,11 @@ target_link_libraries(exch
         ${CURL_LIBRARIES}
         ${JSONCPP_LIBRARIES}
         ${JSONRPCCPP_LIBRARIES}
-        -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
-        ${LIB_MBEDTLS_PATH}
+        ${LOG4CXX_LIBRARY}
         ${Boost_LIBRARIES}
         ${OPENSSL_CRYPTO_LIBRARY}
+        -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
+        ${LIB_MBEDTLS_PATH}
         -lpthread)
 
 target_link_libraries(exch-keygen

@@ -78,7 +78,6 @@ typedef struct ms_query_rsa_pubkey_t {
 
 typedef struct ms_merkle_proof_verify_t {
 	int ms_retval;
-	char* ms_root;
 	merkle_proof_t* ms_proof;
 } ms_merkle_proof_verify_t;
 
@@ -433,27 +432,12 @@ static sgx_status_t SGX_CDECL sgx_merkle_proof_verify(void* pms)
 {
 	ms_merkle_proof_verify_t* ms = SGX_CAST(ms_merkle_proof_verify_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
-	char* _tmp_root = ms->ms_root;
-	size_t _len_root = _tmp_root ? strlen(_tmp_root) + 1 : 0;
-	char* _in_root = NULL;
 	merkle_proof_t* _tmp_proof = ms->ms_proof;
 
 	CHECK_REF_POINTER(pms, sizeof(ms_merkle_proof_verify_t));
-	CHECK_UNIQUE_POINTER(_tmp_root, _len_root);
 
-	if (_tmp_root != NULL) {
-		_in_root = (char*)malloc(_len_root);
-		if (_in_root == NULL) {
-			status = SGX_ERROR_OUT_OF_MEMORY;
-			goto err;
-		}
+	ms->ms_retval = merkle_proof_verify((const merkle_proof_t*)_tmp_proof);
 
-		memcpy((void*)_in_root, _tmp_root, _len_root);
-		_in_root[_len_root - 1] = '\0';
-	}
-	ms->ms_retval = merkle_proof_verify((const char*)_in_root, (const merkle_proof_t*)_tmp_proof);
-err:
-	if (_in_root) free((void*)_in_root);
 
 	return status;
 }

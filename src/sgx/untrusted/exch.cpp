@@ -16,17 +16,29 @@
 #include "Enclave_u.h"
 #include "Utils.h"
 #include "bitcoindrpcclient.h"
-#include "blockfeeding.h"
-#include "tls_server_threaded.h"
+#include "tls_service_pthread.h"
 
 #include "enclave_rpc.h"
 #include <jsonrpccpp/server/connectors/httpserver.h>
 #include "enclave_rpc.h"
+#include "interrupt.h"
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
 using namespace std;
+
+#include <log4cxx/logger.h>
+#include <log4cxx/propertyconfigurator.h>
+
+namespace exch{
+namespace main {
+log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.main"));
+}
+}
+
+using exch::main::logger;
+using exch::interrupt::init_signal_handler;
 
 sgx_enclave_id_t eid;
 
@@ -66,6 +78,10 @@ int main(int argc, const char *argv[]) {
   Config conf;
   config(argc, argv, conf);
 
+  init_signal_handler();
+
+  log4cxx::PropertyConfigurator::configure(LOGGING_CONF);
+
   if (0 != initialize_enclave(&eid)) {
     cerr << "failed to init enclave" << endl;
     exit(-1);
@@ -80,7 +96,7 @@ int main(int argc, const char *argv[]) {
   EnclaveRPC enclaveRPC(eid, httpserver);
   if(enclaveRPC.StartListening()) {
     RPCSrvRunning = true;
-    cout << "RPC server listening at " << RPCSrvPort << endl;
+    LOG4CXX_INFO(logger, "RPC server listening at " << RPCSrvPort);
   }
 
   try {
@@ -131,14 +147,15 @@ int main(int argc, const char *argv[]) {
     fairnessProtocolServer.join();
   }
 
-  // stop the main thread
-  // for debug only. replaced with barrier later.
-  getchar();
+  while(!exch::interrupt::quit.load())
+  {
+    this_thread::sleep_for(chrono::seconds(2));
+  }
 
   if (RPCSrvRunning)
   {
     enclaveRPC.StopListening();
-    cout << "RPC server shutdown" << endl;
+    LOG4CXX_INFO(logger, "shutting down the RPC server...")
   }
 
   sgx_destroy_enclave(eid);

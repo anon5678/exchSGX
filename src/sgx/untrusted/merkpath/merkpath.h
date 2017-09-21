@@ -7,8 +7,8 @@
 #include <array>
 
 #include "../../common/merkle_data.h"
-#include <string.h>
 #include <iostream>
+#include <stdexcept>
 
 using std::vector;
 using std::string;
@@ -16,11 +16,14 @@ using std::array;
 using std::cout;
 using std::endl;
 using std::ostream;
+using std::invalid_argument;
 
 constexpr size_t SHA256_DIGEST_LENGTH = 32;
 using sha256buf = array<unsigned char, SHA256_DIGEST_LENGTH>;
 
 void merkGenPath(const vector<string> &leaf_nodes, int index);
+
+#include <json/json.h>
 
 class MerkleProof {
  private:
@@ -28,12 +31,23 @@ class MerkleProof {
   static constexpr const char* END = "---END MERKLEPROOF---";
 
   string tx;
-  string block_hash;
   vector<string> branch;
   int direction;
 
+  // helper data
+  // in particular, these are not necessary but it helps
+  string block;
+
  public:
   MerkleProof(const string& tx, const vector<string>& branch, int dirvec)
+      : tx(tx), branch(branch), direction(dirvec){
+    for (auto& b : branch) {
+      if (b.size() != 2 * BITCOIN_HASH_LENGTH) {
+        throw invalid_argument("branch " + b + " doesn't have 64 letters");
+      }
+    }
+  }
+  MerkleProof(const string& tx, vector<string>&& branch, int dirvec)
   : tx(tx), branch(branch), direction(dirvec){
   }
 
@@ -43,7 +57,23 @@ class MerkleProof {
     return branch.size();
   }
 
-  void set_block_hash(const string& block_hash) { this->block_hash = block_hash; }
+  void set_block(const string& value) {
+    block = value;
+  }
+
+  void dumpJSON(ostream& out) {
+    Json::Value proof;
+    proof["tx"] = tx;
+    proof["block"] = block;
+    proof["dirvec"] = direction;
+    proof["branch"] = Json::arrayValue;
+
+    for (auto & b: branch) {
+      proof["branch"].append(b);
+    }
+
+    out << proof;
+  }
 
   void output(ostream& out) const {
     if (direction < 0) {
@@ -60,7 +90,7 @@ class MerkleProof {
   }
 
   void serialize(merkle_proof_t *o) const;
-  bool verify() const;
+  string verify() const;
 };
 
 void testMerk();
