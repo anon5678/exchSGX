@@ -69,6 +69,9 @@ int ecall_deposit(const merkle_proof_t* merkle_proof, const char* block_hash_hex
     if (calc_root == h->GetHash().GetHex()) {
       LL_NOTICE("deposit %s accepted", bin2hex(merkle_proof->tx, 32).c_str());
       LL_CRITICAL("balance update has not been implemented");
+
+      int amount = 100;
+      state::balanceBook.deposit(public_key_pem, amount);
     }
     else {
       LL_CRITICAL("deposit %s NOT accepted", bin2hex(merkle_proof->tx, 32).c_str());

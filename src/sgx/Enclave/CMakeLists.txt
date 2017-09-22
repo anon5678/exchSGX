@@ -28,11 +28,12 @@ set(SOURCE_FILES
 
         bytestream.cpp
 
-        state_balance.cpp
         blockfifo.hpp
+        balancebook.hpp
 
         state.cpp
         state_blockfifo.cpp
+        state_balance.cpp
 
         bitcoin/uint256.cpp
         bitcoin/hash.cpp
