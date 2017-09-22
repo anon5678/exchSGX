@@ -6,7 +6,7 @@
 #ifndef PROJECT_LATEST_BLOCKS_H
 #define PROJECT_LATEST_BLOCKS_H
 
-#include <queue>
+#include <deque>
 
 #include "bitcoin/primitives/block.h"
 #include "pprint.h"
@@ -29,12 +29,18 @@ unsigned int nLeadingZero(const uint256 &hash);
 template <unsigned int QUEUE_LENGTH>
 class BlockFIFO {
 private:
-  queue<CBlockHeader> _blocks;
+  deque<CBlockHeader> _blocks;
+
+  struct hashPredicate {
+    const uint256 hash;
+    explicit hashPredicate(const uint256& hash): hash(hash) {}
+
+    bool operator()(const CBlockHeader& header) {
+      return header.GetHash() == hash;
+    }
+  };
 
 public:
-  //! validate a block by checking its hash
-  //! \param new_block
-  //! \return  true = validated
   bool is_valid_successor(const CBlockHeader &new_block) const {
     if (_blocks.empty())
       return true;
@@ -51,6 +57,14 @@ public:
     return false;
   }
 
+  const CBlockHeader* find_block(const uint256& hash) {
+    deque<CBlockHeader>::iterator it = find_if(_blocks.begin(), _blocks.end(), hashPredicate(hash));
+    if (it == _blocks.end())
+      return nullptr;
+
+    return &(*it);
+  }
+
   bool enqueue(const CBlockHeader &new_header) {
     if (!is_valid_successor(new_header)) {
       return false;
@@ -58,14 +72,14 @@ public:
 
     int nPoped = 0;
     while (_blocks.size() >= QUEUE_LENGTH) {
-      _blocks.pop();
+      _blocks.pop_front();
       nPoped++;
     }
 
     if (nPoped > 0)
       LL_LOG("removed %d blocks from FIFO", nPoped);
 
-    _blocks.push(new_header);
+    _blocks.push_back(new_header);
     return true;
   }
 

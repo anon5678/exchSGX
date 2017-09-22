@@ -250,7 +250,7 @@ void TLSClient::Send(const vector<uint8_t> &data) {
   }
 
   // write data
-  for (int written = 0, frags = 0; written < data.size(); written += ret, frags++) {
+  for (size_t written = 0, frags = 0; written < data.size(); written += ret, frags++) {
     while ((ret = mbedtls_ssl_write(&ssl, data.data() + written, data.size() - written)) <= 0) {
       if (ret != MBEDTLS_ERR_SSL_WANT_READ &&
           ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
@@ -267,7 +267,7 @@ void TLSClient::SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &da
   }
 
   // write data
-  for (int written = 0, frags = 0; written < data_in.size(); written += ret, frags++) {
+  for (size_t written = 0, frags = 0; written < data_in.size(); written += ret, frags++) {
     while ((ret = mbedtls_ssl_write(&ssl, data_in.data() + written, data_in.size() - written)) <= 0) {
       if (ret != MBEDTLS_ERR_SSL_WANT_READ &&
           ret != MBEDTLS_ERR_SSL_WANT_WRITE) {

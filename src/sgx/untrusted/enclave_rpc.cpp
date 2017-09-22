@@ -26,7 +26,7 @@ bool EnclaveRPC::appendBlock2FIFO(const std::string &block_header) {
   int ret;
   sgx_status_t st = ecall_append_block_to_fifo(eid, &ret, block_header.c_str());
   if (st != SGX_SUCCESS || ret != 0) {
-    std::cerr << "cannot append block" << std::endl;
+    LOG4CXX_INFO(logger, "cannot append");
     return false;
   }
   return true;
@@ -36,9 +36,9 @@ bool EnclaveRPC::deposit(const Json::Value &merkle_proof, const string &public_k
   int ret;
   sgx_status_t st;
 
-  cout << "depositing" << endl;
-  cout << "proof: " << merkle_proof << endl;
-  cout << "public key: " << public_key << endl;
+  LOG4CXX_INFO(logger, "depositing")
+  LOG4CXX_DEBUG(logger, merkle_proof.toStyledString());
+  LOG4CXX_DEBUG(logger, public_key);
 
   try {
     if (!merkle_proof.isMember("tx") ||
@@ -69,6 +69,14 @@ bool EnclaveRPC::deposit(const Json::Value &merkle_proof, const string &public_k
       LOG4CXX_ERROR(logger, "failed to make ecall");
       return false;
     }
+
+    st = ecall_deposit(eid, &ret, p, merkle_proof["block"].asCString(), public_key.c_str());
+    if (st != SGX_SUCCESS || ret != 0) {
+      LOG4CXX_ERROR(logger, "failed to make ecall st=" << hex << st);
+      return false;
+    }
+
+    return true;
   }
 
   catch (const std::exception &e) {

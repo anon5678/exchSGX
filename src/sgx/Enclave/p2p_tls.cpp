@@ -22,4 +22,6 @@ int test_tls_client(const char* hostname, unsigned int port) {
   catch (...) {
     LL_CRITICAL("something stupid");
   }
+
+  return 0;
 }

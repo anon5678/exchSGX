@@ -100,7 +100,7 @@ int main(int argc, const char *argv[]) {
   }
 
   try {
-    cout << "using identity " << conf.identity << "..." << endl;
+    LOG4CXX_INFO(logger, "using id " << conf.identity);
 
     fs::path identity_dir(conf.identity_dir);
 
@@ -132,6 +132,7 @@ int main(int argc, const char *argv[]) {
     cout << cert_pem;
   } catch (const std::exception &e) {
     cerr << "cannot provision rsa id: " << e.what() << endl;
+    exit(-1);
   }
 
 

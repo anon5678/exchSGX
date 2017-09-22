@@ -231,9 +231,7 @@ exit_without_notify:
 }
 
 int send(long thread_id, mbedtls_ssl_context* ssl, const vector<uint8_t> &data) {
-  /*
-  * 7. Write the 200 Response
-  */
+#if 0
   LL_DEBUG("  [ #%ld ]  > Write to client", thread_id);
 
   int len;
@@ -253,7 +251,9 @@ int send(long thread_id, mbedtls_ssl_context* ssl, const vector<uint8_t> &data) 
 
   len = ret;
   LL_DEBUG("  [ #%ld ]  %d bytes written", thread_id, len);
-  ret = 0;
+#endif
+
+  return 0;
 }
 
 string TLSConnectionHandler::getError(int errno) {
@@ -267,7 +267,7 @@ string TLSConnectionHandler::getError(int errno) {
 
 const string TLSConnectionHandler::pers = "ssl_pthread_server";
 sgx_thread_mutex_t TLSConnectionHandler::mutex = SGX_THREAD_MUTEX_INITIALIZER;
-unsigned int TLSConnectionHandler::debug_level = 0;
+int TLSConnectionHandler::debug_level = 0;
 
 void TLSConnectionHandler::mydebug(void *ctx, int level,
                                    const char *file, int line,

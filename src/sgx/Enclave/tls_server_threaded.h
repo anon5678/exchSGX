@@ -79,7 +79,7 @@ class TLSConnectionHandler {
   /*
    * configuration
    */
-  static unsigned int debug_level;
+  static int debug_level;
 
   /*
    * debug callback

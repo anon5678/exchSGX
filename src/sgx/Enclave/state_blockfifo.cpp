@@ -35,8 +35,6 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex) {
     bytestream ibs(header_bin);
     block_header.Unserialize(ibs);
 
-    int a = 1000;
-
     LL_DEBUG("done unserilize");
 
     uint256 block_hash;

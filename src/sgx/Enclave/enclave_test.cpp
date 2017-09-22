@@ -25,5 +25,5 @@ const lest::test specification[] =
 };
 
 int enclaveTest() {
-  lest::run(specification);
+  return lest::run(specification);
 }

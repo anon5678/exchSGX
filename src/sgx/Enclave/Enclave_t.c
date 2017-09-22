@@ -81,6 +81,13 @@ typedef struct ms_merkle_proof_verify_t {
 	merkle_proof_t* ms_proof;
 } ms_merkle_proof_verify_t;
 
+typedef struct ms_ecall_deposit_t {
+	int ms_retval;
+	merkle_proof_t* ms_merkle_proof;
+	char* ms_block_hash_hex;
+	char* ms_public_key_pem;
+} ms_ecall_deposit_t;
+
 
 typedef struct ms_ocall_mbedtls_net_connect_t {
 	int ms_retval;
@@ -442,6 +449,22 @@ static sgx_status_t SGX_CDECL sgx_merkle_proof_verify(void* pms)
 	return status;
 }
 
+static sgx_status_t SGX_CDECL sgx_ecall_deposit(void* pms)
+{
+	ms_ecall_deposit_t* ms = SGX_CAST(ms_ecall_deposit_t*, pms);
+	sgx_status_t status = SGX_SUCCESS;
+	merkle_proof_t* _tmp_merkle_proof = ms->ms_merkle_proof;
+	char* _tmp_block_hash_hex = ms->ms_block_hash_hex;
+	char* _tmp_public_key_pem = ms->ms_public_key_pem;
+
+	CHECK_REF_POINTER(pms, sizeof(ms_ecall_deposit_t));
+
+	ms->ms_retval = ecall_deposit((const merkle_proof_t*)_tmp_merkle_proof, (const char*)_tmp_block_hash_hex, (const char*)_tmp_public_key_pem);
+
+
+	return status;
+}
+
 static sgx_status_t SGX_CDECL sgx_dummy(void* pms)
 {
 	sgx_status_t status = SGX_SUCCESS;
@@ -452,9 +475,9 @@ static sgx_status_t SGX_CDECL sgx_dummy(void* pms)
 
 SGX_EXTERNC const struct {
 	size_t nr_ecall;
-	struct {void* ecall_addr; uint8_t is_priv;} ecall_table[12];
+	struct {void* ecall_addr; uint8_t is_priv;} ecall_table[13];
 } g_ecall_table = {
-	12,
+	13,
 	{
 		{(void*)(uintptr_t)sgx_ssl_conn_init, 0},
 		{(void*)(uintptr_t)sgx_ssl_conn_teardown, 0},
@@ -467,34 +490,35 @@ SGX_EXTERNC const struct {
 		{(void*)(uintptr_t)sgx_provision_rsa_id, 0},
 		{(void*)(uintptr_t)sgx_query_rsa_pubkey, 0},
 		{(void*)(uintptr_t)sgx_merkle_proof_verify, 0},
+		{(void*)(uintptr_t)sgx_ecall_deposit, 0},
 		{(void*)(uintptr_t)sgx_dummy, 0},
 	}
 };
 
 SGX_EXTERNC const struct {
 	size_t nr_ocall;
-	uint8_t entry_table[18][12];
+	uint8_t entry_table[18][13];
 } g_dyn_entry_table = {
 	18,
 	{
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
 	}
 };
 

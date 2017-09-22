@@ -47,6 +47,13 @@ enclave {
         // merkle proof test
         public int merkle_proof_verify(
             [user_check] const merkle_proof_t* proof);
+
+
+        //
+        public int ecall_deposit(
+            [user_check] const merkle_proof_t* merkle_proof,
+            [user_check] const char* block_hash_hex,
+            [user_check] const char* public_key_pem);
     };
 
     untrusted {
