@@ -30,7 +30,7 @@ public:
   string getblockhash(int block_height);
   string getblockheader(const string &block_hash, bool format);
   Value getblock(const string &block_hash);
-  Value getrawtransaction(const string &tx_hash, bool format);
+  Value getrawtransaction(const string &tx_hash, bool JSONformat);
 };
 
 /**

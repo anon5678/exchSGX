@@ -51,9 +51,15 @@ Json::Value bitcoinRPC::getblock(const string& block_hash) {
     }
 }
 
-Json::Value bitcoinRPC::getrawtransaction(const string& txn_hash, bool format) {
+Json::Value bitcoinRPC::getrawtransaction(const string& txn_hash, bool JSONformat) {
     try {
-        return this->bitcoindClient.getrawtransaction(txn_hash, format);
+       Json::Value ret = this->bitcoindClient.getrawtransaction(txn_hash, true);
+
+      if (!JSONformat) {
+        return ret["hex"];
+      }
+
+      return ret;
     }
     catch (const jsonrpc::JsonRpcException& e) {
       bitcoinRPCException err(e.GetCode(), e.GetMessage());

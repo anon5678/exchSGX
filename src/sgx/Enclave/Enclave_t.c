@@ -84,6 +84,7 @@ typedef struct ms_merkle_proof_verify_t {
 typedef struct ms_ecall_deposit_t {
 	int ms_retval;
 	merkle_proof_t* ms_merkle_proof;
+	char* ms_tx_raw;
 	char* ms_block_hash_hex;
 	char* ms_public_key_pem;
 } ms_ecall_deposit_t;
@@ -454,12 +455,13 @@ static sgx_status_t SGX_CDECL sgx_ecall_deposit(void* pms)
 	ms_ecall_deposit_t* ms = SGX_CAST(ms_ecall_deposit_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
 	merkle_proof_t* _tmp_merkle_proof = ms->ms_merkle_proof;
+	char* _tmp_tx_raw = ms->ms_tx_raw;
 	char* _tmp_block_hash_hex = ms->ms_block_hash_hex;
 	char* _tmp_public_key_pem = ms->ms_public_key_pem;
 
 	CHECK_REF_POINTER(pms, sizeof(ms_ecall_deposit_t));
 
-	ms->ms_retval = ecall_deposit((const merkle_proof_t*)_tmp_merkle_proof, (const char*)_tmp_block_hash_hex, (const char*)_tmp_public_key_pem);
+	ms->ms_retval = ecall_deposit((const merkle_proof_t*)_tmp_merkle_proof, (const char*)_tmp_tx_raw, (const char*)_tmp_block_hash_hex, (const char*)_tmp_public_key_pem);
 
 
 	return status;

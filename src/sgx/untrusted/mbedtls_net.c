@@ -415,141 +415,144 @@ int mbedtls_net_set_nonblock( mbedtls_net_context *ctx )
     return( fcntl( ctx->fd, F_SETFL, fcntl( ctx->fd, F_GETFL ) | O_NONBLOCK ) );
 #endif
 }
-//
-///*
-// * Portable usleep helper
-// */
-//void mbedtls_net_usleep( unsigned long usec )
-//{
-//#if defined(_WIN32)
-//    Sleep( ( usec + 999 ) / 1000 );
-//#else
-//    struct timeval tv;
-//    tv.tv_sec  = usec / 1000000;
-//#if defined(__unix__) || defined(__unix) || \
-//    ( defined(__APPLE__) && defined(__MACH__) )
-//    tv.tv_usec = (suseconds_t) usec % 1000000;
-//#else
-//    tv.tv_usec = usec % 1000000;
-//#endif
-//    select( 0, NULL, NULL, NULL, &tv );
-//#endif
-//}
+
+#if 0
+
+/*
+ * Portable usleep helper
+ */
+void mbedtls_net_usleep( unsigned long usec )
+{
+#if defined(_WIN32)
+    Sleep( ( usec + 999 ) / 1000 );
+#else
+    struct timeval tv;
+    tv.tv_sec  = usec / 1000000;
+#if defined(__unix__) || defined(__unix) || \
+    ( defined(__APPLE__) && defined(__MACH__) )
+    tv.tv_usec = (suseconds_t) usec % 1000000;
+#else
+    tv.tv_usec = usec % 1000000;
+#endif
+    select( 0, NULL, NULL, NULL, &tv );
+#endif
+}
 
 /*
  * Read at most 'len' characters
  */
-//int mbedtls_net_recv( void *ctx, unsigned char *buf, size_t len )
-//{
-//    int ret;
-//    int fd = ((mbedtls_net_context *) ctx)->fd;
-//
-//    if( fd < 0 )
-//        return( MBEDTLS_ERR_NET_INVALID_CONTEXT );
-//
-//    ret = (int) read( fd, buf, len );
-//
-//    if( ret < 0 )
-//    {
-//        if( net_would_block( ctx ) != 0 )
-//            return( MBEDTLS_ERR_SSL_WANT_READ );
-//
-//#if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
-//    !defined(EFI32)
-//        if( WSAGetLastError() == WSAECONNRESET )
-//            return( MBEDTLS_ERR_NET_CONN_RESET );
-//#else
-//        if( errno == EPIPE || errno == ECONNRESET )
-//            return( MBEDTLS_ERR_NET_CONN_RESET );
-//
-//        if( errno == EINTR )
-//            return( MBEDTLS_ERR_SSL_WANT_READ );
-//#endif
-//
-//        return( MBEDTLS_ERR_NET_RECV_FAILED );
-//    }
-//
-//    return( ret );
-//}
+int mbedtls_net_recv( void *ctx, unsigned char *buf, size_t len )
+{
+    int ret;
+    int fd = ((mbedtls_net_context *) ctx)->fd;
+
+    if( fd < 0 )
+        return( MBEDTLS_ERR_NET_INVALID_CONTEXT );
+
+    ret = (int) read( fd, buf, len );
+
+    if( ret < 0 )
+    {
+        if( net_would_block( ctx ) != 0 )
+            return( MBEDTLS_ERR_SSL_WANT_READ );
+
+#if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
+    !defined(EFI32)
+        if( WSAGetLastError() == WSAECONNRESET )
+            return( MBEDTLS_ERR_NET_CONN_RESET );
+#else
+        if( errno == EPIPE || errno == ECONNRESET )
+            return( MBEDTLS_ERR_NET_CONN_RESET );
+
+        if( errno == EINTR )
+            return( MBEDTLS_ERR_SSL_WANT_READ );
+#endif
+
+        return( MBEDTLS_ERR_NET_RECV_FAILED );
+    }
+
+    return( ret );
+}
 
 /*
  * Read at most 'len' characters, blocking for at most 'timeout' ms
  */
-//int mbedtls_net_recv_timeout( void *ctx, unsigned char *buf, size_t len,
-//                      uint32_t timeout )
-//{
-//    int ret;
-//    struct timeval tv;
-//    fd_set read_fds;
-//    int fd = ((mbedtls_net_context *) ctx)->fd;
-//
-//    if( fd < 0 )
-//        return( MBEDTLS_ERR_NET_INVALID_CONTEXT );
-//
-//    FD_ZERO( &read_fds );
-//    FD_SET( fd, &read_fds );
-//
-//    tv.tv_sec  = timeout / 1000;
-//    tv.tv_usec = ( timeout % 1000 ) * 1000;
-//
-//    ret = select( fd + 1, &read_fds, NULL, NULL, timeout == 0 ? NULL : &tv );
-//
-//    /* Zero fds ready means we timed out */
-//    if( ret == 0 )
-//        return( MBEDTLS_ERR_SSL_TIMEOUT );
-//
-//    if( ret < 0 )
-//    {
-//#if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
-//    !defined(EFI32)
-//        if( WSAGetLastError() == WSAEINTR )
-//            return( MBEDTLS_ERR_SSL_WANT_READ );
-//#else
-//        if( errno == EINTR )
-//            return( MBEDTLS_ERR_SSL_WANT_READ );
-//#endif
-//
-//        return( MBEDTLS_ERR_NET_RECV_FAILED );
-//    }
-//
-//    /* This call will not block */
-//    return( mbedtls_net_recv( ctx, buf, len ) );
-//}
-///*
-// * Write at most 'len' characters
-// */
-//int mbedtls_net_send( void *ctx, const unsigned char *buf, size_t len )
-//{
-//    int ret;
-//    int fd = ((mbedtls_net_context *) ctx)->fd;
-//
-//    if( fd < 0 )
-//        return( MBEDTLS_ERR_NET_INVALID_CONTEXT );
-//
-//    ret = (int) write( fd, buf, len );
-//
-//    if( ret < 0 )
-//    {
-//        if( net_would_block( ctx ) != 0 )
-//            return( MBEDTLS_ERR_SSL_WANT_WRITE );
-//
-//#if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
-//    !defined(EFI32)
-//        if( WSAGetLastError() == WSAECONNRESET )
-//            return( MBEDTLS_ERR_NET_CONN_RESET );
-//#else
-//        if( errno == EPIPE || errno == ECONNRESET )
-//            return( MBEDTLS_ERR_NET_CONN_RESET );
-//
-//        if( errno == EINTR )
-//            return( MBEDTLS_ERR_SSL_WANT_WRITE );
-//#endif
-//
-//        return( MBEDTLS_ERR_NET_SEND_FAILED );
-//    }
-//
-//    return( ret );
-//}
+int mbedtls_net_recv_timeout( void *ctx, unsigned char *buf, size_t len,
+                      uint32_t timeout )
+{
+    int ret;
+    struct timeval tv;
+    fd_set read_fds;
+    int fd = ((mbedtls_net_context *) ctx)->fd;
+
+    if( fd < 0 )
+        return( MBEDTLS_ERR_NET_INVALID_CONTEXT );
+
+    FD_ZERO( &read_fds );
+    FD_SET( fd, &read_fds );
+
+    tv.tv_sec  = timeout / 1000;
+    tv.tv_usec = ( timeout % 1000 ) * 1000;
+
+    ret = select( fd + 1, &read_fds, NULL, NULL, timeout == 0 ? NULL : &tv );
+
+    /* Zero fds ready means we timed out */
+    if( ret == 0 )
+        return( MBEDTLS_ERR_SSL_TIMEOUT );
+
+    if( ret < 0 )
+    {
+#if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
+    !defined(EFI32)
+        if( WSAGetLastError() == WSAEINTR )
+            return( MBEDTLS_ERR_SSL_WANT_READ );
+#else
+        if( errno == EINTR )
+            return( MBEDTLS_ERR_SSL_WANT_READ );
+#endif
+
+        return( MBEDTLS_ERR_NET_RECV_FAILED );
+    }
+
+    /* This call will not block */
+    return( mbedtls_net_recv( ctx, buf, len ) );
+}
+/*
+ * Write at most 'len' characters
+ */
+int mbedtls_net_send( void *ctx, const unsigned char *buf, size_t len )
+{
+    int ret;
+    int fd = ((mbedtls_net_context *) ctx)->fd;
+
+    if( fd < 0 )
+        return( MBEDTLS_ERR_NET_INVALID_CONTEXT );
+
+    ret = (int) write( fd, buf, len );
+
+    if( ret < 0 )
+    {
+        if( net_would_block( ctx ) != 0 )
+            return( MBEDTLS_ERR_SSL_WANT_WRITE );
+
+#if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
+    !defined(EFI32)
+        if( WSAGetLastError() == WSAECONNRESET )
+            return( MBEDTLS_ERR_NET_CONN_RESET );
+#else
+        if( errno == EPIPE || errno == ECONNRESET )
+            return( MBEDTLS_ERR_NET_CONN_RESET );
+
+        if( errno == EINTR )
+            return( MBEDTLS_ERR_SSL_WANT_WRITE );
+#endif
+
+        return( MBEDTLS_ERR_NET_SEND_FAILED );
+    }
+
+    return( ret );
+}
+#endif
 
 /*
  * Gracefully close the connection

@@ -158,4 +158,11 @@ inline uint256 uint256S(const std::string& str)
     return rv;
 }
 
+inline uint256 uint256B(const unsigned char* buf, size_t buf_len) {
+    assert(buf_len == 32);
+    uint256 rv;
+    memcpy(rv.begin(), buf, buf_len);
+    return rv;
+}
+
 #endif // BITCOIN_UINT256_H

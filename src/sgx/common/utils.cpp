@@ -2,17 +2,17 @@
 #include <stdexcept>
 #include <string>
 #include <stdio.h>
+#include <vector>
 
 #include "portable.h"
 
 using std::to_string;
 
-int char2int(char c) {
+static int char2int(char c) {
   if (c >= '0' && c <= '9') return c - '0';
   if(c >= 'A' && c <= 'F') return c - 'A' + 10;
   if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-  printf_sgx("%d is a bad hex", c);
-  throw std::invalid_argument(std::to_string(c) + " is a bad hex");
+  throw std::invalid_argument("bad hex");
 }
 
 void hex2bin(unsigned char *dest, const char *src) {
@@ -20,6 +20,18 @@ void hex2bin(unsigned char *dest, const char *src) {
     *(dest++) = char2int(*src) * 16 + char2int(src[1]);
     src += 2;
   }
+}
+
+#include <cstring>
+
+std::vector<unsigned char> hex2bin(const char *src) {
+  if (strlen(src) % 2)
+    throw std::invalid_argument("bad hex");
+
+  unsigned char buf[strlen(src)/2];
+  hex2bin(buf, src);
+
+  return std::vector<unsigned char>(buf, buf + strlen(src)/2);
 }
 
 void byte_swap(unsigned char *data, int len) {
@@ -88,15 +100,14 @@ std::string bin2hex(const unsigned char *bin, size_t len)
   char          hex_str[]= "0123456789abcdef";
   unsigned int  i;
 
-  std::string result;
-  result.resize(2*len + 1);
-  result[2*len] = 0;
+  char tmp[2*len + 1];
+  tmp[2*len] = 0;
 
   for (i = 0; i < len; i++)
   {
-    result[i * 2 + 0] = hex_str[(bin[i] >> 4) & 0x0F];
-    result[i * 2 + 1] = hex_str[(bin[i]     ) & 0x0F];
+    tmp[i * 2 + 0] = hex_str[(bin[i] >> 4) & 0x0F];
+    tmp[i * 2 + 1] = hex_str[(bin[i]     ) & 0x0F];
   }
 
-  return result;
+  return std::string(tmp, tmp + 2*len);
 }

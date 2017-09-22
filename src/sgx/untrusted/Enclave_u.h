@@ -51,7 +51,7 @@ sgx_status_t unseal_secret_and_leak_public_key(sgx_enclave_id_t eid, int* retval
 sgx_status_t provision_rsa_id(sgx_enclave_id_t eid, int* retval, const unsigned char* sealed_rsa_secret_key, size_t secret_len, const char* cert_pem);
 sgx_status_t query_rsa_pubkey(sgx_enclave_id_t eid, int* retval, unsigned char* pubkey, size_t cap_pubkey, char* cert_pem, size_t cap_cert_pem);
 sgx_status_t merkle_proof_verify(sgx_enclave_id_t eid, int* retval, const merkle_proof_t* proof);
-sgx_status_t ecall_deposit(sgx_enclave_id_t eid, int* retval, const merkle_proof_t* merkle_proof, const char* block_hash_hex, const char* public_key_pem);
+sgx_status_t ecall_deposit(sgx_enclave_id_t eid, int* retval, const merkle_proof_t* merkle_proof, const char* tx_raw, const char* block_hash_hex, const char* public_key_pem);
 sgx_status_t dummy(sgx_enclave_id_t eid);
 
 #ifdef __cplusplus

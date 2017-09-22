@@ -27,6 +27,7 @@ int main(int argc, const char *argv[]) {
 
   try {
     Json::Value txn = rpc.getrawtransaction(txid, true);
+    string tx_raw_hex = rpc.getrawtransaction(txid, false).asString();
 
     if (!txn.isMember("blockhash")) {
       throw runtime_error("invalid txn");
@@ -39,7 +40,7 @@ int main(int argc, const char *argv[]) {
     if (!block.isMember("tx")) {
       throw runtime_error("invalid txn");
     }
-    for (auto tx : block["tx"]) {
+    for (auto& tx : block["tx"]) {
       merkle_leaves.push_back(tx.asString());
     }
 
@@ -57,6 +58,7 @@ int main(int argc, const char *argv[]) {
     MerkleProof proof = loopMerkleProof(merkle_leaves, tx_idx);
 
     proof.set_block(block_hash);
+    proof.set_tx_raw(tx_raw_hex);
     string calc_root = proof.verify();
 
     if (calc_root == block["merkleroot"].asString()) {

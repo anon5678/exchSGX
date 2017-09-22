@@ -9,6 +9,7 @@
 merkle_proof_t* merkle_proof_init(size_t n) {
   auto o = (merkle_proof_t*) malloc(sizeof(merkle_proof_t) + n * sizeof(bitcoin_hash_t*));
 
+  o->tx_raw_hex = nullptr;
   o->dirvec = 0;
   o->merkle_branch_len = n;
 
@@ -21,6 +22,7 @@ merkle_proof_t* merkle_proof_init(size_t n) {
 
 void merkle_proof_dump(const merkle_proof_t* p) {
   printf("tx: %s\n", bin2hex(p->tx, sizeof p->tx).c_str());
+  printf("tx_raw: %s\n", p->tx_raw_hex);
   printf("direction: %d\n", p->dirvec);
   for (int i = 0; i < p->merkle_branch_len; i++) {
     if (p->merkle_branch[i] == nullptr) {

@@ -327,8 +327,8 @@ string ext::b64_encode(const unsigned char *src, size_t src_len) {
   return string(target);
 }
 
-void ext::b64_decode(const std::string &in) {
-  unsigned char buffer[in.length() / 2];
+vector<unsigned char> ext::b64_decode(const std::string &in) {
+  unsigned char buffer[in.length()];
   int ret = b64_pton(in.c_str(), buffer, sizeof buffer);
   if (ret < 0) {
     throw runtime_error("cannot decode");
@@ -336,4 +336,6 @@ void ext::b64_decode(const std::string &in) {
 
   std::vector<unsigned char> res;
   res.insert(res.end(), buffer, buffer + ret);
+
+  return res;
 }

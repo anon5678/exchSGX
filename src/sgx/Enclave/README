@@ -1,0 +1,5 @@
+Rule of Thumb for Byte Order
+============================
+
+For hex strings, assume they are in RPC order (i.e. reverse order to the intuitive one).
+For binary arrays, assume they are in little endian order.

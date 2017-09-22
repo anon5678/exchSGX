@@ -13,7 +13,7 @@ add_custom_command(
 
 set(SOURCE_FILES
         state_TLS.cpp
-        
+
         Enclave_t.c
         log.c
         pprint.c
@@ -44,6 +44,7 @@ set(SOURCE_FILES
         bitcoin/crypto/hmac_sha512.cpp
         bitcoin/crypto/sha256.cpp
         bitcoin/crypto/sha512.cpp
+        bitcoin/crypto/ripemd160.cpp
 
         ../common/utils.cpp
 

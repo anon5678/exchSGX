@@ -16,7 +16,6 @@
 #include <log4cxx/propertyconfigurator.h>
 
 using namespace std;
-typedef unsigned long long cointype;
 
 namespace exch {
 namespace merkpath {
@@ -26,12 +25,14 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("merkpath.merkpath"));
 
 using exch::merkpath::logger;
 
+#if 0
 void hexdump(const unsigned char *data, int len) {
   std::cout << std::hex;
   for (int i = 0; i < len; ++i)
     std::cout << std::setfill('0') << std::setw(2) << (int) data[i];
   std::cout << std::dec << std::endl;
 }
+#endif
 
 string tohex(const sha256buf& data) {
   stringstream ss;
@@ -59,17 +60,6 @@ void sha256double(void const *const s1, void const *const s2, void *const dst) {
   SHA256_Final((unsigned char *) dst, &h2);
 }
 
-void hash160(void const *const src, int len, void *const dst) {
-  SHA256_CTX h1;
-  unsigned char tmp[SHA256_DIGEST_LENGTH];
-  SHA256_Init(&h1);
-  SHA256_Update(&h1, (unsigned char *) src, len);
-  SHA256_Final(tmp, &h1);
-  RIPEMD160_CTX h2;
-  RIPEMD160_Init(&h2);
-  RIPEMD160_Update(&h2, tmp, SHA256_DIGEST_LENGTH);
-  RIPEMD160_Final((unsigned char *) dst, &h2);
-}
 
 
 MerkleProof loopMerkleProof(const vector<string> &leaf_nodes, long index) {
@@ -143,9 +133,14 @@ MerkleProof loopMerkleProof(const vector<string> &leaf_nodes, long index) {
 void MerkleProof::serialize(merkle_proof_t *o) const {
   if (!o) return;
   // 1. put in the tx
-  hex2bin(o->tx, tx.c_str());
+  hex2bin(o->tx, tx_hash_hex.c_str());
+  // swap from RPC order -> little endian
+  byte_swap(o->tx, sizeof o->tx);
 
-  // 2. put in the merkle branch
+  // 2. put in the tx_raw
+  o->tx_raw_hex = tx_raw_hex.c_str();
+
+  // 3. put in the merkle branch
   if (o->merkle_branch_len != branch.size()) {
     throw runtime_error("output buffer too small");
   }
@@ -160,7 +155,7 @@ void MerkleProof::serialize(merkle_proof_t *o) const {
     }
   }
 
-  // 3. put in the dir vec
+  // 4. put in the dir vec
   o->dirvec = direction;
 }
 
@@ -226,8 +221,33 @@ string MerkleProof::verify() const{
   sha256buf curr;
   sha256buf tmp;
 
-  hex2bin(curr.data(),  tx.c_str());
+  hex2bin(curr.data(),  tx_hash_hex.c_str());
   byte_swap(curr.data(), 32);
+
+  if (!tx_raw_hex.empty())
+  {
+    auto tx_raw_bin = hex2bin(tx_raw_hex.c_str());
+
+    SHA256_CTX h1,h2;
+    unsigned char t1[SHA256_DIGEST_LENGTH];
+    SHA256_Init(&h1);
+    SHA256_Update(&h1, tx_raw_bin.data(), tx_raw_bin.size());
+    SHA256_Final(t1, &h1);
+
+    SHA256_Init(&h2);
+    SHA256_Update(&h2, t1, SHA256_DIGEST_LENGTH);
+    SHA256_Final(t1, &h2);
+
+    byte_swap(t1, sizeof t1);
+
+    auto tx_hash_calc = bin2hex(t1, sizeof t1);
+
+    if (tx_hash_calc != tx_hash_hex) {
+      LOG4CXX_WARN(logger, "incorrect tx hash?");
+      LOG4CXX_WARN(logger, "expected: " << tx_hash_hex);
+      LOG4CXX_WARN(logger, "calc: " << tx_hash_calc);
+    }
+  }
 
   // make a copy of direction
   int dirvec = direction;
@@ -250,61 +270,7 @@ string MerkleProof::verify() const{
 }
 
 #if 0
-void fill_timelock_payment_template(unsigned char *aa, const char *RTEpk,
-                                    int timeout, const char *refund) {
-  int j = 0;
-  aa[j++] = 0x63; // op_if
-  aa[j++] = 0xa8; // op_sha256 (rm)
-  aa[j++] = 0x20; // 32 bytes digest size (rm)
-  std::memcpy(
-      aa + j,
-      (base64_decode("x3Xnt1ft5jDNCqERO9ECZhqziCnKUqZCKreChi8mhkY=")).data(),
-      32);           // sha256 digest (rm)
-  aa[j + 32] = 0x88; // op_equalverify (rm)
-  j += 33;
-  aa[j++] = 0x21; // 33 bytes pubkey size
-  std::memcpy(aa + j, RTEpk, 33);
-  aa[j + 33] = 0xAC; // op_checksig
-  j += 34;
-  aa[j++] = 0x67; // op_else
-  aa[j++] = 0x3;  // timeout size
-  aa[j++] = timeout >> 16;
-  aa[j++] = timeout >> 8;
-  aa[j++] = timeout;
-  aa[j++] = 0xb1; // op_CLTV
-  aa[j++] = 0x75; // op_drop
-  aa[j++] = 0x21; // 33 bytes pubkey size
-  std::memcpy(aa + j, refund, 33);
-  aa[j + 33] = 0xAC; // op_checksig
-  aa[j + 34] = 0x68; // op_endif
-}
 
-cointype validateDeposit(const unsigned char *tx, const char *RTEpubkey,
-                         int timeout, const char *refund) {
-  if (1 != tx[4])
-    return 0;                                      // single input
-  int j = 5 + 32 + 4 + 1 + tx[5 + 32 + 4] + 4 + 1; // skip to first output
-  cointype r = tx[j++];
-  for (int i = 8; i <= 56; i += 8)
-    r += cointype(tx[j++]) << i;
-  if (23 != tx[j++])
-    return 0; // p2sh size
-  if (0xA9 != tx[j++])
-    return 0; // op_hash160
-  if (0x14 != tx[j++])
-    return 0; // 20 bytes
-  if (0x87 != tx[j + 20])
-    return 0; // op_equal
-  hexdump(tx + j, 20);
-
-  unsigned char arr[114];
-  fill_timelock_payment_template(arr, RTEpubkey, timeout, refund);
-  unsigned char res[20];
-  hash160(arr, 114, res);
-  hexdump(res, 20);
-
-  return r;
-}
 #endif
 
 

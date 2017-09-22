@@ -27,28 +27,29 @@ void merkGenPath(const vector<string> &leaf_nodes, int index);
 
 class MerkleProof {
  private:
-  static constexpr const char* BEGIN = "---BEGIN MERKLEPROOF---";
-  static constexpr const char* END = "---END MERKLEPROOF---";
+  static constexpr const char *BEGIN = "---BEGIN MERKLEPROOF---";
+  static constexpr const char *END = "---END MERKLEPROOF---";
 
-  string tx;
+  string tx_hash_hex;
   vector<string> branch;
   int direction;
 
-  // helper data
-  // in particular, these are not necessary but it helps
-  string block;
+  // helper data. not necessary but it helps
+  // block_hash
+  string block_hash_hex;
+  string tx_raw_hex;
 
  public:
-  MerkleProof(const string& tx, const vector<string>& branch, int dirvec)
-      : tx(tx), branch(branch), direction(dirvec){
-    for (auto& b : branch) {
+  MerkleProof(const string &tx, const vector<string> &branch, int dirvec)
+      : tx_hash_hex(tx), branch(branch), direction(dirvec) {
+    for (auto &b : branch) {
       if (b.size() != 2 * BITCOIN_HASH_LENGTH) {
         throw invalid_argument("branch " + b + " doesn't have 64 letters");
       }
     }
   }
-  MerkleProof(const string& tx, vector<string>&& branch, int dirvec)
-  : tx(tx), branch(branch), direction(dirvec){
+  MerkleProof(const string &tx, vector<string> &&branch, int dirvec)
+      : tx_hash_hex(tx), branch(branch), direction(dirvec) {
   }
 
   ~MerkleProof() = default;
@@ -57,31 +58,36 @@ class MerkleProof {
     return branch.size();
   }
 
-  void set_block(const string& value) {
-    block = value;
+  void set_block(const string &value) {
+    block_hash_hex = value;
   }
 
-  void dumpJSON(ostream& out) {
+  void set_tx_raw(const string& value) {
+    tx_raw_hex = value;
+  }
+
+  void dumpJSON(ostream &out) {
     Json::Value proof;
-    proof["tx"] = tx;
-    proof["block"] = block;
+    proof["tx"] = tx_hash_hex;
+    proof["tx_raw"] = tx_raw_hex;
+    proof["block"] = block_hash_hex;
     proof["dirvec"] = direction;
     proof["branch"] = Json::arrayValue;
 
-    for (auto & b: branch) {
+    for (auto &b: branch) {
       proof["branch"].append(b);
     }
 
     out << proof;
   }
 
-  void output(ostream& out) const {
+  void output(ostream &out) const {
     if (direction < 0) {
       out << "error" << endl;
       return;
     }
     out << BEGIN << endl;
-    for (auto& s : branch) {
+    for (auto &s : branch) {
       out << s << endl;
     }
 

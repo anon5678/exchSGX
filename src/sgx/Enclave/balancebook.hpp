@@ -7,6 +7,9 @@
 
 #include <map>
 #include <string>
+#include <stdexcept>
+
+using namespace std;
 
 class BalanceBook {
  private:
@@ -15,7 +18,13 @@ class BalanceBook {
   BalanceBook() = default;
 
   void deposit(string user_id, int amount) {
-    book[user_id] = amount;
+      try{
+
+        book[user_id] = amount;
+      }
+      catch (const std::exception& e) {
+          LL_CRITICAL("%s", e.what());
+      }
   }
 };
 

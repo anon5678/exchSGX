@@ -9,6 +9,7 @@ typedef unsigned char bitcoin_hash_t[BITCOIN_HASH_LENGTH];
 
 typedef struct {
   bitcoin_hash_t tx;
+  const char* tx_raw_hex;
 
   int dirvec;
 

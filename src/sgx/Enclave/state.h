@@ -30,7 +30,7 @@ extern "C" {
 #endif
 
 int merkle_proof_verify(const merkle_proof_t *proof);
-int ecall_deposit(const merkle_proof_t* merkle_proof, const char* block_hash_hex, const char* public_key_pem);
+int ecall_deposit(const merkle_proof_t* merkle_proof, const char* tx_raw, const char* block_hash_hex, const char* public_key_pem);
 
 int ecall_append_block_to_fifo(const char *blockHeaderHex);
 int ecall_get_latest_block_hash(unsigned char* o_buf, size_t cap_obuf);
