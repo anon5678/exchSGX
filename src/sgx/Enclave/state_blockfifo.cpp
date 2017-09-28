@@ -49,7 +49,7 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex) {
 
     // try to push it to the FIFO
     if (state::blockFIFO.enqueue(block_header)) {
-      LL_NOTICE("succeed.");
+      LL_NOTICE("%s add.", block_header.GetHash().ToString().c_str());
       return 0;
     } else {
       LL_CRITICAL("failed to append block %s", block_hash.GetHex().c_str());

@@ -96,7 +96,7 @@ int main(int argc, const char *argv[]) {
   EnclaveRPC enclaveRPC(eid, httpserver);
   if(enclaveRPC.StartListening()) {
     RPCSrvRunning = true;
-    LOG4CXX_INFO(logger, "RPC server listening at " << RPCSrvPort);
+    LOG4CXX_INFO(logger, "RPC server listening at localhost:" << RPCSrvPort);
   }
 
   try {
@@ -117,8 +117,6 @@ int main(int argc, const char *argv[]) {
       exit(-1);
     }
 
-    cout << "RSA id provisioned" << endl;
-
     // print out the provisioned id
     unsigned char pubkey[1024];
     char cert_pem[2048];
@@ -127,9 +125,12 @@ int main(int argc, const char *argv[]) {
       cerr << "error in provisioning the id" << ret << endl;
       exit(-1);
     }
-    cout << "using the following public key..." << endl;
-    cout << (char *)pubkey;
-    cout << cert_pem;
+
+    LOG4CXX_INFO(logger, "RSA secret key for " << conf.identity << " provisioned");
+
+    // cout << "using the following public key..." << endl;
+    // cout << (char *)pubkey;
+    // cout << cert_pem;
   } catch (const std::exception &e) {
     cerr << "cannot provision rsa id: " << e.what() << endl;
     exit(-1);

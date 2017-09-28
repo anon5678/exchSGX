@@ -31,7 +31,7 @@ def append(block_height):
         print resp
 
     except JSONRPCException as e:
-        print e.message
+        print 'Exception:', e.message
 
 
 import sys

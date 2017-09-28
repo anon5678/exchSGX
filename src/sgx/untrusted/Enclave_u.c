@@ -65,13 +65,10 @@ typedef struct ms_merkle_proof_verify_t {
 	merkle_proof_t* ms_proof;
 } ms_merkle_proof_verify_t;
 
-typedef struct ms_ecall_deposit_t {
+typedef struct ms_ecall_bitcoin_deposit_t {
 	int ms_retval;
-	merkle_proof_t* ms_merkle_proof;
-	char* ms_tx_raw;
-	char* ms_block_hash_hex;
-	char* ms_public_key_pem;
-} ms_ecall_deposit_t;
+	bitcoin_deposit_t* ms_deposit;
+} ms_ecall_bitcoin_deposit_t;
 
 
 typedef struct ms_ocall_mbedtls_net_connect_t {
@@ -472,14 +469,11 @@ sgx_status_t merkle_proof_verify(sgx_enclave_id_t eid, int* retval, const merkle
 	return status;
 }
 
-sgx_status_t ecall_deposit(sgx_enclave_id_t eid, int* retval, const merkle_proof_t* merkle_proof, const char* tx_raw, const char* block_hash_hex, const char* public_key_pem)
+sgx_status_t ecall_bitcoin_deposit(sgx_enclave_id_t eid, int* retval, const bitcoin_deposit_t* deposit)
 {
 	sgx_status_t status;
-	ms_ecall_deposit_t ms;
-	ms.ms_merkle_proof = (merkle_proof_t*)merkle_proof;
-	ms.ms_tx_raw = (char*)tx_raw;
-	ms.ms_block_hash_hex = (char*)block_hash_hex;
-	ms.ms_public_key_pem = (char*)public_key_pem;
+	ms_ecall_bitcoin_deposit_t ms;
+	ms.ms_deposit = (bitcoin_deposit_t*)deposit;
 	status = sgx_ecall(eid, 11, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;

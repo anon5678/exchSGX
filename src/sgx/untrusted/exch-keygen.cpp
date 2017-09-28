@@ -62,7 +62,6 @@ int main(int argc, const char *argv[]) {
   }
 
   sgx_enclave_id_t eid;
-  sgx_status_t st;
   int ret;
 
   ret = initialize_enclave(enclave_path, &eid);

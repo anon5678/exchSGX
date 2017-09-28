@@ -3,15 +3,17 @@
 //
 
 #include "state.h"
-#include "../common/utils.h"
 #include "pprint.h"
 #include "log.h"
 #include "bitcoin/crypto/sha256.h"
+#include "bitcoin/hash.h"
+
 #include "../common/merkle_data.h"
 #include "../common/base64.hxx"
+#include "../common/utils.h"
+#include "../common/common.h"
 
 #include <string>
-#include <bitcoin/hash.h>
 
 using namespace std;
 using namespace exch::enclave;
@@ -86,6 +88,7 @@ static void fill_timelock_payment_template(unsigned char *aa, const unsigned cha
   aa[j++] = 0x63; // op_if
   aa[j++] = 0xa8; // op_sha256 (rm)
   aa[j++] = 0x20; // 32 bytes digest size (rm)
+  // FIXME: Not relevant. will be removed later.
   std::memcpy(
       aa + j,
       (ext::b64_decode("x3Xnt1ft5jDNCqERO9ECZhqziCnKUqZCKreChi8mhkY=")).data(),
@@ -112,7 +115,7 @@ static void fill_timelock_payment_template(unsigned char *aa, const unsigned cha
 static cointype validateDeposit(const unsigned char *tx,
                                 size_t tx_len,
                                 const unsigned char *RTEpubkey,
-                                int timeout,
+                                unsigned long timeout,
                                 const unsigned char *refund) {
   if (1 != tx[4])
     return 0;                                      // single input
@@ -128,31 +131,37 @@ static cointype validateDeposit(const unsigned char *tx,
     return 0; // 20 bytes
   if (0x87 != tx[j + 20])
     return 0; // op_equal
-  // hexdump(tx + j, 20);
-  LL_NOTICE("%s", bin2hex(tx + j, 20).c_str());
+
+  const unsigned char* p2sh_hash = tx + j;
 
   unsigned char arr[114];
   fill_timelock_payment_template(arr, RTEpubkey, timeout, refund);
   unsigned char res[20];
   hash160(arr, 114, res);
 
-  LL_NOTICE("%s", bin2hex(res, 20).c_str());
+  if (0 != memcmp(p2sh_hash, res, 20)) {
+    LL_CRITICAL("script hash mismatch");
+    LL_DEBUG("hash in the tx: %s", bin2hex(tx + j, 20).c_str());
+    LL_DEBUG("calculated hash: %s", bin2hex(res, 20).c_str());
+    return 0;
+  }
+
 
   return r;
 }
 
-int ecall_deposit(const merkle_proof_t *merkle_proof,
-                  const char *tx_raw_hex,
-                  const char *block_hash_hex,
-                  const char *public_key_pem) {
-  try {
+int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit) {
+  if (!deposit)
+    return -1;
 
+  try {
+    // 0. find the block
     uint256 _block_hash;
-    _block_hash.SetHex(block_hash_hex);
+    _block_hash.SetHex(deposit->block);
     const CBlockHeader *h = state::blockFIFO.find_block(_block_hash);
     if (h) {
       // 1. verify the integrity of tx_raw
-      vector<unsigned char> tx_raw = hex2bin(tx_raw_hex);
+      vector<unsigned char> tx_raw = hex2bin(deposit->tx_raw);
 
       unsigned char tmp[CSHA256::OUTPUT_SIZE];
 
@@ -167,25 +176,25 @@ int ecall_deposit(const merkle_proof_t *merkle_proof,
         tx_hash.Finalize(tmp);
       }
 
-      if (0 != memcmp(tmp, merkle_proof->tx, sizeof tmp)) {
+      if (0 != memcmp(tmp, deposit->merkle_proof->tx, sizeof tmp)) {
         LL_CRITICAL("tx binary corrupted");
         LL_CRITICAL("calculated hash (little-endian): %s", bin2hex(tmp, BITCOIN_HASH_LENGTH).c_str());
-        LL_CRITICAL("expected hash (little-endian): %s", bin2hex(merkle_proof->tx, BITCOIN_HASH_LENGTH).c_str());
+        LL_CRITICAL("expected hash (little-endian): %s", bin2hex(deposit->merkle_proof->tx, BITCOIN_HASH_LENGTH).c_str());
         return -1;
       }
 
       LL_LOG("find block %s", h->GetHash().GetHex().c_str());
-      uint256 calc_root = __merkle_proof_verify(merkle_proof);
+      uint256 calc_root = __merkle_proof_verify(deposit->merkle_proof);
       if (calc_root == h->hashMerkleRoot) {
-        LL_NOTICE("deposit %s accepted", bin2hex(merkle_proof->tx, 32).c_str());
+        LL_NOTICE("deposit %s accepted", bin2hex(deposit->merkle_proof->tx, 32).c_str());
 
         const cointype amount = validateDeposit(tx_raw.data(),
                                                 tx_raw.size(),
-                                                ext::b64_decode("A9fGBSVEvELrK8DSfIhAFq25M/FVdqGi0hzU3Q8t4MN9").data(),
-                                                0x389900,
-                                                ext::b64_decode("AhhEmJor16zRJ91+1Rqi9NVbMtu0FN5jJa434FwQZ1mN").data());
+                                                hex2bin(deposit->deposit_recipient_addr).data(),
+                                                deposit->deposit_timeout, // 0x389900,
+                                                hex2bin(deposit->deposit_refund_addr).data());
         LL_NOTICE("depositing amount: %d", amount);
-        state::balanceBook.deposit(public_key_pem, amount);
+        state::balanceBook.deposit(deposit->pubkey_pem, amount);
       } else {
         LL_CRITICAL("deposit NOT accepted");
         LL_CRITICAL("expected root: \n%s", h->hashMerkleRoot.GetHex().c_str());

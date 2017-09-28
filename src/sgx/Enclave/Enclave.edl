@@ -5,6 +5,7 @@ enclave {
 
     include "../common/ssl_context.h"
     include "../common/merkle_data.h"
+    include "../common/common.h"
     include "sgx_tseal.h"
 
     trusted {
@@ -49,11 +50,7 @@ enclave {
             [user_check] const merkle_proof_t* proof);
 
         //
-        public int ecall_deposit(
-            [user_check] const merkle_proof_t* merkle_proof,
-            [user_check] const char* tx_raw,
-            [user_check] const char* block_hash_hex,
-            [user_check] const char* public_key_pem);
+        public int ecall_bitcoin_deposit([user_check] const bitcoin_deposit_t * deposit);
     };
 
     untrusted {

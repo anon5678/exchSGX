@@ -81,13 +81,10 @@ typedef struct ms_merkle_proof_verify_t {
 	merkle_proof_t* ms_proof;
 } ms_merkle_proof_verify_t;
 
-typedef struct ms_ecall_deposit_t {
+typedef struct ms_ecall_bitcoin_deposit_t {
 	int ms_retval;
-	merkle_proof_t* ms_merkle_proof;
-	char* ms_tx_raw;
-	char* ms_block_hash_hex;
-	char* ms_public_key_pem;
-} ms_ecall_deposit_t;
+	bitcoin_deposit_t* ms_deposit;
+} ms_ecall_bitcoin_deposit_t;
 
 
 typedef struct ms_ocall_mbedtls_net_connect_t {
@@ -450,18 +447,15 @@ static sgx_status_t SGX_CDECL sgx_merkle_proof_verify(void* pms)
 	return status;
 }
 
-static sgx_status_t SGX_CDECL sgx_ecall_deposit(void* pms)
+static sgx_status_t SGX_CDECL sgx_ecall_bitcoin_deposit(void* pms)
 {
-	ms_ecall_deposit_t* ms = SGX_CAST(ms_ecall_deposit_t*, pms);
+	ms_ecall_bitcoin_deposit_t* ms = SGX_CAST(ms_ecall_bitcoin_deposit_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
-	merkle_proof_t* _tmp_merkle_proof = ms->ms_merkle_proof;
-	char* _tmp_tx_raw = ms->ms_tx_raw;
-	char* _tmp_block_hash_hex = ms->ms_block_hash_hex;
-	char* _tmp_public_key_pem = ms->ms_public_key_pem;
+	bitcoin_deposit_t* _tmp_deposit = ms->ms_deposit;
 
-	CHECK_REF_POINTER(pms, sizeof(ms_ecall_deposit_t));
+	CHECK_REF_POINTER(pms, sizeof(ms_ecall_bitcoin_deposit_t));
 
-	ms->ms_retval = ecall_deposit((const merkle_proof_t*)_tmp_merkle_proof, (const char*)_tmp_tx_raw, (const char*)_tmp_block_hash_hex, (const char*)_tmp_public_key_pem);
+	ms->ms_retval = ecall_bitcoin_deposit((const bitcoin_deposit_t*)_tmp_deposit);
 
 
 	return status;
@@ -492,7 +486,7 @@ SGX_EXTERNC const struct {
 		{(void*)(uintptr_t)sgx_provision_rsa_id, 0},
 		{(void*)(uintptr_t)sgx_query_rsa_pubkey, 0},
 		{(void*)(uintptr_t)sgx_merkle_proof_verify, 0},
-		{(void*)(uintptr_t)sgx_ecall_deposit, 0},
+		{(void*)(uintptr_t)sgx_ecall_bitcoin_deposit, 0},
 		{(void*)(uintptr_t)sgx_dummy, 0},
 	}
 };
