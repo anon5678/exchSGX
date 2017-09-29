@@ -1,7 +1,3 @@
-//
-// Created by fanz on 9/21/17.
-//
-
 #ifndef PROJECT_STATE_H
 #define PROJECT_STATE_H
 
