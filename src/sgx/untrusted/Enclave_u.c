@@ -11,16 +11,21 @@ typedef struct ms_ssl_conn_handle_t {
 	thread_info_t* ms_thread_info;
 } ms_ssl_conn_handle_t;
 
+typedef struct ms_ssl_client_init_t {
+	int ms_retval;
+	char* ms_hostname;
+	unsigned int ms_port;
+} ms_ssl_client_init_t;
+
+typedef struct ms_ssl_client_write_test_t {
+	int ms_retval;
+} ms_ssl_client_write_test_t;
+
+
 typedef struct ms_ecall_append_block_to_fifo_t {
 	int ms_retval;
 	char* ms_blockHeaderHex;
 } ms_ecall_append_block_to_fifo_t;
-
-typedef struct ms_test_tls_client_t {
-	int ms_retval;
-	char* ms_hostname;
-	unsigned int ms_port;
-} ms_test_tls_client_t;
 
 typedef struct ms_enclaveTest_t {
 	int ms_retval;
@@ -375,23 +380,39 @@ sgx_status_t ssl_conn_handle(sgx_enclave_id_t eid, long int thread_id, thread_in
 	return status;
 }
 
-sgx_status_t ecall_append_block_to_fifo(sgx_enclave_id_t eid, int* retval, const char* blockHeaderHex)
+sgx_status_t ssl_client_init(sgx_enclave_id_t eid, int* retval, const char* hostname, unsigned int port)
 {
 	sgx_status_t status;
-	ms_ecall_append_block_to_fifo_t ms;
-	ms.ms_blockHeaderHex = (char*)blockHeaderHex;
+	ms_ssl_client_init_t ms;
+	ms.ms_hostname = (char*)hostname;
+	ms.ms_port = port;
 	status = sgx_ecall(eid, 3, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
 
-sgx_status_t test_tls_client(sgx_enclave_id_t eid, int* retval, const char* hostname, unsigned int port)
+sgx_status_t ssl_client_write_test(sgx_enclave_id_t eid, int* retval)
 {
 	sgx_status_t status;
-	ms_test_tls_client_t ms;
-	ms.ms_hostname = (char*)hostname;
-	ms.ms_port = port;
+	ms_ssl_client_write_test_t ms;
 	status = sgx_ecall(eid, 4, &ocall_table_Enclave, &ms);
+	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
+	return status;
+}
+
+sgx_status_t ssl_client_teardown(sgx_enclave_id_t eid)
+{
+	sgx_status_t status;
+	status = sgx_ecall(eid, 5, &ocall_table_Enclave, NULL);
+	return status;
+}
+
+sgx_status_t ecall_append_block_to_fifo(sgx_enclave_id_t eid, int* retval, const char* blockHeaderHex)
+{
+	sgx_status_t status;
+	ms_ecall_append_block_to_fifo_t ms;
+	ms.ms_blockHeaderHex = (char*)blockHeaderHex;
+	status = sgx_ecall(eid, 6, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
@@ -400,7 +421,7 @@ sgx_status_t enclaveTest(sgx_enclave_id_t eid, int* retval)
 {
 	sgx_status_t status;
 	ms_enclaveTest_t ms;
-	status = sgx_ecall(eid, 5, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 7, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
@@ -416,7 +437,7 @@ sgx_status_t rsa_keygen_in_seal(sgx_enclave_id_t eid, int* retval, const char* s
 	ms.ms_cap_pubkey = cap_pubkey;
 	ms.ms_o_csr = o_csr;
 	ms.ms_cap_csr = cap_csr;
-	status = sgx_ecall(eid, 6, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 8, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
@@ -429,7 +450,7 @@ sgx_status_t unseal_secret_and_leak_public_key(sgx_enclave_id_t eid, int* retval
 	ms.ms_secret_len = secret_len;
 	ms.ms_pubkey = pubkey;
 	ms.ms_cap_pubkey = cap_pubkey;
-	status = sgx_ecall(eid, 7, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 9, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
@@ -441,7 +462,7 @@ sgx_status_t provision_rsa_id(sgx_enclave_id_t eid, int* retval, const unsigned 
 	ms.ms_sealed_rsa_secret_key = (unsigned char*)sealed_rsa_secret_key;
 	ms.ms_secret_len = secret_len;
 	ms.ms_cert_pem = (char*)cert_pem;
-	status = sgx_ecall(eid, 8, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 10, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
@@ -454,7 +475,7 @@ sgx_status_t query_rsa_pubkey(sgx_enclave_id_t eid, int* retval, unsigned char* 
 	ms.ms_cap_pubkey = cap_pubkey;
 	ms.ms_cert_pem = cert_pem;
 	ms.ms_cap_cert_pem = cap_cert_pem;
-	status = sgx_ecall(eid, 9, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 11, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
@@ -464,7 +485,7 @@ sgx_status_t merkle_proof_verify(sgx_enclave_id_t eid, int* retval, const merkle
 	sgx_status_t status;
 	ms_merkle_proof_verify_t ms;
 	ms.ms_proof = (merkle_proof_t*)proof;
-	status = sgx_ecall(eid, 10, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 12, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
@@ -474,7 +495,7 @@ sgx_status_t ecall_bitcoin_deposit(sgx_enclave_id_t eid, int* retval, const bitc
 	sgx_status_t status;
 	ms_ecall_bitcoin_deposit_t ms;
 	ms.ms_deposit = (bitcoin_deposit_t*)deposit;
-	status = sgx_ecall(eid, 11, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 13, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
@@ -482,7 +503,7 @@ sgx_status_t ecall_bitcoin_deposit(sgx_enclave_id_t eid, int* retval, const bitc
 sgx_status_t dummy(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 12, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 14, &ocall_table_Enclave, NULL);
 	return status;
 }
 

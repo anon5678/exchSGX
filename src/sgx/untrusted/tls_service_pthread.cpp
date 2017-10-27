@@ -19,6 +19,7 @@
 #include "mbedtls/error.h"
 #include "Enclave_u.h"
 #include "interrupt.h"
+#include "../common/ssl_context.h"
 
 extern sgx_enclave_id_t eid;
 
@@ -34,8 +35,8 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.TLSService"));
 
 using exch::tls::logger;
 
-TLSService::TLSService(const string &hostname,
-                       const string &port, TLSService::Role role, size_t n_threads) :
+TLSServerThreadPool::TLSServerThreadPool(const string &hostname, const string &port,
+                       TLSServerThreadPool::Role role, size_t n_threads) :
     hostname(hostname), port(port), role(role), ret(0) {
   // initialize the enclave TLS resources
   if (ssl_conn_init(eid, &ret) != SGX_SUCCESS || ret != 0) {
@@ -52,7 +53,7 @@ TLSService::TLSService(const string &hostname,
   LOG4CXX_INFO(logger, "" << threads.size() << " threads initialized");
 }
 
-TLSService::TLSService(TLSService &&other) noexcept {
+TLSServerThreadPool::TLSServerThreadPool(TLSServerThreadPool &&other) noexcept {
   hostname = move(other.hostname);
   port = move(other.port);
   role = other.role;
@@ -63,13 +64,13 @@ TLSService::TLSService(TLSService &&other) noexcept {
   other.moved_away = true;
 }
 
-TLSService::~TLSService() {
+TLSServerThreadPool::~TLSServerThreadPool() {
   if (!moved_away) {
     ssl_conn_teardown(eid);
   }
 }
 
-void TLSService::operator()() {
+void TLSServerThreadPool::operator()() {
   // bind to localhost:port
   if ((ret = mbedtls_net_bind(&server_socket,
                               hostname.c_str(), port.c_str(),
@@ -87,7 +88,7 @@ void TLSService::operator()() {
       LOG4CXX_ERROR(logger, "can't set nonblock for the listen socket")
     }
 
-    ret = mbedtls_net_accept(&server_socket, &client_fd, NULL, 0, NULL);
+    ret = mbedtls_net_accept(&server_socket, &client_fd, nullptr, 0, nullptr);
 
     if (ret == MBEDTLS_ERR_SSL_WANT_READ) {
       // it means accept would block (i.e. no connection so far)
@@ -100,8 +101,6 @@ void TLSService::operator()() {
       LOG4CXX_ERROR(logger, "mbedtls_net_accept returns " << ret);
       break;
     }
-
-    LOG4CXX_INFO(logger, "serving " << client_fd.fd)
 
     if ((ret = serve_tls_conn_in_thread(&client_fd)) != 0) {
       LOG4CXX_ERROR(logger, "failed to create threads: " << ret);
@@ -133,11 +132,12 @@ void *ecall_handle_tls_conn(void *data) {
     LOG4CXX_ERROR(logger, "failed to make ecall");
   }
 
+  LOG4CXX_INFO(logger, "cleaning up socket " << thread_info->client_fd.fd);
   mbedtls_net_free(&thread_info->client_fd);
-  return (NULL);
+  return nullptr;
 }
 
-int TLSService::serve_tls_conn_in_thread(const mbedtls_net_context *client_fd) {
+int TLSServerThreadPool::serve_tls_conn_in_thread(const mbedtls_net_context *client_fd) {
   int ret, i;
 
   for (i = 0; i < threads.size(); i++) {
@@ -145,8 +145,7 @@ int TLSService::serve_tls_conn_in_thread(const mbedtls_net_context *client_fd) {
       break;
 
     if (threads[i].data.thread_complete == 1) {
-      LOG4CXX_INFO(logger, "cleaning up thread " << i);
-      pthread_join(threads[i].thread, NULL);
+      pthread_join(threads[i].thread, nullptr);
       memset(&threads[i], 0, sizeof(pthread_info_t));
       break;
     }
@@ -158,11 +157,11 @@ int TLSService::serve_tls_conn_in_thread(const mbedtls_net_context *client_fd) {
   }
 
   threads[i].active = 1;
-  threads[i].data.config = NULL;
+  threads[i].data.config = nullptr;
   threads[i].data.thread_complete = 0;
   memcpy(&threads[i].data.client_fd, client_fd, sizeof(mbedtls_net_context));
 
-  if ((ret = pthread_create(&threads[i].thread, NULL, ecall_handle_tls_conn, &threads[i].data)) != 0) {
+  if ((ret = pthread_create(&threads[i].thread, nullptr, ecall_handle_tls_conn, &threads[i].data)) != 0) {
     return (ret);
   }
 

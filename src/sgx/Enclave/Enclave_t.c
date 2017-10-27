@@ -27,16 +27,21 @@ typedef struct ms_ssl_conn_handle_t {
 	thread_info_t* ms_thread_info;
 } ms_ssl_conn_handle_t;
 
+typedef struct ms_ssl_client_init_t {
+	int ms_retval;
+	char* ms_hostname;
+	unsigned int ms_port;
+} ms_ssl_client_init_t;
+
+typedef struct ms_ssl_client_write_test_t {
+	int ms_retval;
+} ms_ssl_client_write_test_t;
+
+
 typedef struct ms_ecall_append_block_to_fifo_t {
 	int ms_retval;
 	char* ms_blockHeaderHex;
 } ms_ecall_append_block_to_fifo_t;
-
-typedef struct ms_test_tls_client_t {
-	int ms_retval;
-	char* ms_hostname;
-	unsigned int ms_port;
-} ms_test_tls_client_t;
 
 typedef struct ms_enclaveTest_t {
 	int ms_retval;
@@ -246,6 +251,55 @@ err:
 	return status;
 }
 
+static sgx_status_t SGX_CDECL sgx_ssl_client_init(void* pms)
+{
+	ms_ssl_client_init_t* ms = SGX_CAST(ms_ssl_client_init_t*, pms);
+	sgx_status_t status = SGX_SUCCESS;
+	char* _tmp_hostname = ms->ms_hostname;
+	size_t _len_hostname = _tmp_hostname ? strlen(_tmp_hostname) + 1 : 0;
+	char* _in_hostname = NULL;
+
+	CHECK_REF_POINTER(pms, sizeof(ms_ssl_client_init_t));
+	CHECK_UNIQUE_POINTER(_tmp_hostname, _len_hostname);
+
+	if (_tmp_hostname != NULL) {
+		_in_hostname = (char*)malloc(_len_hostname);
+		if (_in_hostname == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		memcpy((void*)_in_hostname, _tmp_hostname, _len_hostname);
+		_in_hostname[_len_hostname - 1] = '\0';
+	}
+	ms->ms_retval = ssl_client_init((const char*)_in_hostname, ms->ms_port);
+err:
+	if (_in_hostname) free((void*)_in_hostname);
+
+	return status;
+}
+
+static sgx_status_t SGX_CDECL sgx_ssl_client_write_test(void* pms)
+{
+	ms_ssl_client_write_test_t* ms = SGX_CAST(ms_ssl_client_write_test_t*, pms);
+	sgx_status_t status = SGX_SUCCESS;
+
+	CHECK_REF_POINTER(pms, sizeof(ms_ssl_client_write_test_t));
+
+	ms->ms_retval = ssl_client_write_test();
+
+
+	return status;
+}
+
+static sgx_status_t SGX_CDECL sgx_ssl_client_teardown(void* pms)
+{
+	sgx_status_t status = SGX_SUCCESS;
+	if (pms != NULL) return SGX_ERROR_INVALID_PARAMETER;
+	ssl_client_teardown();
+	return status;
+}
+
 static sgx_status_t SGX_CDECL sgx_ecall_append_block_to_fifo(void* pms)
 {
 	ms_ecall_append_block_to_fifo_t* ms = SGX_CAST(ms_ecall_append_block_to_fifo_t*, pms);
@@ -270,34 +324,6 @@ static sgx_status_t SGX_CDECL sgx_ecall_append_block_to_fifo(void* pms)
 	ms->ms_retval = ecall_append_block_to_fifo((const char*)_in_blockHeaderHex);
 err:
 	if (_in_blockHeaderHex) free((void*)_in_blockHeaderHex);
-
-	return status;
-}
-
-static sgx_status_t SGX_CDECL sgx_test_tls_client(void* pms)
-{
-	ms_test_tls_client_t* ms = SGX_CAST(ms_test_tls_client_t*, pms);
-	sgx_status_t status = SGX_SUCCESS;
-	char* _tmp_hostname = ms->ms_hostname;
-	size_t _len_hostname = _tmp_hostname ? strlen(_tmp_hostname) + 1 : 0;
-	char* _in_hostname = NULL;
-
-	CHECK_REF_POINTER(pms, sizeof(ms_test_tls_client_t));
-	CHECK_UNIQUE_POINTER(_tmp_hostname, _len_hostname);
-
-	if (_tmp_hostname != NULL) {
-		_in_hostname = (char*)malloc(_len_hostname);
-		if (_in_hostname == NULL) {
-			status = SGX_ERROR_OUT_OF_MEMORY;
-			goto err;
-		}
-
-		memcpy((void*)_in_hostname, _tmp_hostname, _len_hostname);
-		_in_hostname[_len_hostname - 1] = '\0';
-	}
-	ms->ms_retval = test_tls_client((const char*)_in_hostname, ms->ms_port);
-err:
-	if (_in_hostname) free((void*)_in_hostname);
 
 	return status;
 }
@@ -471,15 +497,17 @@ static sgx_status_t SGX_CDECL sgx_dummy(void* pms)
 
 SGX_EXTERNC const struct {
 	size_t nr_ecall;
-	struct {void* ecall_addr; uint8_t is_priv;} ecall_table[13];
+	struct {void* ecall_addr; uint8_t is_priv;} ecall_table[15];
 } g_ecall_table = {
-	13,
+	15,
 	{
 		{(void*)(uintptr_t)sgx_ssl_conn_init, 0},
 		{(void*)(uintptr_t)sgx_ssl_conn_teardown, 0},
 		{(void*)(uintptr_t)sgx_ssl_conn_handle, 0},
+		{(void*)(uintptr_t)sgx_ssl_client_init, 0},
+		{(void*)(uintptr_t)sgx_ssl_client_write_test, 0},
+		{(void*)(uintptr_t)sgx_ssl_client_teardown, 0},
 		{(void*)(uintptr_t)sgx_ecall_append_block_to_fifo, 0},
-		{(void*)(uintptr_t)sgx_test_tls_client, 0},
 		{(void*)(uintptr_t)sgx_enclaveTest, 0},
 		{(void*)(uintptr_t)sgx_rsa_keygen_in_seal, 0},
 		{(void*)(uintptr_t)sgx_unseal_secret_and_leak_public_key, 0},
@@ -493,28 +521,28 @@ SGX_EXTERNC const struct {
 
 SGX_EXTERNC const struct {
 	size_t nr_ocall;
-	uint8_t entry_table[18][13];
+	uint8_t entry_table[18][15];
 } g_dyn_entry_table = {
 	18,
 	{
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
 	}
 };
 

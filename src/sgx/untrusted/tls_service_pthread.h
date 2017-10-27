@@ -17,21 +17,21 @@ typedef struct {
 
 using namespace std;
 
-class TLSService {
+class TLSServerThreadPool {
  public:
   enum Role {
     FAIRNESS_SERVER,
     END_USER_SERVICE,
   };
 
-  TLSService(const TLSService &) = delete;
-  TLSService &operator=(const TLSService &) = delete;
+  TLSServerThreadPool(const TLSServerThreadPool &) = delete;
+  TLSServerThreadPool &operator=(const TLSServerThreadPool &) = delete;
 
-  TLSService(TLSService &&) noexcept;
-  TLSService &operator=(TLSService &&) = delete;
+  TLSServerThreadPool(TLSServerThreadPool &&) noexcept;
+  TLSServerThreadPool &operator=(TLSServerThreadPool &&) = delete;
 
-  TLSService(const string &hostname, const string &port, TLSService::Role role, size_t n_threads);
-  ~TLSService();
+  TLSServerThreadPool(const string &hostname, const string &port, TLSServerThreadPool::Role role, size_t n_threads);
+  ~TLSServerThreadPool();
   void operator()();
 
  private:

@@ -23,6 +23,8 @@
 #include "enclave_rpc.h"
 #include "interrupt.h"
 
+#include "config.h"
+
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
@@ -41,17 +43,6 @@ using exch::main::logger;
 using exch::interrupt::init_signal_handler;
 
 sgx_enclave_id_t eid;
-
-class Config {
-public:
-  bool testBlockFeeding = false;
-  bool runServer = false;
-  bool runClient = false;
-  string identity;
-  string identity_dir;
-};
-
-void config(int argc, const char *argv[], Config &conf);
 
 
 static vector<uint8_t> readBinaryFile(const string &fname) {
@@ -75,8 +66,7 @@ static string readTextFile(const string &fname) {
 
 
 int main(int argc, const char *argv[]) {
-  Config conf;
-  config(argc, argv, conf);
+  Config conf(argc, argv);
 
   init_signal_handler();
 
@@ -100,12 +90,12 @@ int main(int argc, const char *argv[]) {
   }
 
   try {
-    LOG4CXX_INFO(logger, "using id " << conf.identity);
+    LOG4CXX_INFO(logger, "launching " << conf.getIdentity());
 
-    fs::path identity_dir(conf.identity_dir);
+    fs::path identity_dir(conf.getIdentity_dir());
 
-    auto sealed_secret_path = (identity_dir / (conf.identity + ".priv"));
-    auto cert_path = (identity_dir / (conf.identity + ".crt"));
+    auto sealed_secret_path = (identity_dir / (conf.getIdentity() + ".priv"));
+    auto cert_path = (identity_dir / (conf.getIdentity() + ".crt"));
 
     auto sealed = readBinaryFile(sealed_secret_path.string());
     auto cert = readTextFile(cert_path.string());
@@ -126,11 +116,7 @@ int main(int argc, const char *argv[]) {
       exit(-1);
     }
 
-    LOG4CXX_INFO(logger, "RSA secret key for " << conf.identity << " provisioned");
-
-    // cout << "using the following public key..." << endl;
-    // cout << (char *)pubkey;
-    // cout << cert_pem;
+    LOG4CXX_INFO(logger, "RSA secret key for " << conf.getIdentity() << " provisioned");
   } catch (const std::exception &e) {
     cerr << "cannot provision rsa id: " << e.what() << endl;
     exit(-1);
@@ -138,11 +124,32 @@ int main(int argc, const char *argv[]) {
 
 
   thread fairnessProtocolServer;
-  if (conf.runServer) {
+  if (conf.getFairnessServerPort() > 0) {
     // prepare tls server
-    fairnessProtocolServer = thread(TLSService("localhost", "4433", TLSService::FAIRNESS_SERVER, 5));
-  } else if (conf.runClient) {
-    test_tls_client(eid, &ret, "localhost", 4433);
+    auto port = conf.getFairnessServerPort();
+    LOG4CXX_INFO(logger, "starting fairness server at " << port);
+    fairnessProtocolServer = thread(TLSServerThreadPool("localhost", to_string(port), TLSServerThreadPool::FAIRNESS_SERVER, 5));
+  }
+
+  if (conf.getFairnessClientPort() > 0) {
+    auto port = (unsigned int) conf.getFairnessClientPort();
+
+    st = ssl_client_init(eid, &ret, "localhost", port);
+    if (st != SGX_SUCCESS || ret != 0) {
+      LOG4CXX_ERROR(logger, "cannot start fairness client");
+      exit(-1);
+    }
+    LOG4CXX_INFO(logger, "fairness client started at " << port);
+
+    st = ssl_client_write_test(eid, &ret);
+    if (st != SGX_SUCCESS || ret != 0) {
+      LOG4CXX_ERROR(logger, "cannot teardown fairness client");
+    }
+
+    st = ssl_client_teardown(eid);
+    if (st != SGX_SUCCESS) {
+      LOG4CXX_ERROR(logger, "cannot teardown fairness client");
+    }
   }
 
   if (fairnessProtocolServer.joinable()) {
@@ -163,33 +170,3 @@ int main(int argc, const char *argv[]) {
   sgx_destroy_enclave(eid);
 }
 
-void config(int argc, const char *argv[], Config &config) {
-  try {
-    po::options_description desc("Allowed options");
-    desc.add_options()
-        ("help,h", "print this message")
-        ("id,i", po::value(&config.identity)->required(), "dry run identity provision and exit.")
-        ("id_dir", po::value(&config.identity_dir)->required(), "path to the dir where priv and crt files are stored.")
-        ("feed,f", po::bool_switch(&config.testBlockFeeding)->default_value(false), "try to feed some blocks.")
-        ("server,s", po::bool_switch(&config.runServer)->default_value(false), "run as a tls server.")
-        ("client,c", po::bool_switch(&config.runClient)->default_value(false), "run as a tls client.");
-
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-
-    if (vm.count("help")) {
-      cerr << desc << endl;
-      exit(0);
-    }
-    po::notify(vm);
-  } catch (po::required_option &e) {
-    cerr << e.what() << endl;
-    exit(-1);
-  } catch (std::exception &e) {
-    cerr << e.what() << endl;
-    exit(-1);
-  } catch (...) {
-    cerr << "Unknown error!" << endl;
-    exit(-1);
-  }
-}

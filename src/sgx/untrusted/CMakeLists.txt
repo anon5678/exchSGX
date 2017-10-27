@@ -3,6 +3,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11")
 
 set(CLIENT_SRC_FILES Enclave_u.c Utils.cpp)
 
+set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_u.a")
+
 set_directory_properties(PROPERTIES
         ADDITIONAL_MAKE_CLEAN_FILES "Enclave_u.c; Enclave_u.h")
 
@@ -26,7 +28,8 @@ add_executable(exch exch.cpp
         tls_service_pthread.cpp
         Enclave_u.c
         mbedtls_error.c
-        mbedtls_net.c)
+        mbedtls_net.c
+        config.cpp)
 
 add_executable(enclave_test
         enclave_test.cpp Utils.cpp Enclave_u.c
@@ -34,7 +37,9 @@ add_executable(enclave_test
         merkle_data.cpp
         ../common/utils.cpp
         )
+
 add_executable(exch-keygen exch-keygen.cpp key_u.cpp Utils.cpp Enclave_u.c ../common/base64.cpp)
+
 add_executable(exch-merkleproof
         exch-merkleproof.cpp
         merkpath/merkpath.cpp
@@ -60,7 +65,6 @@ include_directories(
         ${LOG4CXX_INCLUDE_DIR}
 )
 
-set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_u.a")
 
 target_link_libraries(exch
         ${CURL_LIBRARIES}
@@ -85,7 +89,8 @@ target_link_libraries(exch-merkleproof
         ${JSONRPCCPP_LIBRARIES}
         ${Boost_LIBRARIES}
         ${LOG4CXX_LIBRARY}
-        ${OPENSSL_CRYPTO_LIBRARY})
+        ${OPENSSL_CRYPTO_LIBRARY}
+        )
 
 target_link_libraries(enclave_test
         ${LOG4CXX_LIBRARY}
@@ -96,7 +101,7 @@ target_link_libraries(enclave_test
 
 add_dependencies(exch enclave)
 
-add_custom_command(TARGET exch-merkleproof
+add_custom_command(TARGET exch
         POST_BUILD
         COMMAND cp -f ${CMAKE_CURRENT_SOURCE_DIR}/logging.conf ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
         COMMENT "Installing the configuration files")

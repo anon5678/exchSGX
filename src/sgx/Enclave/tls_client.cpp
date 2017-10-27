@@ -317,6 +317,9 @@ void TLSClient::SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &da
 }
 
 void TLSClient::Close() {
+  if (!isConnected)
+    return;
+
   do ret = mbedtls_ssl_close_notify(&ssl);
   while (ret == MBEDTLS_ERR_SSL_WANT_WRITE);
   ret = 0;
@@ -336,6 +339,9 @@ string TLSClient::GetError() {
 }
 
 TLSClient::~TLSClient() {
+  // try to close first
+  Close();
+
   mbedtls_net_free(&server_fd);
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
   mbedtls_x509_crt_free(&clicert);

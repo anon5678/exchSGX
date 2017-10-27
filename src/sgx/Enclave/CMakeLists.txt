@@ -21,7 +21,6 @@ set(SOURCE_FILES
         tls_client.cpp
         tls_server_threaded.cpp
         tls_exch_ca.cpp
-        p2p_tls.cpp
 
         ../common/base64.cpp
         key_rsa_t.cpp
@@ -62,7 +61,7 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/bitcoin
 )
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SGX_COMMON_CFLAGS} -Wall -Werror -nostdinc -fvisibility=hidden -fpie -fstack-protector")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SGX_COMMON_CFLAGS} -Wall -nostdinc -fvisibility=hidden -fpie -fstack-protector")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11 -nostdinc++")
 
 set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_t.a")

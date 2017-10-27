@@ -25,8 +25,10 @@ extern "C" {
 int ssl_conn_init();
 void ssl_conn_teardown();
 void ssl_conn_handle(long int thread_id, thread_info_t* thread_info);
+int ssl_client_init(const char* hostname, unsigned int port);
+int ssl_client_write_test();
+void ssl_client_teardown();
 int ecall_append_block_to_fifo(const char* blockHeaderHex);
-int test_tls_client(const char* hostname, unsigned int port);
 int enclaveTest();
 int rsa_keygen_in_seal(const char* subject_name, unsigned char* o_sealed, size_t cap_sealed, unsigned char* o_pubkey, size_t cap_pubkey, unsigned char* o_csr, size_t cap_csr);
 int unseal_secret_and_leak_public_key(const sgx_sealed_data_t* secret, size_t secret_len, unsigned char* pubkey, size_t cap_pubkey);

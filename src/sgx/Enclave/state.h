@@ -4,6 +4,7 @@
 #include "blockfifo.hpp"
 #include "balancebook.hpp"
 #include "tls_server_threaded.h"
+#include "tls_client.h"
 
 #include "../common/merkle_data.h"
 #include "../common/common.h"
@@ -18,6 +19,7 @@ namespace state {
 extern BalanceBook balanceBook;
 extern BlockFIFO<1000> blockFIFO;
 extern TLSConnectionHandler* connectionHandler;
+extern TLSClient* tlsClient;
 }
 }
 }
@@ -35,6 +37,10 @@ int ecall_get_latest_block_hash(unsigned char* o_buf, size_t cap_obuf);
 int ssl_conn_init(void);
 void ssl_conn_handle(long int thread_id, thread_info_t* thread_info);
 void ssl_conn_teardown(void);
+
+int ssl_client_init(const char* hostname, unsigned int port);
+int ssl_client_write_test(void);
+void ssl_client_teardown(void);
 
 #ifdef __cplusplus
 }
