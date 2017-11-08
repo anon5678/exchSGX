@@ -29,7 +29,7 @@ int initialize_enclave(std::string enclave_path, sgx_enclave_id_t *eid);
 typedef struct _sgx_errlist_t {
   sgx_status_t err;
   const char *msg;
-  const char *sug; /* Suggestion */
+  const char *sug;
 } sgx_errlist_t;
 
 /* Error code returned by sgx_create_enclave */
