@@ -7,8 +7,6 @@
 
 #include <jsonrpccpp/common/errors.h>
 
-#include <jsoncpp/json/reader.h>
-
 
 const string bitcoinRPC::BITCOIND_RPC_ADDR =
     "http://exch:goodpass@localhost:8332";
