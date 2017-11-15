@@ -19,7 +19,7 @@ set(SOURCE_FILES
         pprint.c
 
         tls_client.cpp
-        tls_server_threaded.cpp
+        tls_server_threaded_t.cpp
         tls_exch_ca.cpp
 
         ../common/base64.cpp

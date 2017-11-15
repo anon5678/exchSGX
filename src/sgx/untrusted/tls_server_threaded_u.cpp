@@ -1,4 +1,4 @@
-#include "tls_service_pthread.h"
+#include "tls_server_threaded_u.h"
 
 #include <cstdio>
 #define mbedtls_fprintf    fprintf
@@ -29,7 +29,7 @@ extern sgx_enclave_id_t eid;
 
 namespace exch{
 namespace tls {
-log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.TLSService"));
+log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("tls_server_threaded_u.cpp"));
 }
 }
 
@@ -102,6 +102,8 @@ void TLSServerThreadPool::operator()() {
       break;
     }
 
+    LOG4CXX_INFO(logger, "connected at socket %d" << client_fd.fd);
+
     if ((ret = serve_tls_conn_in_thread(&client_fd)) != 0) {
       LOG4CXX_ERROR(logger, "failed to create threads: " << ret);
       mbedtls_net_free(&client_fd);
@@ -132,8 +134,11 @@ void *ecall_handle_tls_conn(void *data) {
     LOG4CXX_ERROR(logger, "failed to make ecall");
   }
 
-  LOG4CXX_INFO(logger, "cleaning up socket " << thread_info->client_fd.fd);
-  mbedtls_net_free(&thread_info->client_fd);
+  // cleanup the thread if finished
+  if (thread_info->thread_complete == 1) {
+    LOG4CXX_INFO(logger, "cleaning up socket " << thread_info->client_fd.fd);
+    mbedtls_net_free(&thread_info->client_fd);
+  }
   return nullptr;
 }
 

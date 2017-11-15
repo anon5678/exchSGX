@@ -64,9 +64,9 @@ class TLSClient {
   ~TLSClient();
 
   string GetError();
-  void Connect();
+  void Connect() throw(runtime_error);
   void Send(const vector<uint8_t>& data);
-  void SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &data_out);
+  int SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &data_out) throw (runtime_error);
   void Close();
 };
 

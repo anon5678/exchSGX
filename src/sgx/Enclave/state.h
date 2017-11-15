@@ -3,7 +3,7 @@
 
 #include "blockfifo.hpp"
 #include "balancebook.hpp"
-#include "tls_server_threaded.h"
+#include "tls_server_threaded_t.h"
 #include "tls_client.h"
 
 #include "../common/merkle_data.h"

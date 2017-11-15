@@ -1,4 +1,4 @@
-#include "tls_server_threaded.h"
+#include "tls_server_threaded_t.h"
 #include "log.h"
 #include "pprint.h"
 #include "tls_exch_ca.h"
@@ -114,14 +114,15 @@ TLSConnectionHandler::~TLSConnectionHandler() {
 
 void TLSConnectionHandler::handle(long int thread_id, thread_info_t *thread_info) {
   int ret, len;
-  mbedtls_net_context *client_fd = &thread_info->client_fd;
   unsigned char buf[1024];
   mbedtls_ssl_context ssl;
-  mbedtls_ssl_init(&ssl);
-
-  // thread local data
   mbedtls_ssl_config conf;
 
+  mbedtls_ssl_init(&ssl);
+
+  mbedtls_net_context *client_fd = &thread_info->client_fd;
+
+  // thread local data
   memcpy(&conf, &this->conf, sizeof(mbedtls_ssl_config));
   thread_info->config = &conf;
   thread_info->thread_complete = 0;
@@ -157,7 +158,7 @@ void TLSConnectionHandler::handle(long int thread_id, thread_info_t *thread_info
   LL_LOG("[socket %d] handshake succeeds", client_fd->fd);
 
   /*
-   * 6. Read the HTTP Request
+   * 6. Read from the client
    */
   LL_DEBUG("  [ #%ld ]  < Read from client", thread_id);
 
@@ -201,6 +202,32 @@ void TLSConnectionHandler::handle(long int thread_id, thread_info_t *thread_info
   } while (true);
 
   hexdump("data from client", data_in.data(), data_in.size());
+
+  // write dummy back
+  {
+    vector<uint8_t> back {4, 3, 2, 1};
+
+    size_t written = 0, frags = 0;
+    for( written = 0, frags = 0; written < back.size(); written += ret, frags++ )
+    {
+      while( ( ret = mbedtls_ssl_write( &ssl, back.data() + written, back.size() - written ) ) <= 0 )
+      {
+        if( ret == MBEDTLS_ERR_NET_CONN_RESET )
+        {
+          LL_CRITICAL("failed! peer closed the connection" );
+          goto exit_without_notify;
+        }
+
+        if( ret != MBEDTLS_ERR_SSL_WANT_READ &&
+            ret != MBEDTLS_ERR_SSL_WANT_WRITE )
+        {
+          mbedtls_printf( "failed! mbedtls_ssl_write returned %d", ret );
+          goto exit_without_notify;
+        }
+      }
+    }
+    hexdump("written to client: ", data_in.data(), data_in.size());
+  }
 
 thread_exit:
   while ((ret = mbedtls_ssl_close_notify(&ssl)) < 0) {

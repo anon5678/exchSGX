@@ -4,7 +4,7 @@
 #include "log.h"
 #include "../common/ssl_context.h"
 #include "Enclave_t.h"
-#include "tls_server_threaded.h"
+#include "tls_server_threaded_t.h"
 
 #include <mbedtls/net_v.h>
 
@@ -56,7 +56,18 @@ int ssl_client_init(const char* hostname, unsigned int port) {
 
 int ssl_client_write_test() {
   vector<uint8_t> dummy {1,2,3,4};
-  state::tlsClient->Send(dummy);
+  vector<uint8_t> out;
+
+  try {
+    state::tlsClient->SendWaitRecv(dummy, out);
+  }
+  catch (const std::exception& e) {
+    LL_CRITICAL("exception: %s", e.what());
+    return -1;
+  }
+
+  hexdump("got from server: ", out.data(), out.size());
+  // state::tlsClient->SendWaitRecv(dummy, out);
   return 0;
 }
 

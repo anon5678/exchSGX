@@ -25,7 +25,7 @@ add_executable(exch exch.cpp
         merkle_data.cpp
         ../common/utils.cpp
         Utils.cpp
-        tls_service_pthread.cpp
+        tls_server_threaded_u.cpp
         Enclave_u.c
         mbedtls_error.c
         mbedtls_net.c

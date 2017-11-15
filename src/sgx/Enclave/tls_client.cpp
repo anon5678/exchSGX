@@ -137,7 +137,7 @@ TLSClient::TLSClient(const string hostname, unsigned int port)
 #endif /* MBEDTLS_X509_CRT_PARSE_C */
 }
 
-void TLSClient::Connect() {
+void TLSClient::Connect() throw(runtime_error){
   if (isConnected) {
     LL_WARNING("trying to already connected");
     return;
@@ -261,7 +261,10 @@ void TLSClient::Send(const vector<uint8_t> &data) {
   hexdump("bytes sent", data.data(), data.size());
 }
 
-void TLSClient::SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &data_out) {
+/*
+ * return 0 if no error. otherwise error code is returned.
+ */
+int TLSClient::SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &data_out) throw (runtime_error) {
   if (!isConnected) {
     throw runtime_error("not connected yet");
   }
@@ -288,6 +291,8 @@ void TLSClient::SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &da
   while (true) {
     n_data = mbedtls_ssl_read(&ssl, buf, sizeof(buf));
 
+    LL_CRITICAL("n_data = %d", n_data);
+
     // handle possible errors
     if (n_data == MBEDTLS_ERR_SSL_WANT_READ ||
         n_data == MBEDTLS_ERR_SSL_WANT_WRITE)
@@ -296,12 +301,18 @@ void TLSClient::SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &da
     if (n_data < 0) {
       ret = n_data;
       switch (n_data) {
-        case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:LL_CRITICAL(" connection was closed gracefully");
-          throw runtime_error("connection was closed gracefully");
-        case MBEDTLS_ERR_NET_CONN_RESET:LL_CRITICAL(" connection was reset by peer");
-          throw runtime_error("connected reset");
-        default:LL_CRITICAL(" mbedtls_ssl_read returned 0x%x", n_data);
-          throw runtime_error("mbedtls_ssl_read returned non-sense");
+        case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
+          LL_LOG(" connection was closed gracefully");
+          ret = 0;
+          goto close_notify;
+        case MBEDTLS_ERR_NET_CONN_RESET:
+          LL_LOG(" connection was reset by peer");
+          // that's fine. we're not going to reconnect
+          ret = 0;
+          goto close_notify;
+        default:
+          LL_CRITICAL(" mbedtls_ssl_read returned 0x%x", n_data);
+          return -1;
       }
     }
 
@@ -314,15 +325,22 @@ void TLSClient::SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &da
     // otherwise store the bytes read
     data_out.insert(data_out.end(), buf, buf + n_data);
   }
+
+close_notify:
+  this->Close();
+  return 0;
 }
 
 void TLSClient::Close() {
   if (!isConnected)
     return;
 
+  // no error check, the connection might be closed already
   do ret = mbedtls_ssl_close_notify(&ssl);
   while (ret == MBEDTLS_ERR_SSL_WANT_WRITE);
   ret = 0;
+
+  isConnected = false;
 
   LL_DEBUG("closed %s:%d", hostname.c_str(), port);
 }

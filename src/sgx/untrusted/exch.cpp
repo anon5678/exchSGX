@@ -16,7 +16,7 @@
 #include "Enclave_u.h"
 #include "Utils.h"
 #include "bitcoindrpcclient.h"
-#include "tls_service_pthread.h"
+#include "tls_server_threaded_u.h"
 
 #include "enclave_rpc.h"
 #include <jsonrpccpp/server/connectors/httpserver.h>
@@ -35,7 +35,7 @@ using namespace std;
 
 namespace exch{
 namespace main {
-log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.main"));
+log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.cpp"));
 }
 }
 
@@ -143,7 +143,7 @@ int main(int argc, const char *argv[]) {
 
     st = ssl_client_write_test(eid, &ret);
     if (st != SGX_SUCCESS || ret != 0) {
-      LOG4CXX_ERROR(logger, "cannot teardown fairness client");
+      LOG4CXX_ERROR(logger, "ssl_client_write_test returns " << ret);
     }
 
     st = ssl_client_teardown(eid);

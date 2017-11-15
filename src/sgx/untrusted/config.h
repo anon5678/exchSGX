@@ -15,7 +15,7 @@
 #include "Enclave_u.h"
 #include "Utils.h"
 #include "bitcoindrpcclient.h"
-#include "tls_service_pthread.h"
+#include "tls_server_threaded_u.h"
 
 #include "enclave_rpc.h"
 #include "interrupt.h"
