@@ -1,7 +1,7 @@
 add_definitions(-DIN_ENCLAVE)
 
 set_directory_properties(PROPERTIES
-        ADDITIONAL_MAKE_CLEAN_FILES "Enclave_t.c; Enclave_t.h")
+        ADDITIONAL_MAKE_CLEAN_FILES "Enclave_t.c Enclave_t.h")
 
 add_custom_command(
         OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Enclave_t.c

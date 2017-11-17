@@ -10,9 +10,9 @@
 
 using namespace exch::enclave;
 
-int ssl_conn_init(void) {
+int fairness_tls_server_init(void) {
   try {
-    state::connectionHandler = new TLSConnectionHandler();
+    state::fairnessServerTrustedPart = new TLSConnectionHandler();
   }
   catch (const std::exception& e) {
     LL_CRITICAL("cannot init tls: %s", e.what());
@@ -26,13 +26,13 @@ int ssl_conn_init(void) {
   return 0;
 }
 
-void ssl_conn_handle(long int thread_id, thread_info_t* thread_info) {
+void fairness_tls_server_tcp_conn_handler(long int thread_id, thread_info_t *thread_info) {
   LL_LOG("delegating socket %d to handler", thread_info->client_fd.fd);
-  state::connectionHandler->handle(thread_id, thread_info);
+  state::fairnessServerTrustedPart->handle(thread_id, thread_info);
 }
 
-void ssl_conn_teardown(void) {
-  delete state::connectionHandler;
+void fairness_tls_server_free(void) {
+  delete state::fairnessServerTrustedPart;
 }
 
 int ssl_client_init(const char* hostname, unsigned int port) {

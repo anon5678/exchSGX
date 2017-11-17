@@ -41,9 +41,9 @@ int SGX_UBRIDGE(SGX_CDECL, sgx_thread_set_multiple_untrusted_events_ocall, (cons
 int SGX_UBRIDGE(SGX_NOCONVENTION, ocall_print_to_std, (const char* str));
 int SGX_UBRIDGE(SGX_NOCONVENTION, ocall_print_to_err, (const char* str));
 
-sgx_status_t ssl_conn_init(sgx_enclave_id_t eid, int* retval);
-sgx_status_t ssl_conn_teardown(sgx_enclave_id_t eid);
-sgx_status_t ssl_conn_handle(sgx_enclave_id_t eid, long int thread_id, thread_info_t* thread_info);
+sgx_status_t fairness_tls_server_init(sgx_enclave_id_t eid, int* retval);
+sgx_status_t fairness_tls_server_free(sgx_enclave_id_t eid);
+sgx_status_t fairness_tls_server_tcp_conn_handler(sgx_enclave_id_t eid, long int thread_id, thread_info_t* thread_info);
 sgx_status_t ssl_client_init(sgx_enclave_id_t eid, int* retval, const char* hostname, unsigned int port);
 sgx_status_t ssl_client_write_test(sgx_enclave_id_t eid, int* retval);
 sgx_status_t ssl_client_teardown(sgx_enclave_id_t eid);

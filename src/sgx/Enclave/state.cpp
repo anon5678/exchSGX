@@ -8,5 +8,5 @@ using namespace exch::enclave;
 
 BlockFIFO<1000> state::blockFIFO;
 BalanceBook state::balanceBook;
-TLSConnectionHandler* state::connectionHandler;
+TLSConnectionHandler* state::fairnessServerTrustedPart;
 TLSClient* state::tlsClient;

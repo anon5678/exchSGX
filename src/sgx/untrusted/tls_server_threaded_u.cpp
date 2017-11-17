@@ -35,11 +35,13 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("tls_server_threaded_u.cpp"
 
 using exch::tls::logger;
 
-TLSServerThreadPool::TLSServerThreadPool(const string &hostname, const string &port,
-                       TLSServerThreadPool::Role role, size_t n_threads) :
+TLSServerThreadPool::TLSServerThreadPool(
+    const string &hostname, const string &port,
+    TLSServerThreadPool::Role role, size_t n_threads) :
     hostname(hostname), port(port), role(role), ret(0) {
   // initialize the enclave TLS resources
-  if (ssl_conn_init(eid, &ret) != SGX_SUCCESS || ret != 0) {
+  // TODO: initialize according to role
+  if (fairness_tls_server_init(eid, &ret) != SGX_SUCCESS || ret != 0) {
     LOG4CXX_ERROR(logger, "failed to init TLSService");
     exit(-1);
   }
@@ -66,10 +68,13 @@ TLSServerThreadPool::TLSServerThreadPool(TLSServerThreadPool &&other) noexcept {
 
 TLSServerThreadPool::~TLSServerThreadPool() {
   if (!moved_away) {
-    ssl_conn_teardown(eid);
+    fairness_tls_server_free(eid);
   }
 }
 
+/*
+ * functor for the main thread of a TLS server
+ */
 void TLSServerThreadPool::operator()() {
   // bind to localhost:port
   if ((ret = mbedtls_net_bind(&server_socket,
@@ -83,7 +88,7 @@ void TLSServerThreadPool::operator()() {
   while (!exch::interrupt::quit.load()) {
     this_thread::sleep_for(chrono::seconds(1));
 
-    // Wait for a client connects
+    // wait for client connects
     if (0 != mbedtls_net_set_nonblock(&server_socket)) {
       LOG4CXX_ERROR(logger, "can't set nonblock for the listen socket")
     }
@@ -129,7 +134,7 @@ void *ecall_handle_tls_conn(void *data) {
   long int thread_id = pthread_self();
   auto *thread_info = (thread_info_t *) data;
 
-  int ret = ssl_conn_handle(eid, thread_id, thread_info);
+  int ret = fairness_tls_server_tcp_conn_handler(eid, thread_id, thread_info);
   if (ret != SGX_SUCCESS) {
     LOG4CXX_ERROR(logger, "failed to make ecall");
   }

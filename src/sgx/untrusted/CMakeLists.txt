@@ -6,7 +6,7 @@ set(CLIENT_SRC_FILES Enclave_u.c Utils.cpp)
 set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_u.a")
 
 set_directory_properties(PROPERTIES
-        ADDITIONAL_MAKE_CLEAN_FILES "Enclave_u.c; Enclave_u.h")
+        ADDITIONAL_MAKE_CLEAN_FILES "Enclave_u.c Enclave_u.h")
 
 add_custom_command(
         OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Enclave_u.c

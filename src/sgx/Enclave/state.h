@@ -18,7 +18,8 @@ namespace enclave {
 namespace state {
 extern BalanceBook balanceBook;
 extern BlockFIFO<1000> blockFIFO;
-extern TLSConnectionHandler* connectionHandler;
+extern TLSConnectionHandler* fairnessServerTrustedPart;
+extern TLSConnectionHandler* clientTLSServerTrustedPart;
 extern TLSClient* tlsClient;
 }
 }
@@ -34,9 +35,16 @@ int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit);
 int ecall_append_block_to_fifo(const char *blockHeaderHex);
 int ecall_get_latest_block_hash(unsigned char* o_buf, size_t cap_obuf);
 
-int ssl_conn_init(void);
-void ssl_conn_handle(long int thread_id, thread_info_t* thread_info);
-void ssl_conn_teardown(void);
+int fairness_tls_server_init(void);
+void fairness_tls_server_tcp_conn_handler(long int thread_id, thread_info_t *thread_info);
+void fairness_tls_server_free(void);
+
+/*
+ * TODO: add the same set of methods for clientTLSServer;
+ */
+// int fairness_tls_server_init(void);
+// void fairness_tls_server_tcp_conn_handler(long int thread_id, thread_info_t* thread_info);
+// void fairness_tls_server_free(void);
 
 int ssl_client_init(const char* hostname, unsigned int port);
 int ssl_client_write_test(void);

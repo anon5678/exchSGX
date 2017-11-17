@@ -22,9 +22,9 @@ extern "C" {
 #endif
 
 
-int ssl_conn_init();
-void ssl_conn_teardown();
-void ssl_conn_handle(long int thread_id, thread_info_t* thread_info);
+int fairness_tls_server_init();
+void fairness_tls_server_free();
+void fairness_tls_server_tcp_conn_handler(long int thread_id, thread_info_t* thread_info);
 int ssl_client_init(const char* hostname, unsigned int port);
 int ssl_client_write_test();
 void ssl_client_teardown();
