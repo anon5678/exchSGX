@@ -6,6 +6,6 @@ BlockFIFO<1000> state::blockFIFO;
 BalanceBook state::balanceBook;
 
 // SSL servers & clients
-SSLContextManager* state::fairnessServerTrustedPart;
-SSLContextManager* state::clientTLSServerTrustedPart;
+SSLServerContext* state::fairnessServerTrustedPart;
+SSLServerContext* state::clientTLSServerTrustedPart;
 TLSClient* state::tlsClient;

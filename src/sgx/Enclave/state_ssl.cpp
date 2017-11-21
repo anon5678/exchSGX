@@ -4,7 +4,7 @@ using namespace exch::enclave;
 
 int fairness_tls_server_init(void) {
   try {
-    state::fairnessServerTrustedPart = new SSLContextManager();
+    state::fairnessServerTrustedPart = new SSLServerContext();
   }
   catch (const std::exception &e) {
     LL_CRITICAL("cannot init tls: %s", e.what());
@@ -29,7 +29,7 @@ void fairness_tls_server_free(void) {
 
 int client_facing_tls_server_init(void) {
   try {
-    state::clientTLSServerTrustedPart = new SSLContextManager();
+    state::clientTLSServerTrustedPart = new SSLServerContext();
   }
   catch (const std::exception &e) {
     LL_CRITICAL("cannot init tls: %s", e.what());

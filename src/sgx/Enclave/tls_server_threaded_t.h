@@ -53,7 +53,7 @@ using std::vector;
     "<h2>mbed TLS Test Server</h2>\r\n" \
     "<p>Successful connection using: %s</p>\r\n"
 
-class SSLContextManager {
+class SSLServerContext {
  private:
   /*
    * static members
@@ -87,15 +87,15 @@ class SSLContextManager {
   static void mydebug(void *ctx, int level, const char *file, int line, const char *str);
 
  public:
-  SSLContextManager();
+  SSLServerContext();
 
   // disable copy and move
-  SSLContextManager(const SSLContextManager &) = delete;
-  SSLContextManager(SSLContextManager &&) = delete;
-  SSLContextManager &operator=(const SSLContextManager &) = delete;
-  SSLContextManager &operator=(SSLContextManager &&)= delete;
+  SSLServerContext(const SSLServerContext &) = delete;
+  SSLServerContext(SSLServerContext &&) = delete;
+  SSLServerContext &operator=(const SSLServerContext &) = delete;
+  SSLServerContext &operator=(SSLServerContext &&)= delete;
 
-  ~SSLContextManager();
+  ~SSLServerContext();
   void handle(long int thread_id, thread_info_t *);
   string getError(int errno);
 };

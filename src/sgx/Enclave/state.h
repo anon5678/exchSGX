@@ -18,8 +18,8 @@ namespace enclave {
 namespace state {
 extern BalanceBook balanceBook;
 extern BlockFIFO<1000> blockFIFO;
-extern SSLContextManager *fairnessServerTrustedPart;
-extern SSLContextManager *clientTLSServerTrustedPart;
+extern SSLServerContext *fairnessServerTrustedPart;
+extern SSLServerContext *clientTLSServerTrustedPart;
 extern TLSClient *tlsClient;
 }
 }

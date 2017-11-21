@@ -13,7 +13,7 @@
 
 using namespace std;
 
-SSLContextManager::SSLContextManager() {
+SSLServerContext::SSLServerContext() {
   int ret;
 
   // initialize a bunch of context data
@@ -84,7 +84,7 @@ SSLContextManager::SSLContextManager() {
    */
   mbedtls_ssl_conf_dbg(&conf, mydebug, nullptr);
   // if debug_level is not set (could be set via other constructors), set it to 0
-  mbedtls_debug_set_threshold(SSLContextManager::debug_level);
+  mbedtls_debug_set_threshold(SSLServerContext::debug_level);
 
   /* mbedtls_ssl_cache_get() and mbedtls_ssl_cache_set() are thread-safe if
    * MBEDTLS_THREADING_C is set.
@@ -108,7 +108,7 @@ SSLContextManager::SSLContextManager() {
   mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_REQUIRED);
 }
 
-SSLContextManager::~SSLContextManager() {
+SSLServerContext::~SSLServerContext() {
   mbedtls_x509_crt_free(&srvcert);
   mbedtls_pk_free(priv_key);
 #if defined(MBEDTLS_SSL_CACHE_C)
@@ -130,7 +130,7 @@ SSLContextManager::~SSLContextManager() {
 #endif
 }
 
-void SSLContextManager::handle(long int thread_id, thread_info_t *thread_info) {
+void SSLServerContext::handle(long int thread_id, thread_info_t *thread_info) {
   int ret, len;
   unsigned char buf[1024];
   mbedtls_ssl_context ssl;
@@ -301,7 +301,7 @@ int send(long thread_id, mbedtls_ssl_context* ssl, const vector<uint8_t> &data) 
   return 0;
 }
 
-string SSLContextManager::getError(int err) {
+string SSLServerContext::getError(int err) {
 #ifdef MBEDTLS_ERROR_C
   mbedtls_strerror(err, this->error_msg, sizeof this->error_msg);
   return string(this->error_msg);
@@ -310,11 +310,11 @@ string SSLContextManager::getError(int err) {
 #endif
 }
 
-const string SSLContextManager::pers = "ssl_pthread_server";
-sgx_thread_mutex_t SSLContextManager::mutex = SGX_THREAD_MUTEX_INITIALIZER;
-int SSLContextManager::debug_level = 0;
+const string SSLServerContext::pers = "ssl_pthread_server";
+sgx_thread_mutex_t SSLServerContext::mutex = SGX_THREAD_MUTEX_INITIALIZER;
+int SSLServerContext::debug_level = 0;
 
-void SSLContextManager::mydebug(void *ctx, int level,
+void SSLServerContext::mydebug(void *ctx, int level,
                                    const char *file, int line,
                                    const char *str) {
   (void) ctx;

@@ -109,7 +109,7 @@ void TLSServerThreadPool::operator()() {
 
     LOG4CXX_INFO(logger, "connected at socket %d" << client_fd.fd);
 
-    if ((ret = serve_tls_conn_in_thread(&client_fd)) != 0) {
+    if ((ret = establish_tls_in_thread(&client_fd)) != 0) {
       LOG4CXX_ERROR(logger, "failed to create threads: " << ret);
       mbedtls_net_free(&client_fd);
       continue;
@@ -147,7 +147,7 @@ void *ecall_handle_tls_conn(void *data) {
   return nullptr;
 }
 
-int TLSServerThreadPool::serve_tls_conn_in_thread(const mbedtls_net_context *client_fd) {
+int TLSServerThreadPool::establish_tls_in_thread(const mbedtls_net_context *client_fd) {
   int ret, i;
 
   for (i = 0; i < threads.size(); i++) {
