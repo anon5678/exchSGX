@@ -2,8 +2,8 @@
 #include "log.h"
 #include "pprint.h"
 #include "tls_exch_ca.h"
-#include "key_rsa_t.h"
 #include "utils.h"
+#include "state.h"
 
 #include <vector>
 #include <mbedtls/pk.h>
@@ -13,25 +13,29 @@
 
 using namespace std;
 
-TLSConnectionHandler::TLSConnectionHandler() {
+SSLContextManager::SSLContextManager() {
   int ret;
 
+  // initialize a bunch of context data
   mbedtls_x509_crt_init(&srvcert);
   mbedtls_x509_crt_init(&cachain);
-
   mbedtls_ssl_config_init(&conf);
   mbedtls_ctr_drbg_init(&ctr_drbg);
-
   mbedtls_entropy_init(&entropy);
-  /*
-   * 1. Load the certificates and private RSA key
-   */
+
+  // Load the certificates and private RSA key
   LL_LOG("Loading the server cert. and key...");
-  if (g_cert_pem.empty()) {
+
+  State& state = State::getInstance();
+
+  // FIXME: only provisioning one type of key
+  if (state.getFairnessServerCertPEM().empty()) {
     throw runtime_error("no cert provisioned");
   }
 
-  ret = mbedtls_x509_crt_parse(&srvcert, (unsigned char*) g_cert_pem.data(), g_cert_pem.size());
+  ret = mbedtls_x509_crt_parse(&srvcert,
+                               (const unsigned char*) state.getFairnessServerCertPEM().data(),
+                               state.getFairnessServerCertPEM().size());
   if (ret != 0) {
     throw runtime_error(utils::mbedtls_error(ret));
   }
@@ -44,11 +48,26 @@ TLSConnectionHandler::TLSConnectionHandler() {
   }
   LL_DEBUG("done loading CA certs");
 
-  if (0 == mbedtls_pk_can_do(&g_rsa_sk, MBEDTLS_PK_RSA)){
+  if (0 == mbedtls_pk_can_do(&state.getFairnessServerKey(), MBEDTLS_PK_RSA)){
     throw runtime_error("RSA key is not provisioned");
   }
 
-  mbedtls_pk_context* pkey = &g_rsa_sk;
+  // FIXME: copy the secret key to a local buffer. Ugly but we need this.
+  // FIXME: see https://tls.mbed.org/discussions/generic/mbedtls_ssl_conf_own_cert
+  auto priv_key_len = mbedtls_pk_get_len(&state.getFairnessServerKey());
+
+  if (priv_key_len != 0) {
+    priv_key = (mbedtls_pk_context*) malloc(priv_key_len);
+  }
+  else {
+    throw runtime_error("cannot get length of private key");
+  }
+
+  if (priv_key == nullptr) {
+    throw runtime_error("bad alloc");
+  }
+
+  memcpy(priv_key, &state.getFairnessServerKey(), priv_key_len);
 
   if ((ret = mbedtls_ssl_config_defaults(&conf,
                                          MBEDTLS_SSL_IS_SERVER,
@@ -63,9 +82,9 @@ TLSConnectionHandler::TLSConnectionHandler() {
   /*
    * setup debug
    */
-  mbedtls_ssl_conf_dbg(&conf, mydebug, NULL);
+  mbedtls_ssl_conf_dbg(&conf, mydebug, nullptr);
   // if debug_level is not set (could be set via other constructors), set it to 0
-  mbedtls_debug_set_threshold(TLSConnectionHandler::debug_level);
+  mbedtls_debug_set_threshold(SSLContextManager::debug_level);
 
   /* mbedtls_ssl_cache_get() and mbedtls_ssl_cache_set() are thread-safe if
    * MBEDTLS_THREADING_C is set.
@@ -76,8 +95,8 @@ TLSConnectionHandler::TLSConnectionHandler() {
                                    mbedtls_ssl_cache_set );
 #endif
 
-  mbedtls_ssl_conf_ca_chain(&conf, &cachain, NULL);
-  if ((ret = mbedtls_ssl_conf_own_cert(&conf, &srvcert, pkey)) != 0) {
+  mbedtls_ssl_conf_ca_chain(&conf, &cachain, nullptr);
+  if ((ret = mbedtls_ssl_conf_own_cert(&conf, &srvcert, priv_key)) != 0) {
     mbedtls_printf(" failed\n  ! mbedtls_ssl_conf_own_cert returned %d\n\n", ret);
     throw std::runtime_error("");
   }
@@ -89,10 +108,9 @@ TLSConnectionHandler::TLSConnectionHandler() {
   mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_REQUIRED);
 }
 
-TLSConnectionHandler::~TLSConnectionHandler() {
+SSLContextManager::~SSLContextManager() {
   mbedtls_x509_crt_free(&srvcert);
-  // FIXME
-  // mbedtls_pk_free(&pkey);
+  mbedtls_pk_free(priv_key);
 #if defined(MBEDTLS_SSL_CACHE_C)
   mbedtls_ssl_cache_free( &cache );
 #endif
@@ -112,7 +130,7 @@ TLSConnectionHandler::~TLSConnectionHandler() {
 #endif
 }
 
-void TLSConnectionHandler::handle(long int thread_id, thread_info_t *thread_info) {
+void SSLContextManager::handle(long int thread_id, thread_info_t *thread_info) {
   int ret, len;
   unsigned char buf[1024];
   mbedtls_ssl_context ssl;
@@ -283,20 +301,20 @@ int send(long thread_id, mbedtls_ssl_context* ssl, const vector<uint8_t> &data) 
   return 0;
 }
 
-string TLSConnectionHandler::getError(int errno) {
+string SSLContextManager::getError(int err) {
 #ifdef MBEDTLS_ERROR_C
-  mbedtls_strerror(errno, this->error_msg, sizeof this->error_msg);
+  mbedtls_strerror(err, this->error_msg, sizeof this->error_msg);
   return string(this->error_msg);
 #else
   return "";
 #endif
 }
 
-const string TLSConnectionHandler::pers = "ssl_pthread_server";
-sgx_thread_mutex_t TLSConnectionHandler::mutex = SGX_THREAD_MUTEX_INITIALIZER;
-int TLSConnectionHandler::debug_level = 0;
+const string SSLContextManager::pers = "ssl_pthread_server";
+sgx_thread_mutex_t SSLContextManager::mutex = SGX_THREAD_MUTEX_INITIALIZER;
+int SSLContextManager::debug_level = 0;
 
-void TLSConnectionHandler::mydebug(void *ctx, int level,
+void SSLContextManager::mydebug(void *ctx, int level,
                                    const char *file, int line,
                                    const char *str) {
   (void) ctx;

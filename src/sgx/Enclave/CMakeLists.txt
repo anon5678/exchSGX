@@ -1,10 +1,11 @@
 add_definitions(-DIN_ENCLAVE)
 
 set_directory_properties(PROPERTIES
-        ADDITIONAL_MAKE_CLEAN_FILES "Enclave_t.c Enclave_t.h")
+        ADDITIONAL_MAKE_CLEAN_FILES Enclave_t.c
+        ADDITIONAL_MAKE_CLEAN_FILES Enclave_t.h)
 
 add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Enclave_t.c
+        OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Enclave_t.c ${CMAKE_CURRENT_SOURCE_DIR}/Enclave_t.h
         COMMAND ${SGX_EDGER8R} --trusted ${CMAKE_CURRENT_SOURCE_DIR}/Enclave.edl
         --search-path ${SGX_SDK}/include
         --search-path ${MBEDTLS_SGX_ROOT_DIR}/lib
@@ -12,18 +13,19 @@ add_custom_command(
 )
 
 set(SOURCE_FILES
-        state_TLS.cpp
-
         Enclave_t.c
+        Enclave_t.h
+
         log.c
         pprint.c
+
+        rsa_utils.cpp
 
         tls_client.cpp
         tls_server_threaded_t.cpp
         tls_exch_ca.cpp
 
         ../common/base64.cpp
-        key_rsa_t.cpp
 
         bytestream.cpp
 
@@ -33,6 +35,8 @@ set(SOURCE_FILES
         state.cpp
         state_blockfifo.cpp
         state_balance.cpp
+        state_cert_rsa.cpp
+        state_ssl.cpp
 
         bitcoin/uint256.cpp
         bitcoin/hash.cpp
@@ -61,7 +65,7 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/bitcoin
 )
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SGX_COMMON_CFLAGS} -Wall -nostdinc -fvisibility=hidden -fpie -fstack-protector")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SGX_COMMON_CFLAGS} -Wall -Wno-deprecated -nostdinc -fvisibility=hidden -fpie -fstack-protector")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11 -nostdinc++")
 
 set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_t.a")

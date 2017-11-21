@@ -53,7 +53,7 @@ using std::vector;
     "<h2>mbed TLS Test Server</h2>\r\n" \
     "<p>Successful connection using: %s</p>\r\n"
 
-class TLSConnectionHandler {
+class SSLContextManager {
  private:
   /*
    * static members
@@ -69,7 +69,7 @@ class TLSConnectionHandler {
   mbedtls_ssl_config conf;
   mbedtls_x509_crt srvcert;
   mbedtls_x509_crt cachain;
-  mbedtls_pk_context pkey;
+  mbedtls_pk_context* priv_key;
 
   /*
    * error message buffer
@@ -87,15 +87,15 @@ class TLSConnectionHandler {
   static void mydebug(void *ctx, int level, const char *file, int line, const char *str);
 
  public:
-  TLSConnectionHandler();
+  SSLContextManager();
 
   // disable copy and move
-  TLSConnectionHandler(const TLSConnectionHandler &) = delete;
-  TLSConnectionHandler(TLSConnectionHandler &&) = delete;
-  TLSConnectionHandler &operator=(const TLSConnectionHandler &) = delete;
-  TLSConnectionHandler &operator=(TLSConnectionHandler &&)= delete;
+  SSLContextManager(const SSLContextManager &) = delete;
+  SSLContextManager(SSLContextManager &&) = delete;
+  SSLContextManager &operator=(const SSLContextManager &) = delete;
+  SSLContextManager &operator=(SSLContextManager &&)= delete;
 
-  ~TLSConnectionHandler();
+  ~SSLContextManager();
   void handle(long int thread_id, thread_info_t *);
   string getError(int errno);
 };

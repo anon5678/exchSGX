@@ -1,10 +1,6 @@
-//
-// Created by fanz on 9/20/17.
-//
 #include "merkpath/merkpath.h"
 #include "Utils.h"
 #include "rpc.h"
-#include "Enclave_u.h"
 
 #include <algorithm>
 #include <fstream>

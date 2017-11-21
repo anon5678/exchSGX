@@ -1,12 +1,11 @@
-//
-// Created by fanz on 9/21/17.
-//
-
 #include "state.h"
 
 using namespace exch::enclave;
 
 BlockFIFO<1000> state::blockFIFO;
 BalanceBook state::balanceBook;
-TLSConnectionHandler* state::fairnessServerTrustedPart;
+
+// SSL servers & clients
+SSLContextManager* state::fairnessServerTrustedPart;
+SSLContextManager* state::clientTLSServerTrustedPart;
 TLSClient* state::tlsClient;

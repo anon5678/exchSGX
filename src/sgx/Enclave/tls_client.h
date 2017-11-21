@@ -52,7 +52,7 @@ class TLSClient {
   uint32_t flags;
   mbedtls_x509_crt cacert;
   mbedtls_x509_crt clicert;
-  mbedtls_pk_context* pkey;
+  mbedtls_pk_context* priv_key;
 #endif
 
  private:

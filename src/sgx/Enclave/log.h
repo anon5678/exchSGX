@@ -34,7 +34,7 @@ extern const char *log_level_strings[];
 #ifdef __cplusplus
 #define _FALSE false
 #else
-#define _FALSE true
+#define _FALSE 0
 #endif
 
 #define LOG_SHOULD_I(level) ( level <= LOG_BUILD_LEVEL && level <= log_run_level )

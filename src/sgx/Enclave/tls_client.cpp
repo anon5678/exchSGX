@@ -1,8 +1,8 @@
 #include "tls_client.h"
 #include "log.h"
-#include "key_rsa_t.h"
 #include "tls_exch_ca.h"
 #include "utils.h"
+#include "state.h"
 
 #if !defined(MBEDTLS_CONFIG_FILE)
 #include "mbedtls/config.h"
@@ -108,20 +108,43 @@ TLSClient::TLSClient(const string hostname, unsigned int port)
     throw std::runtime_error("mbedtls_ctr_drbg_seed failed");
   }
 
+  State& state = State::getInstance();
+
   /*
    * 1.a load user identity
    */
-  if (0 == mbedtls_pk_can_do(&g_rsa_sk, MBEDTLS_PK_RSA)){
+  // FIXME: using the wrong key for now
+  if (0 == mbedtls_pk_can_do(&state.getFairnessServerKey(), MBEDTLS_PK_RSA)){
     throw runtime_error("no key is provisioned");
   }
 
-  pkey = &g_rsa_sk;
+  const string& cert_pem = state.getFairnessServerCertPEM();
 
-  if ((ret = mbedtls_x509_crt_parse(&clicert, (const unsigned char *) g_cert_pem.c_str(), g_cert_pem.size())) != 0) {
+  // FIXME: copy the secret key to a local buffer. Ugly but we need this.
+  // FIXME: see https://tls.mbed.org/discussions/generic/mbedtls_ssl_conf_own_cert
+  priv_key = nullptr;
+
+  auto priv_key_len = mbedtls_pk_get_len(&state.getFairnessServerKey());
+
+  if (priv_key_len != 0) {
+    priv_key = (mbedtls_pk_context*) malloc(priv_key_len);
+  }
+  else {
+    throw runtime_error("cannot get length of private key");
+  }
+
+  if (priv_key == nullptr) {
+    throw runtime_error("bad alloc");
+  }
+
+  memcpy(priv_key, &state.getFairnessServerKey(), priv_key_len);
+
+
+  if ((ret = mbedtls_x509_crt_parse(&clicert, (const unsigned char *) cert_pem.c_str(), cert_pem.size())) != 0) {
     throw std::runtime_error("failed to load client cert");
   }
 
-  if ((ret = mbedtls_ssl_conf_own_cert(&conf, &clicert, pkey)) != 0) {
+  if ((ret = mbedtls_ssl_conf_own_cert(&conf, &clicert, priv_key)) != 0) {
     throw std::runtime_error("failed to set own cert: " + this->GetError());
   }
 
@@ -364,6 +387,7 @@ TLSClient::~TLSClient() {
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
   mbedtls_x509_crt_free(&clicert);
   mbedtls_x509_crt_free(&cacert);
+  mbedtls_pk_free(priv_key);
 #endif
   mbedtls_ssl_session_free(&saved_session);
   mbedtls_ssl_free(&ssl);
