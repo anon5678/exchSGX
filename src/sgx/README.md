@@ -3,8 +3,10 @@ Dependencies
 
 You need lib support for RPC. For Ubuntu 16.04:
 
-    sudo apt install libjsonrpccpp-dev
-    sudo apt install libjsoncpp-dev libcurl4-openssl-dev
+    sudo apt-get -y install build-essential cmake pkg-config
+    sudo apt-get -y install libboost-all-dev libssl-dev openssl liblog4cxx-dev libmicrohttpd-dev
+    sudo apt-get -y install libjsonrpccpp-dev
+    sudo apt-get -y install libjsoncpp-dev libcurl4-openssl-dev
 
 You also need `bitcoind`, which can be installed by (Ubuntu 16.04)
 
