@@ -33,3 +33,13 @@ Run
 Run the (small) testing excutable:
 
     ./blockfeeder
+
+
+System Configuration
+====================
+
+The Intel SGX SDK is installed to `/opt/intel/sgxsdk`. You should set
+
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/opt/intel/sgxsdk/lib64"
+
+in your `.bashrc` to avoid dynamic loader errors.
