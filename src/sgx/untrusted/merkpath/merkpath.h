@@ -43,7 +43,7 @@ class MerkleProof {
   MerkleProof(const string &tx, const vector<string> &branch, int dirvec)
       : tx_hash_hex(tx), branch(branch), direction(dirvec) {
     for (auto &b : branch) {
-      if (b.size() != 2 * BITCOIN_HASH_LENGTH) {
+      if (!b.empty() && b.size() != 2 * BITCOIN_HASH_LENGTH) {
         throw invalid_argument("branch " + b + " doesn't have 64 letters");
       }
     }
