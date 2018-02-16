@@ -13,7 +13,7 @@ which docker >/dev/null || {
 # Start SGX Rust Docker container.
 docker run --rm -t -i \
   --name "tesseract-devel" \
-  -v ${ROOTDIR}/src:/code \
+  -v ${ROOTDIR}/src/sgx:/code \
   -e "TESSERTACT_BUILD_CONFIG=Debug" \
   -e "SGX_SDK=/opt/intel/sgxsdk" \
   -w /code/build \
