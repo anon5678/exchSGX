@@ -15,4 +15,8 @@ typedef struct {
   const char* pubkey_pem;
 } bitcoin_deposit_t;
 
+typedef struct {
+  const char* fairness;
+} init_param;
+
 #endif

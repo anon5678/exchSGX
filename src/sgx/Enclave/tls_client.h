@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include <string>
+#include <vector>
 #include <stdlib.h>
 
-#include "Enclave_t.h"
 #include "mbedtls/platform.h"
 #include "mbedtls/net_v.h"
 #include "mbedtls/net_f.h"
@@ -13,11 +14,13 @@
 #include "mbedtls/error.h"
 #include "mbedtls/debug.h"
 
+#include "Enclave_t.h"
+#include "utils.h"
+#include "tls.h"
+
 #ifndef TLS_CLIENT_H
 #define TLS_CLIENT_H
 
-#include <string>
-#include <vector>
 
 using namespace std;
 
@@ -58,16 +61,18 @@ class TLSClient {
  private:
   bool isConnected;
 
-
  public:
-  TLSClient(string hostname, unsigned int port);
+  TLSClient(const exch::enclave::tls::TLSCert &clientCert,
+            const string hostname,
+            unsigned int port);
   ~TLSClient();
 
-  string GetError();
-  void Connect() throw(runtime_error);
-  void Send(const vector<uint8_t>& data);
-  int SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &data_out) throw (runtime_error);
-  void Close();
+  string getError();
+  void connect() throw(runtime_error);
+  void send(const bytes &data);
+  void receive(bytes&);
+  int sendWait(const bytes &data_in, bytes &data_out) throw (runtime_error);
+  void close();
 };
 
 #endif

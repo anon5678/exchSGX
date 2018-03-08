@@ -26,6 +26,10 @@ void print_error_message(sgx_status_t ret);
 int initialize_enclave(sgx_enclave_id_t *eid);
 int initialize_enclave(std::string enclave_path, sgx_enclave_id_t *eid);
 
+
+std::string readTextFile(const std::string &fname);
+std::vector<uint8_t> readBinaryFile(const std::string &fname);
+
 typedef struct _sgx_errlist_t {
   sgx_status_t err;
   const char *msg;
@@ -33,7 +37,7 @@ typedef struct _sgx_errlist_t {
 } sgx_errlist_t;
 
 /* Error code returned by sgx_create_enclave */
-static sgx_errlist_t sgx_errlist[] = {
+const sgx_errlist_t sgx_errlist[] = {
     {
         SGX_ERROR_UNEXPECTED,
         "Unexpected error occurred.",

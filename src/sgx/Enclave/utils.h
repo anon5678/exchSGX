@@ -1,11 +1,13 @@
-#ifndef PROJECT_UTILS_H
-#define PROJECT_UTILS_H
+#ifndef PROJECT_ENCLVAE_UTILS_H
+#define PROJECT_ENCLAVE_UTILS_H
 
 #include "Enclave_t.h"
 
 #include <cstdio>
 #include <string>
 #include <vector>
+
+using bytes = std::vector<uint8_t>;
 
 namespace utils {
 int printf_std(const char *fmt, ...);

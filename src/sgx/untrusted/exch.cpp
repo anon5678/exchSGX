@@ -12,26 +12,24 @@
 #include <boost/algorithm/hex.hpp>
 #include <boost/filesystem.hpp>
 #include <jsonrpccpp/client/connectors/httpclient.h>
+#include <jsonrpccpp/server/connectors/httpserver.h>
+#include <log4cxx/logger.h>
+#include <log4cxx/propertyconfigurator.h>
 
-#include "Enclave_u.h"
-#include "Utils.h"
 #include "bitcoindrpcclient.h"
 #include "tls_server_threaded_u.h"
-
-#include "enclave_rpc.h"
-#include <jsonrpccpp/server/connectors/httpserver.h>
 #include "enclave_rpc.h"
 #include "interrupt.h"
-
 #include "config.h"
+#include "Utils.h"
+
+#include "Enclave_u.h"
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
 using namespace std;
 
-#include <log4cxx/logger.h>
-#include <log4cxx/propertyconfigurator.h>
 
 namespace exch{
 namespace main {
@@ -40,38 +38,16 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.cpp"));
 }
 
 using exch::main::logger;
-using exch::interrupt::init_signal_handler;
 
 sgx_enclave_id_t eid;
 
-
-static vector<uint8_t> readBinaryFile(const string &fname) {
-  ifstream in(fname, std::ios::binary);
-  if (!in.is_open()) {
-    throw invalid_argument("cannot open file " + fname);
-  }
-
-  return vector<uint8_t>(istreambuf_iterator<char>(in),
-                         istreambuf_iterator<char>());
-}
-
-static string readTextFile(const string &fname) {
-  ifstream in(fname);
-  if (!in.is_open()) {
-    throw invalid_argument("cannot open file " + fname);
-  }
-
-  return string(istreambuf_iterator<char>(in), istreambuf_iterator<char>());
-}
-
-
 int main(int argc, const char *argv[]) {
+  // initialize logging and stuff
   Config conf(argc, argv);
-
-  init_signal_handler();
-
   log4cxx::PropertyConfigurator::configure(LOGGING_CONF);
+  exch::interrupt::init_signal_handler();
 
+  // try to create an enclave
   if (0 != initialize_enclave(&eid)) {
     cerr << "failed to init enclave" << endl;
     exit(-1);
@@ -80,15 +56,7 @@ int main(int argc, const char *argv[]) {
   sgx_status_t st;
   int ret = 0;
 
-  int RPCSrvPort = 1234;
-  bool RPCSrvRunning = false;
-  jsonrpc::HttpServer httpserver(RPCSrvPort);
-  EnclaveRPC enclaveRPC(eid, httpserver);
-  if(enclaveRPC.StartListening()) {
-    RPCSrvRunning = true;
-    LOG4CXX_INFO(logger, "RPC server listening at localhost:" << RPCSrvPort);
-  }
-
+  // try to load sealed secret keys
   try {
     LOG4CXX_INFO(logger, "launching " << conf.getIdentity());
 
@@ -100,14 +68,14 @@ int main(int argc, const char *argv[]) {
     auto sealed = readBinaryFile(sealed_secret_path.string());
     auto cert = readTextFile(cert_path.string());
 
+    // provision the sealed RSA key. Die if this fails.
     st = provision_rsa_id(eid, &ret, sealed.data(), sealed.size(), cert.c_str());
-    // die if failed to provision id
     if (st != SGX_SUCCESS || ret != 0) {
       cerr << "cannot provision rsa id. ret=" << ret << endl;
       exit(-1);
     }
 
-    // print out the provisioned id
+    // ask enclave for the public key corresponding to the provisioned secret key
     unsigned char pubkey[1024];
     char cert_pem[2048];
     st = query_rsa_pubkey(eid, &ret, pubkey, sizeof pubkey, cert_pem, sizeof cert_pem);
@@ -122,15 +90,25 @@ int main(int argc, const char *argv[]) {
     exit(-1);
   }
 
-
-  thread fairnessProtocolServer;
-  if (conf.getFairnessServerPort() > 0) {
-    // prepare tls server
-    auto port = conf.getFairnessServerPort();
-    LOG4CXX_INFO(logger, "starting fairness server at " << port);
-    fairnessProtocolServer = thread(TLSServerThreadPool("localhost", to_string(port), TLSServerThreadPool::FAIRNESS_SERVER, 5));
+  // start a RPC server (defined in enclave_rpc.cpp)
+  int RPCSrvPort = 1234;
+  bool RPCSrvRunning = false;
+  jsonrpc::HttpServer httpserver(RPCSrvPort);
+  EnclaveRPC enclaveRPC(eid, httpserver);
+  if(enclaveRPC.StartListening()) {
+    RPCSrvRunning = true;
+    LOG4CXX_INFO(logger, "RPC server listening at localhost:" << RPCSrvPort);
   }
 
+  // initiate the fairness protocol server
+  thread fairnessProtocolServer;
+  if (conf.getFairnessServerPort() > 0) {
+    auto port = conf.getFairnessServerPort();
+    LOG4CXX_INFO(logger, "starting fairness server at " << port);
+    fairnessProtocolServer = thread(TLSServerThreadPool("localhost", to_string(port), TLSServerThreadPool::FAIRNESS_SERVER, 1));
+  }
+
+  // launch the fairness client (if -c PORT is given in argv)
   if (conf.getFairnessClientPort() > 0) {
     auto port = (unsigned int) conf.getFairnessClientPort();
 

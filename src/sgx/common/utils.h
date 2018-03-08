@@ -1,7 +1,3 @@
-//
-// Created by fanz on 9/20/17.
-//
-
 #ifndef PROJECT_UTILS_H
 #define PROJECT_UTILS_H
 

@@ -1,8 +1,10 @@
 #include "utils.h"
+
 #include <stdexcept>
 #include <string>
 #include <stdio.h>
 #include <vector>
+#include <cstring>
 
 #include "portable.h"
 
@@ -22,7 +24,6 @@ void hex2bin(unsigned char *dest, const char *src) {
   }
 }
 
-#include <cstring>
 
 std::vector<unsigned char> hex2bin(const char *src) {
   if (strlen(src) % 2)

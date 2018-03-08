@@ -17,6 +17,7 @@ add_custom_command(
 )
 
 add_executable(exch exch.cpp
+        fairness.cpp
         interrupt.cpp
         rpc.cpp
         enclave_rpc.cpp

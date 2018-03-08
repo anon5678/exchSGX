@@ -5,7 +5,6 @@ typedef struct ms_fairness_tls_server_init_t {
 	int ms_retval;
 } ms_fairness_tls_server_init_t;
 
-
 typedef struct ms_fairness_tls_server_tcp_conn_handler_t {
 	long int ms_thread_id;
 	thread_info_t* ms_thread_info;
@@ -20,7 +19,6 @@ typedef struct ms_ssl_client_init_t {
 typedef struct ms_ssl_client_write_test_t {
 	int ms_retval;
 } ms_ssl_client_write_test_t;
-
 
 typedef struct ms_ecall_append_block_to_fifo_t {
 	int ms_retval;
@@ -74,7 +72,6 @@ typedef struct ms_ecall_bitcoin_deposit_t {
 	int ms_retval;
 	bitcoin_deposit_t* ms_deposit;
 } ms_ecall_bitcoin_deposit_t;
-
 
 typedef struct ms_ocall_mbedtls_net_connect_t {
 	int ms_retval;

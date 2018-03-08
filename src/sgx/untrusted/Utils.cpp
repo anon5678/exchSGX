@@ -1,12 +1,14 @@
+#include <boost/program_options.hpp>
+#include <stdexcept>
 #include <sgx_urts.h>
 
 #include "Utils.h"
 
-#include <unistd.h>
 #include <pwd.h>
+#include <iostream>
+#include <fstream>
+#include <vector>
 
-#include <cstring>
-#include <string>
 
 #define MAX_PATH FILENAME_MAX
 
@@ -110,4 +112,24 @@ int ocall_print_to_err(const char *str) {
   int ret = fprintf(stderr, "%s", str);
   fflush(stdout);
   return ret;
+}
+
+std::vector<uint8_t> readBinaryFile(const std::string &fname) {
+  std::ifstream in(fname, std::ios_base::binary);
+  if (!in.is_open()) {
+    throw std::invalid_argument("cannot open file " + fname);
+  }
+
+  return std::vector<uint8_t>(
+      std::istreambuf_iterator<char>(in),
+      std::istreambuf_iterator<char>());
+}
+
+std::string readTextFile(const std::string &fname) {
+  std::ifstream in(fname);
+  if (!in.is_open()) {
+    throw std::invalid_argument("cannot open file " + fname);
+  }
+
+  return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
 }

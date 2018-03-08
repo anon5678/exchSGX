@@ -36,9 +36,12 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("tls_server_threaded_u.cpp"
 using exch::tls::logger;
 
 TLSServerThreadPool::TLSServerThreadPool(
-    const string &hostname, const string &port,
-    TLSServerThreadPool::Role role, size_t n_threads) :
-    hostname(hostname), port(port), role(role), ret(0) {
+    const string &hostname,
+    const string &port,
+    TLSServerThreadPool::Role role,
+    size_t n_threads) :
+    hostname(hostname), port(port), role(role), ret(0)
+{
   // initialize the enclave TLS resources
   // TODO: initialize according to role
   if (fairness_tls_server_init(eid, &ret) != SGX_SUCCESS || ret != 0) {
@@ -109,7 +112,7 @@ void TLSServerThreadPool::operator()() {
 
     LOG4CXX_INFO(logger, "connected at socket %d" << client_fd.fd);
 
-    if ((ret = establish_tls_in_thread(&client_fd)) != 0) {
+    if ((ret = establishTlsInThread(&client_fd)) != 0) {
       LOG4CXX_ERROR(logger, "failed to create threads: " << ret);
       mbedtls_net_free(&client_fd);
       continue;
@@ -147,7 +150,7 @@ void *ecall_handle_tls_conn(void *data) {
   return nullptr;
 }
 
-int TLSServerThreadPool::establish_tls_in_thread(const mbedtls_net_context *client_fd) {
+int TLSServerThreadPool::establishTlsInThread(const mbedtls_net_context *client_fd) {
   int ret, i;
 
   for (i = 0; i < threads.size(); i++) {

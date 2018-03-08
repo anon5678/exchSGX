@@ -19,6 +19,7 @@ set(SOURCE_FILES
         log.c
         pprint.c
 
+        fairness.cpp
         rsa_utils.cpp
 
         tls_client.cpp

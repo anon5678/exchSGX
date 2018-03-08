@@ -5,12 +5,10 @@
 #include <vector>
 
 #include "state.h"
-#include "utils.h"
 
 #include "../common/errno.h"
 
 using namespace std;
-
 
 /*!
  * Called by untrusted. Update the state with provisioned secret_key and cert_pem
@@ -20,35 +18,55 @@ using namespace std;
  * @return 0 on success
  */
 int provision_rsa_id(const unsigned char *secret_key, size_t secret_key_len, const char *cert_pem) {
+  State &s = State::getInstance();
+
+  return
+      s.set_cert(CLIENT_FACING, secret_key, secret_key_len, cert_pem) ||
+          s.set_cert(FAIRNESS, secret_key, secret_key_len, cert_pem);
+}
+
+int State::set_cert(CertType type, const unsigned char *secret_key, size_t secret_key_len, const char *cert_pem) {
   auto sealed_secret = (const sgx_sealed_data_t *) secret_key;
   int ret;
   try {
-    vector<uint8_t> unsealed = utils::sgx_unseal_data_cpp(sealed_secret, secret_key_len);
+    bytes unsealed = utils::sgx_unseal_data_cpp(sealed_secret, secret_key_len);
     LL_LOG("unsealed secret");
 
-    State &s = State::getInstance();
+    mbedtls_pk_context *sk = nullptr;
+    bytes *cert = nullptr;
+    switch (type) {
+      case CLIENT_FACING:
+        sk = &this->clientFacingCert.sk;
+        cert = &clientFacingCert.cert;
+        break;
+      case FAIRNESS:
+        sk = &this->fairnessCert.sk;
+        cert = &fairnessCert.cert;
+        break;
+    }
 
-    ret = mbedtls_pk_parse_key(&s.fairnessServerKey, unsealed.data(), unsealed.size(), nullptr, 0);
+    ret = mbedtls_pk_parse_key(sk, unsealed.data(), unsealed.size(), nullptr, 0);
     if (ret != 0) {
       LL_CRITICAL("cannot parse secret key: %#x", -ret);
       return -1;
     }
 
-    // copy the certificate in PEM format
-    s.fairnessServerCertPEM.clear();
-    s.fairnessServerCertPEM += cert_pem;
+    // PEM length includes the terminating null
+    string cert_pem_str(cert_pem);
+    if (cert_pem_str.back() != '\0')
+      cert_pem_str += '\n';
+
+    cert->insert(cert->end(), cert_pem_str.begin(), cert_pem_str.end());
 
     LL_LOG("key provisioned");
-
-    // PEM length includes the terminating null
-    if (s.fairnessServerCertPEM.back() != '\0')
-      s.fairnessServerCertPEM += '\0';
 
     return 0;
   } catch (const std::exception &e) {
     LL_CRITICAL("%s", e.what());
     return -1;
   }
+
+  return -1;
 }
 
 /*!
@@ -61,21 +79,26 @@ int provision_rsa_id(const unsigned char *secret_key, size_t secret_key_len, con
  */
 int query_rsa_pubkey(unsigned char *o_pubkey, size_t cap_pubkey, char *o_cert_pem, size_t cap_cert_pem) {
   State &s = State::getInstance();
-  if (0 == mbedtls_pk_can_do(&s.fairnessServerKey, MBEDTLS_PK_RSA)) {
+  return s.get_fairness_pubkey(o_pubkey, cap_pubkey, o_cert_pem, cap_cert_pem);
+}
+
+int State::get_fairness_pubkey(unsigned char *o_pubkey, size_t cap_pubkey, char *o_cert_pem, size_t cap_cert_pem) {
+  if (0 == mbedtls_pk_can_do(fairnessCert.getSkPtr(), MBEDTLS_PK_RSA)) {
     LL_CRITICAL("key is not ready");
     return RSA_KEY_NOT_PROVISIONED;
   }
 
-  int ret = mbedtls_pk_write_pubkey_pem(&s.fairnessServerKey, o_pubkey, cap_pubkey);
+  int ret = mbedtls_pk_write_pubkey_pem(&fairnessCert.sk, o_pubkey, cap_pubkey);
   if (ret != 0) {
     LL_CRITICAL("cannot write pubkey to PEM: %#x", -ret);
     return -ret;
   }
 
-  if (s.fairnessServerCertPEM.empty()) {
+  if (fairnessCert.getCert().empty()) {
     LL_CRITICAL("cert is not provisioned");
+    return -1;
   } else {
-    strncpy(o_cert_pem, s.fairnessServerCertPEM.c_str(), cap_cert_pem);
+    strncpy(o_cert_pem, (const char *) fairnessCert.getCert().data(), cap_cert_pem);
   }
 
   return 0;

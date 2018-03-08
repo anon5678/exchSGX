@@ -2,18 +2,14 @@
 #include "log.h"
 #include "pprint.h"
 #include "tls_exch_ca.h"
-#include "utils.h"
 #include "state.h"
-
-#include <vector>
-#include <mbedtls/pk.h>
-#include "mbedtls/debug.h"
-#include "mbedtls/net_v.h"
-
 
 using namespace std;
 
-SSLServerContext::SSLServerContext() {
+SSLServerContext::SSLServerContext(
+    const bytes& serverCertPEM,
+    const mbedtls_pk_context *serverPrivateKey
+) {
   int ret;
 
   // initialize a bunch of context data
@@ -26,40 +22,39 @@ SSLServerContext::SSLServerContext() {
   // Load the certificates and private RSA key
   LL_LOG("Loading the server cert. and key...");
 
-  State& state = State::getInstance();
+//  State &state = State::getInstance();
 
   // FIXME: only provisioning one type of key
-  if (state.getFairnessServerCertPEM().empty()) {
-    throw runtime_error("no cert provisioned");
-  }
+//  if (state.getFairnessServerCertPEM().empty()) {
+//    throw runtime_error("no cert provisioned");
+//  }
 
   ret = mbedtls_x509_crt_parse(&srvcert,
-                               (const unsigned char*) state.getFairnessServerCertPEM().data(),
-                               state.getFairnessServerCertPEM().size());
+                               serverCertPEM.data(),
+                               serverCertPEM.size());
   if (ret != 0) {
     throw runtime_error(utils::mbedtls_error(ret));
   }
   LL_LOG("done loading server cert");
 
   // length includes the terminating null
-  ret = mbedtls_x509_crt_parse(&cachain, (const unsigned char*) exch_dummy_ca, exch_dummy_ca_len);
+  ret = mbedtls_x509_crt_parse(&cachain, (const unsigned char *) exch_dummy_ca, exch_dummy_ca_len);
   if (ret != 0) {
     throw std::runtime_error("mbedtls_x509_crt_parse returned " + to_string(ret));
   }
   LL_DEBUG("done loading CA certs");
 
-  if (0 == mbedtls_pk_can_do(&state.getFairnessServerKey(), MBEDTLS_PK_RSA)){
+  if (0 == mbedtls_pk_can_do(serverPrivateKey, MBEDTLS_PK_RSA)) {
     throw runtime_error("RSA key is not provisioned");
   }
 
   // FIXME: copy the secret key to a local buffer. Ugly but we need this.
   // FIXME: see https://tls.mbed.org/discussions/generic/mbedtls_ssl_conf_own_cert
-  auto priv_key_len = mbedtls_pk_get_len(&state.getFairnessServerKey());
+  auto priv_key_len = mbedtls_pk_get_len(serverPrivateKey);
 
   if (priv_key_len != 0) {
-    priv_key = (mbedtls_pk_context*) malloc(priv_key_len);
-  }
-  else {
+    priv_key = (mbedtls_pk_context *) malloc(priv_key_len);
+  } else {
     throw runtime_error("cannot get length of private key");
   }
 
@@ -67,7 +62,7 @@ SSLServerContext::SSLServerContext() {
     throw runtime_error("bad alloc");
   }
 
-  memcpy(priv_key, &state.getFairnessServerKey(), priv_key_len);
+  memcpy(priv_key, &serverPrivateKey, priv_key_len);
 
   if ((ret = mbedtls_ssl_config_defaults(&conf,
                                          MBEDTLS_SSL_IS_SERVER,
@@ -155,7 +150,7 @@ void SSLServerContext::handle(long int thread_id, thread_info_t *thread_info) {
   LL_DEBUG("  [ #%ld ]  Setting up SSL/TLS data", thread_id);
   if ((ret = mbedtls_ssl_setup(&ssl, thread_info->config)) != 0) {
     LL_DEBUG("  [ #%ld ]  failed: mbedtls_ssl_setup returned -0x%04x",
-                   thread_id, -ret);
+             thread_id, -ret);
     goto thread_exit;
   }
 
@@ -180,7 +175,6 @@ void SSLServerContext::handle(long int thread_id, thread_info_t *thread_info) {
    */
   LL_DEBUG("  [ #%ld ]  < Read from client", thread_id);
 
-
   do {
     len = sizeof(buf) - 1;
     memset(buf, 0, sizeof(buf));
@@ -192,19 +186,15 @@ void SSLServerContext::handle(long int thread_id, thread_info_t *thread_info) {
 
     if (ret <= 0) {
       switch (ret) {
-        case 0:
-          LL_DEBUG("EOF reached");
+        case 0:LL_DEBUG("EOF reached");
           goto thread_exit;
-        case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
-          LL_DEBUG("  [ #%ld ]  connection was closed gracefully", thread_id);
+        case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:LL_DEBUG("  [ #%ld ]  connection was closed gracefully", thread_id);
           goto thread_exit;
 
-        case MBEDTLS_ERR_NET_CONN_RESET:
-          LL_DEBUG("  [ #%ld ]  connection was reset by peer", thread_id);
+        case MBEDTLS_ERR_NET_CONN_RESET:LL_DEBUG("  [ #%ld ]  connection was reset by peer", thread_id);
           goto exit_without_notify;
 
-        default:
-          LL_DEBUG("  [ #%ld ]  mbedtls_ssl_read returned -0x%04x", thread_id, -ret);
+        default:LL_DEBUG("  [ #%ld ]  mbedtls_ssl_read returned -0x%04x", thread_id, -ret);
           goto thread_exit;
       }
     }
@@ -223,23 +213,19 @@ void SSLServerContext::handle(long int thread_id, thread_info_t *thread_info) {
 
   // write dummy back
   {
-    vector<uint8_t> back {4, 3, 2, 1};
+    vector<uint8_t> back{4, 3, 2, 1};
 
     size_t written = 0, frags = 0;
-    for( written = 0, frags = 0; written < back.size(); written += ret, frags++ )
-    {
-      while( ( ret = mbedtls_ssl_write( &ssl, back.data() + written, back.size() - written ) ) <= 0 )
-      {
-        if( ret == MBEDTLS_ERR_NET_CONN_RESET )
-        {
-          LL_CRITICAL("failed! peer closed the connection" );
+    for (written = 0, frags = 0; written < back.size(); written += ret, frags++) {
+      while ((ret = mbedtls_ssl_write(&ssl, back.data() + written, back.size() - written)) <= 0) {
+        if (ret == MBEDTLS_ERR_NET_CONN_RESET) {
+          LL_CRITICAL("failed! peer closed the connection");
           goto exit_without_notify;
         }
 
-        if( ret != MBEDTLS_ERR_SSL_WANT_READ &&
-            ret != MBEDTLS_ERR_SSL_WANT_WRITE )
-        {
-          mbedtls_printf( "failed! mbedtls_ssl_write returned %d", ret );
+        if (ret != MBEDTLS_ERR_SSL_WANT_READ &&
+            ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
+          mbedtls_printf("failed! mbedtls_ssl_write returned %d", ret);
           goto exit_without_notify;
         }
       }
@@ -247,7 +233,7 @@ void SSLServerContext::handle(long int thread_id, thread_info_t *thread_info) {
     hexdump("written to client: ", data_in.data(), data_in.size());
   }
 
-thread_exit:
+  thread_exit:
   while ((ret = mbedtls_ssl_close_notify(&ssl)) < 0) {
     if (ret != MBEDTLS_ERR_SSL_WANT_READ &&
         ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
@@ -257,7 +243,7 @@ thread_exit:
   }
   LL_LOG("socket %d closed", client_fd->fd);
 
-exit_without_notify:
+  exit_without_notify:
 
 #ifdef MBEDTLS_ERROR_C
   if (ret != 0) {
@@ -275,7 +261,7 @@ exit_without_notify:
   thread_info->thread_complete = 1;
 }
 
-int send(long thread_id, mbedtls_ssl_context* ssl, const vector<uint8_t> &data) {
+int send(long thread_id, mbedtls_ssl_context *ssl, const vector<uint8_t> &data) {
 #if 0
   LL_DEBUG("  [ #%ld ]  > Write to client", thread_id);
 
@@ -315,8 +301,8 @@ sgx_thread_mutex_t SSLServerContext::mutex = SGX_THREAD_MUTEX_INITIALIZER;
 int SSLServerContext::debug_level = 0;
 
 void SSLServerContext::mydebug(void *ctx, int level,
-                                   const char *file, int line,
-                                   const char *str) {
+                               const char *file, int line,
+                               const char *str) {
   (void) ctx;
   (void) level;
   if (level > debug_level) return;

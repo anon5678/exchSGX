@@ -1,32 +1,12 @@
 #include "tls_client.h"
 #include "log.h"
 #include "tls_exch_ca.h"
-#include "utils.h"
 #include "state.h"
 
 #if !defined(MBEDTLS_CONFIG_FILE)
 #include "mbedtls/config.h"
 #else
-#include MBEDTLS_CONFIG_FILE
 #endif
-
-#include "mbedtls/platform.h"
-#include "mbedtls/net_v.h"
-#include "mbedtls/net_f.h"
-#include "mbedtls/ssl.h"
-#include "mbedtls/entropy.h"
-#include "mbedtls/ctr_drbg.h"
-#include "mbedtls/certs.h"
-#include "mbedtls/x509.h"
-#include "mbedtls/error.h"
-#include "mbedtls/debug.h"
-#include "pprint.h"
-
-#include <stdlib.h>
-#include <string.h>
-#include <exception>
-#include <vector>
-#include <mbedtls/pk.h>
 
 using namespace std;
 
@@ -73,7 +53,9 @@ static int my_verify(void *data, mbedtls_x509_crt *crt, int depth, uint32_t *fla
 }
 #endif /* MBEDTLS_X509_CRT_PARSE_C */
 
-TLSClient::TLSClient(const string hostname, unsigned int port)
+TLSClient::TLSClient(const exch::enclave::tls::TLSCert &clientCert,
+                     const string hostname,
+                     unsigned int port)
     : hostname(hostname), port(port), isConnected(false) {
   // init the return code
   ret = 0;
@@ -108,28 +90,23 @@ TLSClient::TLSClient(const string hostname, unsigned int port)
     throw std::runtime_error("mbedtls_ctr_drbg_seed failed");
   }
 
-  State& state = State::getInstance();
-
   /*
    * 1.a load user identity
    */
   // FIXME: using the wrong key for now
-  if (0 == mbedtls_pk_can_do(&state.getFairnessServerKey(), MBEDTLS_PK_RSA)){
+  if (0 == mbedtls_pk_can_do(clientCert.getSkPtr(), MBEDTLS_PK_RSA)) {
     throw runtime_error("no key is provisioned");
   }
-
-  const string& cert_pem = state.getFairnessServerCertPEM();
 
   // FIXME: copy the secret key to a local buffer. Ugly but we need this.
   // FIXME: see https://tls.mbed.org/discussions/generic/mbedtls_ssl_conf_own_cert
   priv_key = nullptr;
 
-  auto priv_key_len = mbedtls_pk_get_len(&state.getFairnessServerKey());
+  auto priv_key_len = mbedtls_pk_get_len(clientCert.getSkPtr());
 
   if (priv_key_len != 0) {
-    priv_key = (mbedtls_pk_context*) malloc(priv_key_len);
-  }
-  else {
+    priv_key = (mbedtls_pk_context *) malloc(priv_key_len);
+  } else {
     throw runtime_error("cannot get length of private key");
   }
 
@@ -137,20 +114,19 @@ TLSClient::TLSClient(const string hostname, unsigned int port)
     throw runtime_error("bad alloc");
   }
 
-  memcpy(priv_key, &state.getFairnessServerKey(), priv_key_len);
+  memcpy(priv_key, clientCert.getSkPtr(), priv_key_len);
 
-
-  if ((ret = mbedtls_x509_crt_parse(&clicert, (const unsigned char *) cert_pem.c_str(), cert_pem.size())) != 0) {
+  if ((ret = mbedtls_x509_crt_parse(&clicert, clientCert.getCert().data(), clientCert.getCert().size())) != 0) {
     throw std::runtime_error("failed to load client cert");
   }
 
   if ((ret = mbedtls_ssl_conf_own_cert(&conf, &clicert, priv_key)) != 0) {
-    throw std::runtime_error("failed to set own cert: " + this->GetError());
+    throw std::runtime_error("failed to set own cert: " + this->getError());
   }
 
-    /*
-     * 1.b Load the trusted CA
-     */
+  /*
+   * 1.b Load the trusted CA
+   */
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
   ret = mbedtls_x509_crt_parse(&cacert, (const unsigned char *) exch_dummy_ca, exch_dummy_ca_len);
   if (ret < 0) {
@@ -160,7 +136,7 @@ TLSClient::TLSClient(const string hostname, unsigned int port)
 #endif /* MBEDTLS_X509_CRT_PARSE_C */
 }
 
-void TLSClient::Connect() throw(runtime_error){
+void TLSClient::connect() throw(runtime_error) {
   if (isConnected) {
     LL_WARNING("trying to already connected");
     return;
@@ -267,7 +243,7 @@ void TLSClient::Connect() throw(runtime_error){
   isConnected = true;
 }
 
-void TLSClient::Send(const vector<uint8_t> &data) {
+void TLSClient::send(const bytes &data) {
   if (!isConnected) {
     throw runtime_error("not connected yet");
   }
@@ -284,14 +260,66 @@ void TLSClient::Send(const vector<uint8_t> &data) {
   hexdump("bytes sent", data.data(), data.size());
 }
 
+void TLSClient::receive(bytes &data){
+  unsigned char buf[4096];
+
+  int n_data;
+  while (true) {
+    /*
+      mbedtls_ssl_read returns the number of bytes read, or 0 for EOF, or
+      MBEDTLS_ERR_SSL_WANT_READ or MBEDTLS_ERR_SSL_WANT_WRITE, or
+      MBEDTLS_ERR_SSL_CLIENT_RECONNECT (see below), or another negative
+      error code.
+    */
+    n_data = mbedtls_ssl_read(&ssl, buf, sizeof(buf));
+
+    LL_CRITICAL("n_data = %d", n_data);
+
+    // handle possible errors
+    if (n_data == MBEDTLS_ERR_SSL_WANT_READ ||
+        n_data == MBEDTLS_ERR_SSL_WANT_WRITE)
+      continue;
+
+    if (n_data < 0) {
+      ret = n_data;
+      switch (n_data) {
+        case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
+          LL_LOG(" connection was closed gracefully");
+          ret = 0;
+          this->close();
+        case MBEDTLS_ERR_NET_CONN_RESET:
+          LL_LOG(" connection was reset by peer");
+          // that's fine. we're not going to reconnect
+          ret = 0;
+          this->close();
+        default:
+          ret = n_data;
+          LL_CRITICAL(" mbedtls_ssl_read returned 0x%x", ret);
+      }
+    }
+
+    // EOF reached
+    if (n_data == 0) {
+      LL_DEBUG("eof reached");
+      break;
+    }
+
+    // otherwise store the bytes read
+    data.insert(data.end(), buf, buf + n_data);
+  }
+}
+
 /*
  * return 0 if no error. otherwise error code is returned.
  */
-int TLSClient::SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &data_out) throw (runtime_error) {
+int TLSClient::sendWait(const bytes &data_in, bytes &data_out) throw(runtime_error) {
   if (!isConnected) {
     throw runtime_error("not connected yet");
   }
 
+  this->send(data_in);
+
+  /* replaced by the above call to this->send()
   // write data
   for (size_t written = 0, frags = 0; written < data_in.size(); written += ret, frags++) {
     while ((ret = mbedtls_ssl_write(&ssl, data_in.data() + written, data_in.size() - written)) <= 0) {
@@ -301,6 +329,7 @@ int TLSClient::SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &dat
       }
     }
   }
+   */
 
   unsigned char buf[4096];
   /*
@@ -324,17 +353,14 @@ int TLSClient::SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &dat
     if (n_data < 0) {
       ret = n_data;
       switch (n_data) {
-        case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
-          LL_LOG(" connection was closed gracefully");
+        case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:LL_LOG(" connection was closed gracefully");
           ret = 0;
           goto close_notify;
-        case MBEDTLS_ERR_NET_CONN_RESET:
-          LL_LOG(" connection was reset by peer");
+        case MBEDTLS_ERR_NET_CONN_RESET:LL_LOG(" connection was reset by peer");
           // that's fine. we're not going to reconnect
           ret = 0;
           goto close_notify;
-        default:
-          LL_CRITICAL(" mbedtls_ssl_read returned 0x%x", n_data);
+        default:LL_CRITICAL(" mbedtls_ssl_read returned 0x%x", n_data);
           return -1;
       }
     }
@@ -349,12 +375,12 @@ int TLSClient::SendWaitRecv(const vector<uint8_t> &data_in, vector<uint8_t> &dat
     data_out.insert(data_out.end(), buf, buf + n_data);
   }
 
-close_notify:
-  this->Close();
+  close_notify:
+  this->close();
   return 0;
 }
 
-void TLSClient::Close() {
+void TLSClient::close() {
   if (!isConnected)
     return;
 
@@ -368,7 +394,7 @@ void TLSClient::Close() {
   LL_DEBUG("closed %s:%d", hostname.c_str(), port);
 }
 
-string TLSClient::GetError() {
+string TLSClient::getError() {
 #ifdef MBEDTLS_ERROR_C
   if (ret != 0) {
     char error_buf[100];
@@ -381,7 +407,7 @@ string TLSClient::GetError() {
 
 TLSClient::~TLSClient() {
   // try to close first
-  Close();
+  close();
 
   mbedtls_net_free(&server_fd);
 #if defined(MBEDTLS_X509_CRT_PARSE_C)

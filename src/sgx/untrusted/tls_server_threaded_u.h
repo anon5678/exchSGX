@@ -47,7 +47,7 @@ class TLSServerThreadPool {
   mbedtls_net_context server_socket, client_fd;
   vector<pthread_info_t> threads;
 
-  int establish_tls_in_thread(const mbedtls_net_context *client_fd);
+  int establishTlsInThread(const mbedtls_net_context *client_fd);
 };
 
 #endif //PROJECT_TLS_SERVER_THREADED_H

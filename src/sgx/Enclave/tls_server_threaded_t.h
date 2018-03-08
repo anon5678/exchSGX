@@ -35,6 +35,7 @@
 #include <cstdint>
 #include <sgx_thread.h>
 
+#include "utils.h"
 #include "../common/ssl_context.h"
 
 using std::string;
@@ -87,7 +88,10 @@ class SSLServerContext {
   static void mydebug(void *ctx, int level, const char *file, int line, const char *str);
 
  public:
-  SSLServerContext();
+  SSLServerContext(
+      const bytes& serverCertPEM,
+      const mbedtls_pk_context* serverPrivateKey
+  );
 
   // disable copy and move
   SSLServerContext(const SSLServerContext &) = delete;
