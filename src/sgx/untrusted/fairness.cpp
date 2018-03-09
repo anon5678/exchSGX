@@ -3,3 +3,11 @@
 //
 
 #include "fairness.h"
+
+void sendMessagesToFairnessFollowers() {
+#pragma message ("NOT IMPLEMENTED")
+}
+
+void settle() {
+#pragma message ("NOT IMPLEMENTED")
+}

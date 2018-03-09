@@ -21,11 +21,11 @@ int provision_rsa_id(const unsigned char *secret_key, size_t secret_key_len, con
   State &s = State::getInstance();
 
   return
-      s.set_cert(CLIENT_FACING, secret_key, secret_key_len, cert_pem) ||
-          s.set_cert(FAIRNESS, secret_key, secret_key_len, cert_pem);
+      s.setCert(CLIENT_FACING, secret_key, secret_key_len, cert_pem) ||
+          s.setCert(FAIRNESS, secret_key, secret_key_len, cert_pem);
 }
 
-int State::set_cert(CertType type, const unsigned char *secret_key, size_t secret_key_len, const char *cert_pem) {
+int State::setCert(CertType type, const unsigned char *secret_key, size_t secret_key_len, const char *cert_pem) {
   auto sealed_secret = (const sgx_sealed_data_t *) secret_key;
   int ret;
   try {
@@ -79,26 +79,41 @@ int State::set_cert(CertType type, const unsigned char *secret_key, size_t secre
  */
 int query_rsa_pubkey(unsigned char *o_pubkey, size_t cap_pubkey, char *o_cert_pem, size_t cap_cert_pem) {
   State &s = State::getInstance();
-  return s.get_fairness_pubkey(o_pubkey, cap_pubkey, o_cert_pem, cap_cert_pem);
+  return s.getPubkey(FAIRNESS, o_pubkey, cap_pubkey, o_cert_pem, cap_cert_pem);
 }
 
-int State::get_fairness_pubkey(unsigned char *o_pubkey, size_t cap_pubkey, char *o_cert_pem, size_t cap_cert_pem) {
-  if (0 == mbedtls_pk_can_do(fairnessCert.getSkPtr(), MBEDTLS_PK_RSA)) {
+int State::getPubkey(CertType type, unsigned char *o_pubkey, size_t cap_pubkey, char *o_cert_pem, size_t cap_cert_pem) {
+  const mbedtls_pk_context* sk = nullptr;
+  const bytes* cert = nullptr;
+
+  switch (type) {
+  case FAIRNESS:
+    sk = fairnessCert.getSkPtr();
+    cert = &fairnessCert.getCert();
+    break;
+  case CLIENT_FACING:
+    sk = clientFacingCert.getSkPtr();
+    cert = &clientFacingCert.getCert();
+    break;
+  }
+
+  if (0 == mbedtls_pk_can_do(sk, MBEDTLS_PK_RSA)) {
     LL_CRITICAL("key is not ready");
     return RSA_KEY_NOT_PROVISIONED;
   }
 
-  int ret = mbedtls_pk_write_pubkey_pem(&fairnessCert.sk, o_pubkey, cap_pubkey);
+  // Needing to cast away const is a bug in mbedtls. Hopefully it will be fixed soon.
+  int ret = mbedtls_pk_write_pubkey_pem(const_cast<mbedtls_pk_context*>(sk), o_pubkey, cap_pubkey);
   if (ret != 0) {
     LL_CRITICAL("cannot write pubkey to PEM: %#x", -ret);
     return -ret;
   }
 
-  if (fairnessCert.getCert().empty()) {
+  if (cert->empty()) {
     LL_CRITICAL("cert is not provisioned");
     return -1;
   } else {
-    strncpy(o_cert_pem, (const char *) fairnessCert.getCert().data(), cap_cert_pem);
+    strncpy(o_cert_pem, (const char *) cert->data(), cap_cert_pem);
   }
 
   return 0;

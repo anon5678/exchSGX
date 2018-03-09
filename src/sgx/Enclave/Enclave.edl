@@ -9,19 +9,18 @@ enclave {
     include "sgx_tseal.h"
 
     trusted {
-        /* define ECALLs here. */
-        public int fairness_tls_server_init(void);
-        public void fairness_tls_server_free(void);
-        public void fairness_tls_server_tcp_conn_handler(long int thread_id, [in,out] thread_info_t* thread_info);
+        // deposit
+        public int ecall_bitcoin_deposit([user_check] const bitcoin_deposit_t * deposit);
 
-        public int ssl_client_init([in,string] const char* hostname, unsigned int port);
-        public int ssl_client_write_test(void);
-        public void ssl_client_teardown(void);
-
-        public int ecall_append_block_to_fifo([in,string]const char *blockHeaderHex);
+        // fairness protocol
+        public void onMessageFromFairnessLeader();
+        public void onAckFromFairnessFollower();
 
         // testing functions
         public int enclaveTest();
+
+        // state update
+        public int ecall_append_block_to_fifo([in,string]const char *blockHeaderHex);
 
         // key management
         public int rsa_keygen_in_seal(
@@ -51,12 +50,10 @@ enclave {
         // merkle proof test
         public int merkle_proof_verify(
             [user_check] const merkle_proof_t* proof);
-
-        //
-        public int ecall_bitcoin_deposit([user_check] const bitcoin_deposit_t * deposit);
     };
 
     untrusted {
-        /* define OCALLs here. */
+        void sendMessagesToFairnessFollowers();
+        void settle();
     };
 };

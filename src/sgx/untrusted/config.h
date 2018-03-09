@@ -31,9 +31,6 @@ class Config {
   string identity;
   string identity_dir;
 
-  int fairnessServerPort;
-  int fairnessClientPort;
-
  public:
   Config(int argc, const char* argv[]) {
     try {
@@ -42,9 +39,7 @@ class Config {
           ("help,h", "print this message")
           ("id,i", po::value(&this->identity)->required(), "dry run identity provision and exit.")
           ("id_dir", po::value(&this->identity_dir)->required(), "path to the dir where priv and crt files are stored.")
-          ("feed,f", po::bool_switch(&this->testBlockFeeding)->default_value(false), "try to feed some blocks.")
-          ("server,s", po::value(&this->fairnessServerPort)->default_value(-1), "run the fairness server at port [PORT].")
-          ("client,c", po::value(&this->fairnessClientPort)->default_value(-1), "run the tls client at port [PORT]");
+          ("feed,f", po::bool_switch(&this->testBlockFeeding)->default_value(false), "try to feed some blocks.");
 
       po::variables_map vm;
       po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -76,15 +71,6 @@ class Config {
   const string &getIdentity_dir() const {
     return identity_dir;
   }
-
-  int getFairnessServerPort() const {
-    return this->fairnessServerPort;
-  }
-
-  int getFairnessClientPort() const {
-    return fairnessClientPort;
-  }
-
 };
 
 #endif //PROJECT_CONFIG_H

@@ -100,40 +100,6 @@ int main(int argc, const char *argv[]) {
     LOG4CXX_INFO(logger, "RPC server listening at localhost:" << RPCSrvPort);
   }
 
-  // initiate the fairness protocol server
-  thread fairnessProtocolServer;
-  if (conf.getFairnessServerPort() > 0) {
-    auto port = conf.getFairnessServerPort();
-    LOG4CXX_INFO(logger, "starting fairness server at " << port);
-    fairnessProtocolServer = thread(TLSServerThreadPool("localhost", to_string(port), TLSServerThreadPool::FAIRNESS_SERVER, 1));
-  }
-
-  // launch the fairness client (if -c PORT is given in argv)
-  if (conf.getFairnessClientPort() > 0) {
-    auto port = (unsigned int) conf.getFairnessClientPort();
-
-    st = ssl_client_init(eid, &ret, "localhost", port);
-    if (st != SGX_SUCCESS || ret != 0) {
-      LOG4CXX_ERROR(logger, "cannot start fairness client");
-      exit(-1);
-    }
-    LOG4CXX_INFO(logger, "fairness client started at " << port);
-
-    st = ssl_client_write_test(eid, &ret);
-    if (st != SGX_SUCCESS || ret != 0) {
-      LOG4CXX_ERROR(logger, "ssl_client_write_test returns " << ret);
-    }
-
-    st = ssl_client_teardown(eid);
-    if (st != SGX_SUCCESS) {
-      LOG4CXX_ERROR(logger, "cannot teardown fairness client");
-    }
-  }
-
-  if (fairnessProtocolServer.joinable()) {
-    fairnessProtocolServer.join();
-  }
-
   while(!exch::interrupt::quit.load())
   {
     this_thread::sleep_for(chrono::seconds(2));

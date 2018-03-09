@@ -1,7 +1,3 @@
-//
-// Created by fanz on 4/7/17.
-//
-
 #ifndef MBEDTLS_SGX_SSL_CONTEXT_H
 #define MBEDTLS_SGX_SSL_CONTEXT_H
 
@@ -11,7 +7,8 @@
 typedef struct {
   mbedtls_net_context client_fd;
   int thread_complete;
+  // TODO: seems like we can remove config?
   const mbedtls_ssl_config *config;
-} thread_info_t;
+} ssl_context;
 
 #endif //MBEDTLS_SGX_SSL_CONTEXT_H

@@ -25,7 +25,7 @@ add_executable(exch exch.cpp
         merkle_data.cpp
         ../common/utils.cpp
         Utils.cpp
-        tls_server_threaded_u.cpp
+        # tls_server_threaded_u.cpp
         Enclave_u.c
         Enclave_u.h
         mbedtls_error.c
@@ -34,6 +34,7 @@ add_executable(exch exch.cpp
 
 add_executable(enclave_test
         enclave_test.cpp Utils.cpp
+        fairness.cpp
         Enclave_u.c Enclave_u.h
         merkpath/merkpath.cpp
         merkle_data.cpp
@@ -41,6 +42,7 @@ add_executable(enclave_test
         )
 
 add_executable(exch-keygen exch-keygen.cpp key_u.cpp Utils.cpp
+        fairness.cpp
         Enclave_u.c Enclave_u.h
         ../common/base64.cpp)
 

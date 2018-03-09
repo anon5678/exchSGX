@@ -19,6 +19,7 @@ set(SOURCE_FILES
         log.c
         pprint.c
 
+        tls.h
         fairness.cpp
         rsa_utils.cpp
 
@@ -36,7 +37,8 @@ set(SOURCE_FILES
         state.cpp
         state_blockfifo.cpp
         state_balance.cpp
-        state_cert_rsa.cpp
+        state_fairness.cpp
+        state_keys.cpp
         state_ssl.cpp
 
         bitcoin/uint256.cpp

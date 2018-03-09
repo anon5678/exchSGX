@@ -20,8 +20,6 @@ namespace enclave {
 namespace state {
 extern BalanceBook balanceBook;
 extern BlockFIFO<1000> blockFIFO;
-extern SSLServerContext *fairnessServerTrustedPart;
-extern SSLServerContext *clientTLSServerTrustedPart;
 extern TLSClient *tlsClient;
 }
 }
@@ -35,33 +33,45 @@ enum CertType {
 };
 
 class State {
- public:
+public:
   static State &getInstance() {
     static State instance;
     return instance;
   }
 
-  int set_cert(CertType, const unsigned char* , size_t , const char *);
+  int setCert(CertType, const unsigned char *, size_t, const char *);
+  int getPubkey(
+      CertType type,
+      unsigned char *o_pubkey,
+      size_t cap_pubkey,
+      char *o_cert_pem,
+      size_t cap_cert_pem
+  );
 
-  int get_fairness_pubkey(unsigned char *o_pubkey, size_t cap_pubkey, char *o_cert_pem, size_t cap_cert_pem);
+  bool addPeer(const fairness::PeerInfo &peer);
+  bool removePeer(const fairness::PeerInfo &peer);
 
- private:
-  fairness::Leader *fairnessLeader;
+private:
   fairness::Follower *fairnessFollower;
   tls::TLSCert fairnessCert;
   tls::TLSCert clientFacingCert;
+  fairness::PeerList fairnessPeers;
+  fairness::PeerInfo currentLeader;
 
   State() = default;
 
- public:
-  // delete copy
+public:
+  // delete copy constructors
   State(const State &) = delete;
   void operator=(const State &) = delete;
 
   const tls::TLSCert &getFairnessCert() const { return fairnessCert; }
   const tls::TLSCert &getClientCert() const { return this->clientFacingCert; }
+  const fairness::PeerList &getPeerList() const { return this->fairnessPeers; }
 
-  ~State() = default;
+  ~State() {
+    delete fairnessFollower;
+  }
 };
 
 #ifdef __cplusplus
@@ -74,18 +84,22 @@ int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit);
 int ecall_append_block_to_fifo(const char *blockHeaderHex);
 int ecall_get_latest_block_hash(unsigned char *o_buf, size_t cap_obuf);
 
+// ECALLs for the fairness protocol
+void onMessageFromFairnessLeader();
+void onAckFromFairnessFollower();
+
 // SSL server & client
-int fairness_tls_server_init(void);
-void fairness_tls_server_tcp_conn_handler(long int thread_id, thread_info_t *thread_info);
-void fairness_tls_server_free(void);
+//int fairness_tls_server_init(void);
+//void fairness_tls_server_tcp_conn_handler(long int thread_id, ssl_context *thread_info);
+//void fairness_tls_server_free(void);
 
-int client_facing_tls_server_init(void);
-void client_facing_tls_server_tcp_conn_handler(long int thread_id, thread_info_t *thread_info);
-void client_facing_tls_server_free(void);
+//int client_facing_tls_server_init(void);
+//void client_facing_tls_server_tcp_conn_handler(long int thread_id, ssl_context *thread_info);
+//void client_facing_tls_server_free(void);
 
-int ssl_client_init(const char *hostname, unsigned int port);
-int ssl_client_write_test(void);
-void ssl_client_teardown(void);
+//int ssl_client_init(const char *hostname, unsigned int port);
+//int ssl_client_write_test(void);
+//void ssl_client_teardown(void);
 
 // key provisioning functions
 int rsa_keygen_in_seal(const char *subject_name,

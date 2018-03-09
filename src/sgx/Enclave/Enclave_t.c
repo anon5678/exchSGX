@@ -17,33 +17,19 @@
 } while (0)
 
 
-typedef struct ms_fairness_tls_server_init_t {
+typedef struct ms_ecall_bitcoin_deposit_t {
 	int ms_retval;
-} ms_fairness_tls_server_init_t;
+	bitcoin_deposit_t* ms_deposit;
+} ms_ecall_bitcoin_deposit_t;
 
-typedef struct ms_fairness_tls_server_tcp_conn_handler_t {
-	long int ms_thread_id;
-	thread_info_t* ms_thread_info;
-} ms_fairness_tls_server_tcp_conn_handler_t;
-
-typedef struct ms_ssl_client_init_t {
+typedef struct ms_enclaveTest_t {
 	int ms_retval;
-	char* ms_hostname;
-	unsigned int ms_port;
-} ms_ssl_client_init_t;
-
-typedef struct ms_ssl_client_write_test_t {
-	int ms_retval;
-} ms_ssl_client_write_test_t;
+} ms_enclaveTest_t;
 
 typedef struct ms_ecall_append_block_to_fifo_t {
 	int ms_retval;
 	char* ms_blockHeaderHex;
 } ms_ecall_append_block_to_fifo_t;
-
-typedef struct ms_enclaveTest_t {
-	int ms_retval;
-} ms_enclaveTest_t;
 
 typedef struct ms_rsa_keygen_in_seal_t {
 	int ms_retval;
@@ -83,11 +69,6 @@ typedef struct ms_merkle_proof_verify_t {
 	int ms_retval;
 	merkle_proof_t* ms_proof;
 } ms_merkle_proof_verify_t;
-
-typedef struct ms_ecall_bitcoin_deposit_t {
-	int ms_retval;
-	bitcoin_deposit_t* ms_deposit;
-} ms_ecall_bitcoin_deposit_t;
 
 typedef struct ms_ocall_mbedtls_net_connect_t {
 	int ms_retval;
@@ -197,11 +178,12 @@ typedef struct ms_ocall_print_to_err_t {
 	char* ms_str;
 } ms_ocall_print_to_err_t;
 
-static sgx_status_t SGX_CDECL sgx_fairness_tls_server_init(void* pms)
+static sgx_status_t SGX_CDECL sgx_ecall_bitcoin_deposit(void* pms)
 {
-	CHECK_REF_POINTER(pms, sizeof(ms_fairness_tls_server_init_t));
-	ms_fairness_tls_server_init_t* ms = SGX_CAST(ms_fairness_tls_server_init_t*, pms);
+	CHECK_REF_POINTER(pms, sizeof(ms_ecall_bitcoin_deposit_t));
+	ms_ecall_bitcoin_deposit_t* ms = SGX_CAST(ms_ecall_bitcoin_deposit_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
+	bitcoin_deposit_t* _tmp_deposit = ms->ms_deposit;
 
 
 
@@ -211,117 +193,45 @@ static sgx_status_t SGX_CDECL sgx_fairness_tls_server_init(void* pms)
 	__builtin_ia32_lfence();
 
 
-	ms->ms_retval = fairness_tls_server_init();
+	ms->ms_retval = ecall_bitcoin_deposit((const bitcoin_deposit_t*)_tmp_deposit);
 
 
 	return status;
 }
 
-static sgx_status_t SGX_CDECL sgx_fairness_tls_server_free(void* pms)
+static sgx_status_t SGX_CDECL sgx_onMessageFromFairnessLeader(void* pms)
 {
 	sgx_status_t status = SGX_SUCCESS;
 	if (pms != NULL) return SGX_ERROR_INVALID_PARAMETER;
-	fairness_tls_server_free();
+	onMessageFromFairnessLeader();
 	return status;
 }
 
-static sgx_status_t SGX_CDECL sgx_fairness_tls_server_tcp_conn_handler(void* pms)
-{
-	CHECK_REF_POINTER(pms, sizeof(ms_fairness_tls_server_tcp_conn_handler_t));
-	ms_fairness_tls_server_tcp_conn_handler_t* ms = SGX_CAST(ms_fairness_tls_server_tcp_conn_handler_t*, pms);
-	sgx_status_t status = SGX_SUCCESS;
-	thread_info_t* _tmp_thread_info = ms->ms_thread_info;
-	size_t _len_thread_info = sizeof(*_tmp_thread_info);
-	thread_info_t* _in_thread_info = NULL;
-
-	CHECK_UNIQUE_POINTER(_tmp_thread_info, _len_thread_info);
-
-
-	//
-	// fence after pointer checks
-	//
-	__builtin_ia32_lfence();
-
-	if (_tmp_thread_info != NULL && _len_thread_info != 0) {
-		_in_thread_info = (thread_info_t*)malloc(_len_thread_info);
-		if (_in_thread_info == NULL) {
-			status = SGX_ERROR_OUT_OF_MEMORY;
-			goto err;
-		}
-
-		memcpy(_in_thread_info, _tmp_thread_info, _len_thread_info);
-	}
-
-	fairness_tls_server_tcp_conn_handler(ms->ms_thread_id, _in_thread_info);
-err:
-	if (_in_thread_info) {
-		memcpy(_tmp_thread_info, _in_thread_info, _len_thread_info);
-		free(_in_thread_info);
-	}
-
-	return status;
-}
-
-static sgx_status_t SGX_CDECL sgx_ssl_client_init(void* pms)
-{
-	CHECK_REF_POINTER(pms, sizeof(ms_ssl_client_init_t));
-	ms_ssl_client_init_t* ms = SGX_CAST(ms_ssl_client_init_t*, pms);
-	sgx_status_t status = SGX_SUCCESS;
-	char* _tmp_hostname = ms->ms_hostname;
-	size_t _len_hostname = _tmp_hostname ? strlen(_tmp_hostname) + 1 : 0;
-	char* _in_hostname = NULL;
-
-	CHECK_UNIQUE_POINTER(_tmp_hostname, _len_hostname);
-
-
-	//
-	// fence after pointer checks
-	//
-	__builtin_ia32_lfence();
-
-	if (_tmp_hostname != NULL && _len_hostname != 0) {
-		_in_hostname = (char*)malloc(_len_hostname);
-		if (_in_hostname == NULL) {
-			status = SGX_ERROR_OUT_OF_MEMORY;
-			goto err;
-		}
-
-		memcpy((void*)_in_hostname, _tmp_hostname, _len_hostname);
-		_in_hostname[_len_hostname - 1] = '\0';
-	}
-
-	ms->ms_retval = ssl_client_init((const char*)_in_hostname, ms->ms_port);
-err:
-	if (_in_hostname) free((void*)_in_hostname);
-
-	return status;
-}
-
-static sgx_status_t SGX_CDECL sgx_ssl_client_write_test(void* pms)
-{
-	CHECK_REF_POINTER(pms, sizeof(ms_ssl_client_write_test_t));
-	ms_ssl_client_write_test_t* ms = SGX_CAST(ms_ssl_client_write_test_t*, pms);
-	sgx_status_t status = SGX_SUCCESS;
-
-
-
-	//
-	// fence after pointer checks
-	//
-	__builtin_ia32_lfence();
-
-
-	ms->ms_retval = ssl_client_write_test();
-
-
-	return status;
-}
-
-static sgx_status_t SGX_CDECL sgx_ssl_client_teardown(void* pms)
+static sgx_status_t SGX_CDECL sgx_onAckFromFairnessFollower(void* pms)
 {
 	sgx_status_t status = SGX_SUCCESS;
 	if (pms != NULL) return SGX_ERROR_INVALID_PARAMETER;
-	ssl_client_teardown();
+	onAckFromFairnessFollower();
+	return status;
+}
+
+static sgx_status_t SGX_CDECL sgx_enclaveTest(void* pms)
+{
+	CHECK_REF_POINTER(pms, sizeof(ms_enclaveTest_t));
+	ms_enclaveTest_t* ms = SGX_CAST(ms_enclaveTest_t*, pms);
+	sgx_status_t status = SGX_SUCCESS;
+
+
+
+	//
+	// fence after pointer checks
+	//
+	__builtin_ia32_lfence();
+
+
+	ms->ms_retval = enclaveTest();
+
+
 	return status;
 }
 
@@ -356,26 +266,6 @@ static sgx_status_t SGX_CDECL sgx_ecall_append_block_to_fifo(void* pms)
 	ms->ms_retval = ecall_append_block_to_fifo((const char*)_in_blockHeaderHex);
 err:
 	if (_in_blockHeaderHex) free((void*)_in_blockHeaderHex);
-
-	return status;
-}
-
-static sgx_status_t SGX_CDECL sgx_enclaveTest(void* pms)
-{
-	CHECK_REF_POINTER(pms, sizeof(ms_enclaveTest_t));
-	ms_enclaveTest_t* ms = SGX_CAST(ms_enclaveTest_t*, pms);
-	sgx_status_t status = SGX_SUCCESS;
-
-
-
-	//
-	// fence after pointer checks
-	//
-	__builtin_ia32_lfence();
-
-
-	ms->ms_retval = enclaveTest();
-
 
 	return status;
 }
@@ -547,27 +437,6 @@ static sgx_status_t SGX_CDECL sgx_merkle_proof_verify(void* pms)
 	return status;
 }
 
-static sgx_status_t SGX_CDECL sgx_ecall_bitcoin_deposit(void* pms)
-{
-	CHECK_REF_POINTER(pms, sizeof(ms_ecall_bitcoin_deposit_t));
-	ms_ecall_bitcoin_deposit_t* ms = SGX_CAST(ms_ecall_bitcoin_deposit_t*, pms);
-	sgx_status_t status = SGX_SUCCESS;
-	bitcoin_deposit_t* _tmp_deposit = ms->ms_deposit;
-
-
-
-	//
-	// fence after pointer checks
-	//
-	__builtin_ia32_lfence();
-
-
-	ms->ms_retval = ecall_bitcoin_deposit((const bitcoin_deposit_t*)_tmp_deposit);
-
-
-	return status;
-}
-
 static sgx_status_t SGX_CDECL sgx_dummy(void* pms)
 {
 	sgx_status_t status = SGX_SUCCESS;
@@ -578,55 +447,69 @@ static sgx_status_t SGX_CDECL sgx_dummy(void* pms)
 
 SGX_EXTERNC const struct {
 	size_t nr_ecall;
-	struct {void* ecall_addr; uint8_t is_priv;} ecall_table[15];
+	struct {void* ecall_addr; uint8_t is_priv;} ecall_table[11];
 } g_ecall_table = {
-	15,
+	11,
 	{
-		{(void*)(uintptr_t)sgx_fairness_tls_server_init, 0},
-		{(void*)(uintptr_t)sgx_fairness_tls_server_free, 0},
-		{(void*)(uintptr_t)sgx_fairness_tls_server_tcp_conn_handler, 0},
-		{(void*)(uintptr_t)sgx_ssl_client_init, 0},
-		{(void*)(uintptr_t)sgx_ssl_client_write_test, 0},
-		{(void*)(uintptr_t)sgx_ssl_client_teardown, 0},
-		{(void*)(uintptr_t)sgx_ecall_append_block_to_fifo, 0},
+		{(void*)(uintptr_t)sgx_ecall_bitcoin_deposit, 0},
+		{(void*)(uintptr_t)sgx_onMessageFromFairnessLeader, 0},
+		{(void*)(uintptr_t)sgx_onAckFromFairnessFollower, 0},
 		{(void*)(uintptr_t)sgx_enclaveTest, 0},
+		{(void*)(uintptr_t)sgx_ecall_append_block_to_fifo, 0},
 		{(void*)(uintptr_t)sgx_rsa_keygen_in_seal, 0},
 		{(void*)(uintptr_t)sgx_unseal_secret_and_leak_public_key, 0},
 		{(void*)(uintptr_t)sgx_provision_rsa_id, 0},
 		{(void*)(uintptr_t)sgx_query_rsa_pubkey, 0},
 		{(void*)(uintptr_t)sgx_merkle_proof_verify, 0},
-		{(void*)(uintptr_t)sgx_ecall_bitcoin_deposit, 0},
 		{(void*)(uintptr_t)sgx_dummy, 0},
 	}
 };
 
 SGX_EXTERNC const struct {
 	size_t nr_ocall;
-	uint8_t entry_table[18][15];
+	uint8_t entry_table[20][11];
 } g_dyn_entry_table = {
-	18,
+	20,
 	{
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
 	}
 };
 
+
+sgx_status_t SGX_CDECL sendMessagesToFairnessFollowers()
+{
+	sgx_status_t status = SGX_SUCCESS;
+	status = sgx_ocall(0, NULL);
+
+	return status;
+}
+
+sgx_status_t SGX_CDECL settle()
+{
+	sgx_status_t status = SGX_SUCCESS;
+	status = sgx_ocall(1, NULL);
+
+	return status;
+}
 
 sgx_status_t SGX_CDECL ocall_mbedtls_net_connect(int* retval, mbedtls_net_context* ctx, const char* host, const char* port, int proto)
 {
@@ -687,7 +570,7 @@ sgx_status_t SGX_CDECL ocall_mbedtls_net_connect(int* retval, mbedtls_net_contex
 	}
 	
 	ms->ms_proto = proto;
-	status = sgx_ocall(0, ms);
+	status = sgx_ocall(2, ms);
 
 	if (retval) *retval = ms->ms_retval;
 	if (ctx) memcpy((void*)ctx, __tmp_ctx, _len_ctx);
@@ -755,7 +638,7 @@ sgx_status_t SGX_CDECL ocall_mbedtls_net_bind(int* retval, mbedtls_net_context* 
 	}
 	
 	ms->ms_proto = proto;
-	status = sgx_ocall(1, ms);
+	status = sgx_ocall(3, ms);
 
 	if (retval) *retval = ms->ms_retval;
 	if (ctx) memcpy((void*)ctx, __tmp_ctx, _len_ctx);
@@ -840,7 +723,7 @@ sgx_status_t SGX_CDECL ocall_mbedtls_net_accept(int* retval, mbedtls_net_context
 		return SGX_ERROR_INVALID_PARAMETER;
 	}
 	
-	status = sgx_ocall(2, ms);
+	status = sgx_ocall(4, ms);
 
 	if (retval) *retval = ms->ms_retval;
 	if (client_ctx) memcpy((void*)client_ctx, __tmp_client_ctx, _len_client_ctx);
@@ -883,7 +766,7 @@ sgx_status_t SGX_CDECL ocall_mbedtls_net_set_block(int* retval, mbedtls_net_cont
 		return SGX_ERROR_INVALID_PARAMETER;
 	}
 	
-	status = sgx_ocall(3, ms);
+	status = sgx_ocall(5, ms);
 
 	if (retval) *retval = ms->ms_retval;
 	if (ctx) memcpy((void*)ctx, __tmp_ctx, _len_ctx);
@@ -924,7 +807,7 @@ sgx_status_t SGX_CDECL ocall_mbedtls_net_set_nonblock(int* retval, mbedtls_net_c
 		return SGX_ERROR_INVALID_PARAMETER;
 	}
 	
-	status = sgx_ocall(4, ms);
+	status = sgx_ocall(6, ms);
 
 	if (retval) *retval = ms->ms_retval;
 	if (ctx) memcpy((void*)ctx, __tmp_ctx, _len_ctx);
@@ -951,7 +834,7 @@ sgx_status_t SGX_CDECL ocall_mbedtls_net_usleep(unsigned long int usec)
 	__tmp = (void *)((size_t)__tmp + sizeof(ms_ocall_mbedtls_net_usleep_t));
 
 	ms->ms_usec = usec;
-	status = sgx_ocall(5, ms);
+	status = sgx_ocall(7, ms);
 
 
 	sgx_ocfree();
@@ -1006,7 +889,7 @@ sgx_status_t SGX_CDECL ocall_mbedtls_net_recv(int* retval, mbedtls_net_context* 
 	}
 	
 	ms->ms_len = len;
-	status = sgx_ocall(6, ms);
+	status = sgx_ocall(8, ms);
 
 	if (retval) *retval = ms->ms_retval;
 	if (ctx) memcpy((void*)ctx, __tmp_ctx, _len_ctx);
@@ -1062,7 +945,7 @@ sgx_status_t SGX_CDECL ocall_mbedtls_net_send(int* retval, mbedtls_net_context* 
 	}
 	
 	ms->ms_len = len;
-	status = sgx_ocall(7, ms);
+	status = sgx_ocall(9, ms);
 
 	if (retval) *retval = ms->ms_retval;
 	if (ctx) memcpy((void*)ctx, __tmp_ctx, _len_ctx);
@@ -1120,7 +1003,7 @@ sgx_status_t SGX_CDECL ocall_mbedtls_net_recv_timeout(int* retval, mbedtls_net_c
 	
 	ms->ms_len = len;
 	ms->ms_timeout = timeout;
-	status = sgx_ocall(8, ms);
+	status = sgx_ocall(10, ms);
 
 	if (retval) *retval = ms->ms_retval;
 	if (ctx) memcpy((void*)ctx, __tmp_ctx, _len_ctx);
@@ -1162,7 +1045,7 @@ sgx_status_t SGX_CDECL ocall_mbedtls_net_free(mbedtls_net_context* ctx)
 		return SGX_ERROR_INVALID_PARAMETER;
 	}
 	
-	status = sgx_ocall(9, ms);
+	status = sgx_ocall(11, ms);
 
 	if (ctx) memcpy((void*)ctx, __tmp_ctx, _len_ctx);
 
@@ -1200,7 +1083,7 @@ sgx_status_t SGX_CDECL ocall_print_string(int* retval, const char* str)
 		return SGX_ERROR_INVALID_PARAMETER;
 	}
 	
-	status = sgx_ocall(10, ms);
+	status = sgx_ocall(12, ms);
 
 	if (retval) *retval = ms->ms_retval;
 
@@ -1242,7 +1125,7 @@ sgx_status_t SGX_CDECL sgx_oc_cpuidex(int cpuinfo[4], int leaf, int subleaf)
 	
 	ms->ms_leaf = leaf;
 	ms->ms_subleaf = subleaf;
-	status = sgx_ocall(11, ms);
+	status = sgx_ocall(13, ms);
 
 	if (cpuinfo) memcpy((void*)cpuinfo, __tmp_cpuinfo, _len_cpuinfo);
 
@@ -1268,7 +1151,7 @@ sgx_status_t SGX_CDECL sgx_thread_wait_untrusted_event_ocall(int* retval, const 
 	__tmp = (void *)((size_t)__tmp + sizeof(ms_sgx_thread_wait_untrusted_event_ocall_t));
 
 	ms->ms_self = SGX_CAST(void*, self);
-	status = sgx_ocall(12, ms);
+	status = sgx_ocall(14, ms);
 
 	if (retval) *retval = ms->ms_retval;
 
@@ -1294,7 +1177,7 @@ sgx_status_t SGX_CDECL sgx_thread_set_untrusted_event_ocall(int* retval, const v
 	__tmp = (void *)((size_t)__tmp + sizeof(ms_sgx_thread_set_untrusted_event_ocall_t));
 
 	ms->ms_waiter = SGX_CAST(void*, waiter);
-	status = sgx_ocall(13, ms);
+	status = sgx_ocall(15, ms);
 
 	if (retval) *retval = ms->ms_retval;
 
@@ -1321,7 +1204,7 @@ sgx_status_t SGX_CDECL sgx_thread_setwait_untrusted_events_ocall(int* retval, co
 
 	ms->ms_waiter = SGX_CAST(void*, waiter);
 	ms->ms_self = SGX_CAST(void*, self);
-	status = sgx_ocall(14, ms);
+	status = sgx_ocall(16, ms);
 
 	if (retval) *retval = ms->ms_retval;
 
@@ -1360,7 +1243,7 @@ sgx_status_t SGX_CDECL sgx_thread_set_multiple_untrusted_events_ocall(int* retva
 	}
 	
 	ms->ms_total = total;
-	status = sgx_ocall(15, ms);
+	status = sgx_ocall(17, ms);
 
 	if (retval) *retval = ms->ms_retval;
 
@@ -1398,7 +1281,7 @@ sgx_status_t SGX_CDECL ocall_print_to_std(int* retval, const char* str)
 		return SGX_ERROR_INVALID_PARAMETER;
 	}
 	
-	status = sgx_ocall(16, ms);
+	status = sgx_ocall(18, ms);
 
 	if (retval) *retval = ms->ms_retval;
 
@@ -1436,7 +1319,7 @@ sgx_status_t SGX_CDECL ocall_print_to_err(int* retval, const char* str)
 		return SGX_ERROR_INVALID_PARAMETER;
 	}
 	
-	status = sgx_ocall(17, ms);
+	status = sgx_ocall(19, ms);
 
 	if (retval) *retval = ms->ms_retval;
 

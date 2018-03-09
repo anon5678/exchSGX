@@ -22,22 +22,20 @@ extern "C" {
 #endif
 
 
-int fairness_tls_server_init();
-void fairness_tls_server_free();
-void fairness_tls_server_tcp_conn_handler(long int thread_id, thread_info_t* thread_info);
-int ssl_client_init(const char* hostname, unsigned int port);
-int ssl_client_write_test();
-void ssl_client_teardown();
-int ecall_append_block_to_fifo(const char* blockHeaderHex);
+int ecall_bitcoin_deposit(const bitcoin_deposit_t* deposit);
+void onMessageFromFairnessLeader();
+void onAckFromFairnessFollower();
 int enclaveTest();
+int ecall_append_block_to_fifo(const char* blockHeaderHex);
 int rsa_keygen_in_seal(const char* subject_name, unsigned char* o_sealed, size_t cap_sealed, unsigned char* o_pubkey, size_t cap_pubkey, unsigned char* o_csr, size_t cap_csr);
 int unseal_secret_and_leak_public_key(const sgx_sealed_data_t* secret, size_t secret_len, unsigned char* pubkey, size_t cap_pubkey);
 int provision_rsa_id(const unsigned char* sealed_rsa_secret_key, size_t secret_len, const char* cert_pem);
 int query_rsa_pubkey(unsigned char* pubkey, size_t cap_pubkey, char* cert_pem, size_t cap_cert_pem);
 int merkle_proof_verify(const merkle_proof_t* proof);
-int ecall_bitcoin_deposit(const bitcoin_deposit_t* deposit);
 void dummy();
 
+sgx_status_t SGX_CDECL sendMessagesToFairnessFollowers();
+sgx_status_t SGX_CDECL settle();
 sgx_status_t SGX_CDECL ocall_mbedtls_net_connect(int* retval, mbedtls_net_context* ctx, const char* host, const char* port, int proto);
 sgx_status_t SGX_CDECL ocall_mbedtls_net_bind(int* retval, mbedtls_net_context* ctx, const char* bind_ip, const char* port, int proto);
 sgx_status_t SGX_CDECL ocall_mbedtls_net_accept(int* retval, mbedtls_net_context* bind_ctx, mbedtls_net_context* client_ctx, void* client_ip, size_t buf_size, size_t* ip_len);

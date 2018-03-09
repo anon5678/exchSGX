@@ -22,6 +22,8 @@
 extern "C" {
 #endif
 
+void SGX_UBRIDGE(SGX_NOCONVENTION, sendMessagesToFairnessFollowers, ());
+void SGX_UBRIDGE(SGX_NOCONVENTION, settle, ());
 int SGX_UBRIDGE(SGX_NOCONVENTION, ocall_mbedtls_net_connect, (mbedtls_net_context* ctx, const char* host, const char* port, int proto));
 int SGX_UBRIDGE(SGX_NOCONVENTION, ocall_mbedtls_net_bind, (mbedtls_net_context* ctx, const char* bind_ip, const char* port, int proto));
 int SGX_UBRIDGE(SGX_NOCONVENTION, ocall_mbedtls_net_accept, (mbedtls_net_context* bind_ctx, mbedtls_net_context* client_ctx, void* client_ip, size_t buf_size, size_t* ip_len));
@@ -41,20 +43,16 @@ int SGX_UBRIDGE(SGX_CDECL, sgx_thread_set_multiple_untrusted_events_ocall, (cons
 int SGX_UBRIDGE(SGX_NOCONVENTION, ocall_print_to_std, (const char* str));
 int SGX_UBRIDGE(SGX_NOCONVENTION, ocall_print_to_err, (const char* str));
 
-sgx_status_t fairness_tls_server_init(sgx_enclave_id_t eid, int* retval);
-sgx_status_t fairness_tls_server_free(sgx_enclave_id_t eid);
-sgx_status_t fairness_tls_server_tcp_conn_handler(sgx_enclave_id_t eid, long int thread_id, thread_info_t* thread_info);
-sgx_status_t ssl_client_init(sgx_enclave_id_t eid, int* retval, const char* hostname, unsigned int port);
-sgx_status_t ssl_client_write_test(sgx_enclave_id_t eid, int* retval);
-sgx_status_t ssl_client_teardown(sgx_enclave_id_t eid);
-sgx_status_t ecall_append_block_to_fifo(sgx_enclave_id_t eid, int* retval, const char* blockHeaderHex);
+sgx_status_t ecall_bitcoin_deposit(sgx_enclave_id_t eid, int* retval, const bitcoin_deposit_t* deposit);
+sgx_status_t onMessageFromFairnessLeader(sgx_enclave_id_t eid);
+sgx_status_t onAckFromFairnessFollower(sgx_enclave_id_t eid);
 sgx_status_t enclaveTest(sgx_enclave_id_t eid, int* retval);
+sgx_status_t ecall_append_block_to_fifo(sgx_enclave_id_t eid, int* retval, const char* blockHeaderHex);
 sgx_status_t rsa_keygen_in_seal(sgx_enclave_id_t eid, int* retval, const char* subject_name, unsigned char* o_sealed, size_t cap_sealed, unsigned char* o_pubkey, size_t cap_pubkey, unsigned char* o_csr, size_t cap_csr);
 sgx_status_t unseal_secret_and_leak_public_key(sgx_enclave_id_t eid, int* retval, const sgx_sealed_data_t* secret, size_t secret_len, unsigned char* pubkey, size_t cap_pubkey);
 sgx_status_t provision_rsa_id(sgx_enclave_id_t eid, int* retval, const unsigned char* sealed_rsa_secret_key, size_t secret_len, const char* cert_pem);
 sgx_status_t query_rsa_pubkey(sgx_enclave_id_t eid, int* retval, unsigned char* pubkey, size_t cap_pubkey, char* cert_pem, size_t cap_cert_pem);
 sgx_status_t merkle_proof_verify(sgx_enclave_id_t eid, int* retval, const merkle_proof_t* proof);
-sgx_status_t ecall_bitcoin_deposit(sgx_enclave_id_t eid, int* retval, const bitcoin_deposit_t* deposit);
 sgx_status_t dummy(sgx_enclave_id_t eid);
 
 #ifdef __cplusplus

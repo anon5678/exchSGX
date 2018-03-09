@@ -42,14 +42,6 @@ TLSServerThreadPool::TLSServerThreadPool(
     size_t n_threads) :
     hostname(hostname), port(port), role(role), ret(0)
 {
-  // initialize the enclave TLS resources
-  // TODO: initialize according to role
-  if (fairness_tls_server_init(eid, &ret) != SGX_SUCCESS || ret != 0) {
-    LOG4CXX_ERROR(logger, "failed to init TLSService");
-    exit(-1);
-  }
-
-  // allocate threads
   threads.resize(n_threads);
   for (auto t : threads) {
     memset(&t, 0, sizeof(pthread_info_t));
@@ -65,14 +57,6 @@ TLSServerThreadPool::TLSServerThreadPool(TLSServerThreadPool &&other) noexcept {
   ret = 0;
 
   threads = move(other.threads);
-
-  other.moved_away = true;
-}
-
-TLSServerThreadPool::~TLSServerThreadPool() {
-  if (!moved_away) {
-    fairness_tls_server_free(eid);
-  }
 }
 
 /*
@@ -135,7 +119,7 @@ void TLSServerThreadPool::operator()() {
 // thread function
 void *ecall_handle_tls_conn(void *data) {
   long int thread_id = pthread_self();
-  auto *thread_info = (thread_info_t *) data;
+  auto *thread_info = (ssl_context *) data;
 
   int ret = fairness_tls_server_tcp_conn_handler(eid, thread_id, thread_info);
   if (ret != SGX_SUCCESS) {
@@ -153,6 +137,8 @@ void *ecall_handle_tls_conn(void *data) {
 int TLSServerThreadPool::establishTlsInThread(const mbedtls_net_context *client_fd) {
   int ret, i;
 
+  // find the first thread that is free
+  // backlog otherwise
   for (i = 0; i < threads.size(); i++) {
     if (threads[i].active == 0)
       break;

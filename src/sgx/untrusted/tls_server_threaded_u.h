@@ -9,7 +9,7 @@
 
 typedef struct {
   int active;
-  thread_info_t data;
+  ssl_context data;
   pthread_t thread;
 } pthread_info_t;
 
@@ -18,7 +18,7 @@ typedef struct {
 using namespace std;
 
 class TLSServerThreadPool {
- public:
+public:
   enum Role {
     FAIRNESS_SERVER,
     END_USER_SERVICE,
@@ -31,19 +31,15 @@ class TLSServerThreadPool {
   TLSServerThreadPool &operator=(TLSServerThreadPool &&) = delete;
 
   TLSServerThreadPool(const string &hostname, const string &port, TLSServerThreadPool::Role role, size_t n_threads);
-  ~TLSServerThreadPool();
+  ~TLSServerThreadPool() = default;
   void operator()();
 
- private:
+private:
   string hostname;
   string port;
   Role role;
   int ret;
 
-  // set in the move constructor
-  bool moved_away = false;
-
-  // resources
   mbedtls_net_context server_socket, client_fd;
   vector<pthread_info_t> threads;
 

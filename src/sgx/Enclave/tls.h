@@ -5,6 +5,7 @@
 
 #include "mbedtls/pk.h"
 #include <string>
+#include <mbedtls/pk.h>
 
 namespace exch {
 namespace enclave {
@@ -28,5 +29,4 @@ struct TLSCert {
 }
 }
 }
-
 #endif //PROJECT_ENCLAVE_TLS_H

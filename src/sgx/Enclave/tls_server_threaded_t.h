@@ -36,6 +36,7 @@
 #include <sgx_thread.h>
 
 #include "utils.h"
+#include "tls.h"
 #include "../common/ssl_context.h"
 
 using std::string;
@@ -49,22 +50,23 @@ using std::vector;
 #include "mbedtls/memory_buffer_alloc.h"
 #endif
 
-#define HTTP_RESPONSE \
-    "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n" \
-    "<h2>mbed TLS Test Server</h2>\r\n" \
-    "<p>Successful connection using: %s</p>\r\n"
+namespace exch {
+namespace enclave {
+namespace tls {
 
-class SSLServerContext {
+struct Session {
+  mbedtls_ssl_context* ssl;
+  ssl_context* ssl_ctx;
+};
+
+class SSLServer {
  private:
   /*
    * static members
    */
-  const static string pers;
   static sgx_thread_mutex_t mutex;
 
-  /*
-   * global server state
-   */
+  // server state
   mbedtls_entropy_context entropy;
   mbedtls_ctr_drbg_context ctr_drbg;
   mbedtls_ssl_config conf;
@@ -72,36 +74,30 @@ class SSLServerContext {
   mbedtls_x509_crt cachain;
   mbedtls_pk_context* priv_key;
 
-  /*
-   * error message buffer
-   */
   char error_msg[1024];
-
-  /*
-   * configuration
-   */
   static int debug_level;
 
-  /*
-   * debug callback
-   */
+  // debug callback
   static void mydebug(void *ctx, int level, const char *file, int line, const char *str);
 
  public:
-  SSLServerContext(
-      const bytes& serverCertPEM,
-      const mbedtls_pk_context* serverPrivateKey
-  );
+  SSLServer(const TLSCert &cert);
 
   // disable copy and move
-  SSLServerContext(const SSLServerContext &) = delete;
-  SSLServerContext(SSLServerContext &&) = delete;
-  SSLServerContext &operator=(const SSLServerContext &) = delete;
-  SSLServerContext &operator=(SSLServerContext &&)= delete;
+  SSLServer(const SSLServer &) = delete;
+  SSLServer(SSLServer &&) = delete;
+  SSLServer &operator=(const SSLServer &) = delete;
+  SSLServer &operator=(SSLServer &&)= delete;
 
-  ~SSLServerContext();
-  void handle(long int thread_id, thread_info_t *);
+  ~SSLServer();
+  Session establish(long int thread_id, ssl_context *, bytes &);
+  int send(Session session, const bytes&);
+  void close(Session &session, bool notify);
   string getError(int errno);
 };
+
+}
+}
+}
 
 #endif //MBEDTLS_SGX_SSL_SERVER_THREAD_H
