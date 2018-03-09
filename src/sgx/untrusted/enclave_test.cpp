@@ -72,12 +72,11 @@ int main() {
   }
 
   int ret;
-  std::cout << "starting tests" << endl;
 
   st = enclaveTest(eid, &ret);
   if (st != SGX_SUCCESS || ret != 0) {
     LOG4CXX_ERROR(logger, "failed to run enclave test: st=" << st << " ret=" << ret);
   }
 
-  test_merkle_verify(eid);
+  // test_merkle_verify(eid);
 }

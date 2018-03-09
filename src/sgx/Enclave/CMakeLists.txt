@@ -52,6 +52,9 @@ set(SOURCE_FILES
         bitcoin/crypto/sha512.cpp
         bitcoin/crypto/ripemd160.cpp
 
+        nacl/tweetnacl.c
+        nacl/randombytes.c
+
         ../common/utils.cpp
 
         enclave_test.cpp
