@@ -54,6 +54,9 @@ set(SOURCE_FILES
 
         nacl/tweetnacl.c
         nacl/randombytes.c
+        nacl/crypto_box/wrapper-keypair.cpp
+        nacl/crypto_box/wrapper-box.cpp
+        nacl/crypto_box/wrapper-open.cpp
 
         ../common/utils.cpp
 
@@ -69,6 +72,7 @@ include_directories(
         ${SGX_SDK}/include/libcxx
         ${MBEDTLS_SGX_ROOT_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/bitcoin
+        ${CMAKE_CURRENT_SOURCE_DIR}/nacl
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SGX_COMMON_CFLAGS} -Wall -Wno-deprecated -nostdinc -fvisibility=hidden -fpie -fstack-protector")
