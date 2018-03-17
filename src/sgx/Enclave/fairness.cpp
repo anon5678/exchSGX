@@ -4,36 +4,17 @@
 #include "state.h"
 
 using namespace exch::enclave::fairness;
+using namespace std;
 
-int fairnessProtocol() {
-  State& s = State::getInstance();
-  Leader leader(s.getFairnessCert(), s.getPeerList());
-
-  Message msg {};
-  leader.disseminate(msg);
-
-  return 0;
+Leader::Leader(const Peer& me, const vector<Peer> &peers, Message& msg)
+    :me(me), peers(peers), msg(move(msg)) {
 }
 
-Leader::Leader(const tls::TLSCert &leaderCert, const PeerList &peers) {
-  // create tls connections for all peers
-  for (auto p : peers) {
-    this->peers.emplace_back(leaderCert, p.hostname, p.port);
-  }
-}
-
-void Leader::disseminate(const Message &msg) throw(CannotDisseminate) {
+void Leader::disseminate() throw(CannotDisseminate) {
   try {
-    for (auto p : this->peers) {
-      p.connect();
-      p.send(msg.serialize());
-    }
-
-    for (auto p: this->peers) {
-      bytes reply;
-      p.receive(reply);
-      p.close();
-      hexdump("received: ", reply.data(), reply.size());
+    for (const auto& peer : peers) {
+      Box cipher = me.createBoxToPeer(peer, msg.serialize());
+      LL_NOTICE("sending %d bytes to %s", cipher.size(), peer.getHostname());
     }
   }
   catch (const std::exception &e) {
@@ -42,9 +23,11 @@ void Leader::disseminate(const Message &msg) throw(CannotDisseminate) {
   }
 }
 
-void Leader::trySettleOnBothBlockchain() {
+void Leader::sendTransaction1() {
+  LL_NOTICE("sending tx1");
 }
 
-Follower::Follower(const PeerInfo &leader, const tls::TLSCert &cert) {
+Follower::Follower(const Peer &me, const Peer &leader)
+:me(me), leader(leader){
 }
 

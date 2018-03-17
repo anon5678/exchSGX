@@ -48,17 +48,17 @@ public:
       size_t cap_cert_pem
   );
 
-  bool addPeer(const fairness::PeerInfo &peer);
-  bool removePeer(const fairness::PeerInfo &peer);
+  bool addPeer(const securechannel::Peer &peer);
+  bool removePeer(const securechannel::Peer &peer);
+  State() {}
+
 
 private:
   fairness::Follower *fairnessFollower;
   tls::TLSCert fairnessCert;
   tls::TLSCert clientFacingCert;
-  fairness::PeerList fairnessPeers;
-  fairness::PeerInfo currentLeader;
-
-  State() = default;
+  set<securechannel::Peer> fairnessPeers;
+  securechannel::Peer currentLeader;
 
 public:
   // delete copy constructors

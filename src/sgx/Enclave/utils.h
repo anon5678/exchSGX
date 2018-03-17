@@ -4,15 +4,19 @@
 #include "Enclave_t.h"
 
 #include <cstdio>
+#include <cstdint>
 #include <string>
 #include <vector>
 
 using bytes = std::vector<uint8_t>;
 
 namespace utils {
+using std::string;
+using std::vector;
+
 int printf_std(const char *fmt, ...);
 int printf_err(const char *fmt, ...);
-std::string mbedtls_error(int ret);
-std::vector<uint8_t> sgx_unseal_data_cpp(const sgx_sealed_data_t *secret, size_t len);
+string mbedtls_error(int ret);
+vector<uint8_t> sgx_unseal_data_cpp(const sgx_sealed_data_t *secret, size_t len);
 } //namespace
 #endif //PROJECT_UTILS_H

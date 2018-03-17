@@ -61,7 +61,7 @@ set(SOURCE_FILES
         ../common/utils.cpp
 
         enclave_test.cpp
-        utils.cpp)
+        utils.cpp securechannel.cpp securechannel.h)
 
 add_library(enclave SHARED ${SOURCE_FILES})
 

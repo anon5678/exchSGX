@@ -9,7 +9,11 @@
 #include "tls_client.h"
 #include "tls_server_threaded_t.h"
 
+#include "securechannel.h"
+
 #include "Enclave_t.h"
+
+using namespace exch::enclave::securechannel;
 
 namespace exch {
 namespace enclave {
@@ -49,9 +53,9 @@ class Message {
     return *this;
   }
 
-  bytes serialize() const {
+  string serialize() const {
     // TODO: this is just a dummy example
-    return bytes {1, 2, 3, 4, 5};
+    return string {1, 2, 3, 4, 5};
   }
 
  private:
@@ -61,15 +65,9 @@ class Message {
   std::vector<uint8_t> tx_2_cancel;
 };
 
-struct PeerInfo {
-  const char *hostname;
-  uint16_t port;
-  bool operator<(const PeerInfo &rhs) const {
-    return strcmp(hostname, rhs.hostname) == 0 ? port < rhs.port : strcmp(hostname, rhs.hostname) < 0;
-  }
-};
 
-using PeerList=std::set<PeerInfo>;
+
+using PeerList=std::set<Peer>;
 
 class FairnessProtocol {
  public:
@@ -83,29 +81,38 @@ class FairnessProtocol {
   // if a follower sees TX_1_Cancel on chain 1, it broadcast TX_2_Cancel to chain 2
   const static int TIMEOUT_T1_SECOND = 3600 * 12;
   const static int N_PEER_SERVERS = 5;
+  virtual void sendTransaction2() = 0;
+  virtual ~FairnessProtocol(){};
 };
 
-class Leader : FairnessProtocol {
+class Leader : public FairnessProtocol {
+private:
+  Peer me;
+  vector<Peer> peers;
+  Message msg;
+
  public:
   const static auto role = LEADER;
   // initialize
-  Leader(const tls::TLSCert &leaderCert, const PeerList &);
+  Leader(const Peer& me, const vector<Peer> &peers, Message& msg);
 
   // send msg to all peers and wait for ACKs
-  void disseminate(const Message &msg) throw(CannotDisseminate);
+  void disseminate() throw(CannotDisseminate);
 
-  // send TX_1 to blockchain C_1
-  void trySettleOnBothBlockchain();
-
- private:
-  std::vector<TLSClient> peers;
+  // send the first tx to blockchain 1
+  void sendTransaction1();
 };
 
 class Follower : FairnessProtocol {
+private:
+  Peer me;
+  Peer leader;
+
  public:
   const static auto role = FOLLOWER;
   // create a TLS server
-  Follower(const PeerInfo &leader, const tls::TLSCert& cert);
+  Follower(const Peer& me, const Peer &leader);
+  ~Follower() {}
 
   // simply send ack
   void receiveFromLeader();

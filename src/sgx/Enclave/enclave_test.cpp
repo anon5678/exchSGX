@@ -5,9 +5,9 @@
 #include "bitcoin/uint256.h"
 #include "blockfifo.hpp"
 
-#include "nacl/crypto_box.h"
-
 #include "sgx_trts.h"
+#include "crypto_box.h"
+#include "securechannel.h"
 
 using namespace std;
 
@@ -27,24 +27,28 @@ const lest::test specification[] =
 int enclaveTest() {
 //  return lest::run(specification);
 
-  string pk, sk;
-  pk = nacl::crypto_box_keypair(&sk);
+  using namespace exch::enclave::securechannel;
 
-  unsigned char n[crypto_box_NONCEBYTES];
-  sgx_read_rand(n, sizeof n);
-  string nonce((char*) n, sizeof n);
+  string skA;
+  string pkA = nacl_crypto_box_keypair(&skA);
 
-  string msg {1,2,3,4};
-  string cipher;
+  string skB;
+  string pkB = nacl_crypto_box_keypair(&skB);
 
-  cipher = nacl::crypto_box(msg, nonce, pk, sk);
+  string msg {1,2,3,4,5};
 
-  hexdump("cipher", cipher.data(), cipher.size());
+  Peer peerA("localhost", 1234, pkA, skA);
+  Peer peerB("localhost", 4321, pkB, skB);
 
-  string plain;
-  plain = nacl::crypto_box_open(cipher, nonce, pk, sk);
-
-  hexdump("msg", plain.data(), plain.size());
-
+  try {
+    for (auto i = 0; i < 10; i++) {
+      Box boxAtoB = peerA.createBoxToPeer(peerB, msg);
+      string msgB = peerB.openBoxFromPeer(boxAtoB, peerA);
+      hexdump("B received:", msgB.data(), msgB.size());
+    }
+  }
+  catch (const exception& e) {
+    LL_CRITICAL("%s", e.what());
+  }
   return 0;
 }

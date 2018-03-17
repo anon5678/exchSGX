@@ -2,13 +2,13 @@
 
 using namespace exch::enclave;
 
-bool State::addPeer(const fairness::PeerInfo &peer) {
-  auto r = this->fairnessPeers.insert(peer);
+bool State::addPeer(const securechannel::Peer &peer) {
+  auto r = fairnessPeers.insert(peer);
   return r.second;
 }
 
-bool State::removePeer(const fairness::PeerInfo &peer) {
-  auto r = this->fairnessPeers.erase(peer);
+bool State::removePeer(const securechannel::Peer &peer) {
+  auto r = fairnessPeers.erase(peer);
   return r == 1;
 }
 
