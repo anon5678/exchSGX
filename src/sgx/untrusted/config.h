@@ -17,7 +17,7 @@
 #include "bitcoindrpcclient.h"
 #include "tls_server_threaded_u.h"
 
-#include "enclave_rpc.h"
+#include "enclave-rpc-server-impl.h"
 #include "interrupt.h"
 
 namespace po = boost::program_options;
@@ -26,20 +26,22 @@ namespace fs = boost::filesystem;
 using namespace std;
 
 class Config {
- private:
+private:
   bool testBlockFeeding = false;
   string identity;
   string identity_dir;
+  uint16_t rpcServerPort;
+  bool fairnessLeader;
 
- public:
-  Config(int argc, const char* argv[]) {
+public:
+  Config(int argc, const char *argv[]) {
     try {
       po::options_description desc("Allowed options");
       desc.add_options()
           ("help,h", "print this message")
-          ("id,i", po::value(&this->identity)->required(), "dry run identity provision and exit.")
-          ("id_dir", po::value(&this->identity_dir)->required(), "path to the dir where priv and crt files are stored.")
-          ("feed,f", po::bool_switch(&this->testBlockFeeding)->default_value(false), "try to feed some blocks.");
+          ("p,port", po::value(&rpcServerPort)->required(), "RPC Port")
+          ("l,leader", po::bool_switch(&fairnessLeader)->default_value(false), "work as the fairness leader")
+          ("feed,f", po::bool_switch(&testBlockFeeding)->default_value(false), "try to feed some blocks.");
 
       po::variables_map vm;
       po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -71,6 +73,10 @@ class Config {
   const string &getIdentity_dir() const {
     return identity_dir;
   }
+  uint16_t getRpcPort() const {
+    return rpcServerPort;
+  }
+  bool getIsFairnessLeader() const { return fairnessLeader; }
 };
 
 #endif //PROJECT_CONFIG_H

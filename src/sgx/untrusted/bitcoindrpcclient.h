@@ -17,7 +17,7 @@ class bitcoindRPCClient : public jsonrpc::Client
             Json::Value p;
             p = Json::nullValue;
             Json::Value result = this->CallMethod("getblockcount",p);
-            if (result.isInt())
+            if (result.isIntegral())
                 return result.asInt();
             else
                 throw jsonrpc::JsonRpcException(jsonrpc::Errors::ERROR_CLIENT_INVALID_RESPONSE, result.toStyledString());

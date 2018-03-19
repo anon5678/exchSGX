@@ -84,10 +84,6 @@ int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit);
 int ecall_append_block_to_fifo(const char *blockHeaderHex);
 int ecall_get_latest_block_hash(unsigned char *o_buf, size_t cap_obuf);
 
-// ECALLs for the fairness protocol
-void onMessageFromFairnessLeader();
-void onAckFromFairnessFollower();
-
 // SSL server & client
 //int fairness_tls_server_init(void);
 //void fairness_tls_server_tcp_conn_handler(long int thread_id, ssl_context *thread_info);

@@ -1,6 +1,6 @@
 #include "merkpath/merkpath.h"
 #include "Utils.h"
-#include "rpc.h"
+#include "bitcoind-rpc.h"
 
 #include <algorithm>
 #include <fstream>

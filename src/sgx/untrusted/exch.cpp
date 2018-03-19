@@ -18,7 +18,7 @@
 
 #include "bitcoindrpcclient.h"
 #include "tls_server_threaded_u.h"
-#include "enclave_rpc.h"
+#include "enclave-rpc-server-impl.h"
 #include "interrupt.h"
 #include "config.h"
 #include "Utils.h"
@@ -57,6 +57,7 @@ int main(int argc, const char *argv[]) {
   int ret = 0;
 
   // try to load sealed secret keys
+#if false
   try {
     LOG4CXX_INFO(logger, "launching " << conf.getIdentity());
 
@@ -89,15 +90,21 @@ int main(int argc, const char *argv[]) {
     cerr << "cannot provision rsa id: " << e.what() << endl;
     exit(-1);
   }
+#endif
 
   // start a RPC server (defined in enclave_rpc.cpp)
-  int RPCSrvPort = 1234;
+  int RPCSrvPort = conf.getRpcPort();
   bool RPCSrvRunning = false;
   jsonrpc::HttpServer httpserver(RPCSrvPort);
   EnclaveRPC enclaveRPC(eid, httpserver);
   if(enclaveRPC.StartListening()) {
     RPCSrvRunning = true;
     LOG4CXX_INFO(logger, "RPC server listening at localhost:" << RPCSrvPort);
+  }
+
+  // TODO: test only
+  if (conf.getIsFairnessLeader()) {
+    simulate_leader(eid, &ret, 1234, RPCSrvPort);
   }
 
   while(!exch::interrupt::quit.load())

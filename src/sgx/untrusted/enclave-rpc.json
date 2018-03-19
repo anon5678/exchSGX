@@ -15,5 +15,15 @@
             },
             "public key"],
         "returns": true
+    },
+    {
+        "name": "distributeSettlementPkg",
+        "params": ["msg"],
+        "returns": true
+    },
+    {
+        "name": "ackSettlementPkg",
+        "params": ["ack"],
+        "returns": true
     }
 ]

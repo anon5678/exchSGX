@@ -27,6 +27,7 @@ struct CannotDisseminate : public std::exception {
 
 class Message {
  public:
+  // TODO: add a more reasonable constructor
   Message() = default;
   ~Message() = default;
 
@@ -101,6 +102,8 @@ private:
 
   // send the first tx to blockchain 1
   void sendTransaction1();
+
+  void sendTransaction2() override;
 };
 
 class Follower : FairnessProtocol {

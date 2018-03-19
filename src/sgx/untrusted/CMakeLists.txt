@@ -3,6 +3,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11")
 
 set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_u.a")
 
+set(BRIDGE_SRC
+        enclave-rpc-client-impl.cpp
+        enclave-rpc-client-impl.h
+        Enclave_u.c
+        Enclave_u.h
+        )
+
 set_directory_properties(PROPERTIES
         ADDITIONAL_MAKE_CLEAN_FILES Enclave_u.c
         ADDITIONAL_MAKE_CLEAN_FILES Enclave_u.h)
@@ -19,15 +26,13 @@ add_custom_command(
 add_executable(exch exch.cpp
         fairness.cpp
         interrupt.cpp
-        rpc.cpp
-        enclave_rpc.cpp
+        bitcoind-rpc.cpp
+        enclave-rpc-server-impl.cpp
         merkpath/merkpath.cpp
         merkle_data.cpp
         ../common/utils.cpp
         Utils.cpp
-        # tls_server_threaded_u.cpp
-        Enclave_u.c
-        Enclave_u.h
+        ${BRIDGE_SRC}
         mbedtls_error.c
         mbedtls_net.c
         config.cpp)
@@ -35,7 +40,7 @@ add_executable(exch exch.cpp
 add_executable(enclave_test
         enclave_test.cpp Utils.cpp
         fairness.cpp
-        Enclave_u.c Enclave_u.h
+        ${BRIDGE_SRC}
         merkpath/merkpath.cpp
         merkle_data.cpp
         ../common/utils.cpp
@@ -43,13 +48,13 @@ add_executable(enclave_test
 
 add_executable(exch-keygen exch-keygen.cpp key_u.cpp Utils.cpp
         fairness.cpp
-        Enclave_u.c Enclave_u.h
+        ${BRIDGE_SRC}
         ../common/base64.cpp)
 
 add_executable(exch-merkleproof
         exch-merkleproof.cpp
         merkpath/merkpath.cpp
-        rpc.cpp
+        bitcoind-rpc.cpp
         ../common/utils.cpp
         merkle_data.cpp)
 
@@ -84,6 +89,8 @@ target_link_libraries(exch
         -lpthread)
 
 target_link_libraries(exch-keygen
+        ${JSONCPP_LIBRARIES}
+        ${JSONRPCCPP_LIBRARIES}
         ${Boost_LIBRARIES}
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
         ${LIB_MBEDTLS_PATH}
@@ -99,6 +106,8 @@ target_link_libraries(exch-merkleproof
         )
 
 target_link_libraries(enclave_test
+        ${JSONCPP_LIBRARIES}
+        ${JSONRPCCPP_LIBRARIES}
         ${LOG4CXX_LIBRARY}
         ${OPENSSL_CRYPTO_LIBRARY}
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}

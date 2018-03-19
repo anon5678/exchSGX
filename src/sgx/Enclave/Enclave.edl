@@ -13,11 +13,12 @@ enclave {
         public int ecall_bitcoin_deposit([user_check] const bitcoin_deposit_t * deposit);
 
         // fairness protocol
-        public void onMessageFromFairnessLeader();
-        public void onAckFromFairnessFollower();
+        public void onMessageFromFairnessLeader([user_check] const unsigned char* tx, size_t size);
+        public void onAckFromFairnessFollower([user_check] const unsigned char* ack, size_t size);
 
         // testing functions
         public int enclaveTest();
+        public int simulate_leader(uint16_t peerport, uint16_t leaderport);
 
         // state update
         public int ecall_append_block_to_fifo([in,string]const char *blockHeaderHex);
@@ -53,7 +54,10 @@ enclave {
     };
 
     untrusted {
-        void sendMessagesToFairnessFollowers();
+        // in = enclave -> app
+        // https://download.01.org/intel-sgx/linux-2.1.2/docs/Intel_SGX_Developer_Reference_Linux_2.1.2_Open_Source.pdf
+        void sendMessagesToFairnessFollower([in, string] const char* host, int port, [in, size=size] const unsigned char* msg, size_t size);
+        void sendAckToFairnessLeader([in, string] const char* host, int port, [in, size=size] const unsigned char* msg, size_t size);
         void settle();
     };
 };

@@ -1,4 +1,4 @@
-#include "enclave_rpc.h"
+#include "enclave-rpc-server-impl.h"
 #include "Enclave_u.h"
 
 #include "sgx_error.h"
@@ -11,16 +11,16 @@
 #include <log4cxx/propertyconfigurator.h>
 
 namespace exch {
-namespace RPC {
+namespace rpc {
 log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.RPC"));
 }
 }
 
-using exch::RPC::logger;
+using exch::rpc::logger;
 
 EnclaveRPC::EnclaveRPC(sgx_enclave_id_t eid,
                        jsonrpc::AbstractServerConnector &conn)
-    : AbstractEnclaveRPC(conn), eid(eid) {}
+    : exch::rpc::AbsServer(conn), eid(eid) {}
 
 bool EnclaveRPC::appendBlock2FIFO(const std::string &block_header) {
   int ret;
@@ -115,5 +115,22 @@ bool EnclaveRPC::deposit(const Json::Value &merkle_proof, const string &public_k
     LOG4CXX_ERROR(logger, "exception: " << e.what());
     return false;
   }
+  return true;
+}
+
+#include "../common/utils.h"
+// This function is called on a follower when receiving messages from the leader
+bool EnclaveRPC::distributeSettlementPkg(const std::string &settlementPkg) {
+  hd("receiving from leader", settlementPkg.data(), settlementPkg.size());
+  onMessageFromFairnessLeader(eid, reinterpret_cast<const unsigned char*>(settlementPkg.data()), settlementPkg.size());
+  return true;
+}
+
+#include "Enclave_u.h"
+
+// This function is called on a leader when receiving message from the followers
+bool EnclaveRPC::ackSettlementPkg(const std::string &ack) {
+  cout << "receiving ack from backup" << endl;
+  onAckFromFairnessFollower(eid, reinterpret_cast<const unsigned char*>(ack.data()), ack.size());
   return true;
 }

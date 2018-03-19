@@ -1,4 +1,4 @@
-#include "rpc.h"
+#include "bitcoind-rpc.h"
 #include "bitcoindrpcclient.h"
 
 #include <stdexcept>
