@@ -25,11 +25,12 @@
 
 #include "Enclave_u.h"
 
+#include "external/toml.h"
+
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
 using namespace std;
-
 
 namespace exch{
 namespace main {
@@ -42,6 +43,9 @@ using exch::main::logger;
 sgx_enclave_id_t eid;
 
 int main(int argc, const char *argv[]) {
+  ifstream ifs("config.")
+
+
   // initialize logging and stuff
   Config conf(argc, argv);
   log4cxx::PropertyConfigurator::configure(LOGGING_CONF);

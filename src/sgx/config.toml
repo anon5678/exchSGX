@@ -1,0 +1,7 @@
+[fairness]
+leader="localhost:1235"
+followers = [
+    "localhost:1234",
+]
+
+

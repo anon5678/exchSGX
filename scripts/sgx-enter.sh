@@ -11,6 +11,8 @@ which docker >/dev/null || {
   exit 1
 }
 
+docker pull $docker_image
+
 # Start SGX Rust Docker container.
 if [ ! "$(docker ps -q -f name=$docker_name)" ]; then
   if [ "$(docker ps -aq -f name=$docker_name)" ]; then
