@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <set>
+#include <map>
 #include <cstdint>
 
 #include "tls.h"
@@ -12,6 +13,8 @@
 #include "securechannel.h"
 
 #include "Enclave_t.h"
+
+#include "json11.hpp"
 
 using namespace exch::enclave::securechannel;
 
@@ -23,6 +26,20 @@ struct CannotDisseminate : public std::exception {
   const char *what() const throw() override {
     return "cannot disseminate fairness messages";
   }
+};
+
+struct AcknowledgeMessage{
+  string hostname;
+  int port;
+
+  string serialize() {
+    json11::Json json = json11::Json::object {
+        {"hostname", hostname},
+        {"port", port}
+    };
+    return json.dump();
+  }
+
 };
 
 class Message {
@@ -89,8 +106,9 @@ class FairnessProtocol {
 class Leader : public FairnessProtocol {
 private:
   Peer me;
-  vector<Peer> peers;
   Message msg;
+  vector<Peer> peers;
+  vector<bool> peers_ack;
 
  public:
   const static auto role = LEADER;
@@ -99,6 +117,8 @@ private:
 
   // send msg to all peers and wait for ACKs
   void disseminate() throw(CannotDisseminate);
+
+  void receiveAck(const string&hostname, uint16_t port);
 
   // send the first tx to blockchain 1
   void sendTransaction1();

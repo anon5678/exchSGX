@@ -41,7 +41,7 @@ public:
 
   Peer(const std::string &hostname, uint16_t port, const std::string &publicKey) : hostname(hostname), port(port), nonce(0) {
     if (crypto_box_PUBLICKEYBYTES != publicKey.size())
-      throw "public key size not right";
+      throw std::invalid_argument("public key size not right");
     memcpy(this->publicKey, publicKey.data(), publicKey.size());
   }
 
@@ -80,6 +80,14 @@ public:
 
   bool operator<(const Peer &rhs) const {
     return hostname == rhs.hostname ? port < rhs.port : hostname < rhs.hostname;
+  }
+
+  bool operator==(const Peer &rhs) const {
+    return hostname == rhs.hostname && port == rhs.port;
+  }
+
+  string toString() const {
+    return hostname + ":" + std::to_string(port);
   }
 };
 

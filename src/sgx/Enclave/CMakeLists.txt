@@ -59,6 +59,7 @@ set(SOURCE_FILES
         nacl/crypto_box/wrapper-open.cpp
 
         ../common/utils.cpp
+        ../common/json11.cpp
 
         enclave_test.cpp
         utils.cpp securechannel.cpp securechannel.h)
@@ -73,6 +74,7 @@ include_directories(
         ${MBEDTLS_SGX_ROOT_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/bitcoin
         ${CMAKE_CURRENT_SOURCE_DIR}/nacl
+        ${CMAKE_SOURCE_DIR}/common
 )
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SGX_COMMON_CFLAGS} -Wall -Wno-deprecated -nostdinc -fvisibility=hidden -fpie -fstack-protector")

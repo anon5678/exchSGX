@@ -6,6 +6,7 @@ set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_u.a")
 set(BRIDGE_SRC
         enclave-rpc-client-impl.cpp
         enclave-rpc-client-impl.h
+        fariness_ocall.cpp
         Enclave_u.c
         Enclave_u.h
         )
@@ -24,7 +25,6 @@ add_custom_command(
 )
 
 add_executable(exch exch.cpp
-        fairness.cpp
         interrupt.cpp
         bitcoind-rpc.cpp
         enclave-rpc-server-impl.cpp
@@ -39,16 +39,18 @@ add_executable(exch exch.cpp
 
 add_executable(enclave_test
         enclave_test.cpp Utils.cpp
-        fairness.cpp
         ${BRIDGE_SRC}
         merkpath/merkpath.cpp
         merkle_data.cpp
         ../common/utils.cpp
         )
 
-add_executable(exch-keygen exch-keygen.cpp key_u.cpp Utils.cpp
-        fairness.cpp
+add_executable(exch-keygen
+        exch-keygen.cpp
+        key_u.cpp
+        Utils.cpp
         ${BRIDGE_SRC}
+        ../common/utils.cpp
         ../common/base64.cpp)
 
 add_executable(exch-merkleproof
@@ -76,12 +78,19 @@ include_directories(
         ${LOG4CXX_INCLUDE_DIR}
 )
 
-
-target_link_libraries(exch
+set(RPC_LIB_BUNDLE
         ${CURL_LIBRARIES}
         ${JSONCPP_LIBRARIES}
         ${JSONRPCCPP_LIBRARIES}
+        )
+
+set(COMMON_LIBS
         ${LOG4CXX_LIBRARY}
+        )
+
+target_link_libraries(exch
+        ${RPC_LIB_BUNDLE}
+        ${COMMON_LIBS}
         ${Boost_LIBRARIES}
         ${OPENSSL_CRYPTO_LIBRARY}
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
@@ -89,26 +98,24 @@ target_link_libraries(exch
         -lpthread)
 
 target_link_libraries(exch-keygen
-        ${JSONCPP_LIBRARIES}
-        ${JSONRPCCPP_LIBRARIES}
+        ${RPC_LIB_BUNDLE}
+        ${COMMON_LIBS}
         ${Boost_LIBRARIES}
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
         ${LIB_MBEDTLS_PATH}
         -lpthread)
 
 target_link_libraries(exch-merkleproof
-        ${CURL_LIBRARIES}
-        ${JSONCPP_LIBRARIES}
-        ${JSONRPCCPP_LIBRARIES}
+        ${RPC_LIB_BUNDLE}
+        ${COMMON_LIBS}
         ${Boost_LIBRARIES}
         ${LOG4CXX_LIBRARY}
         ${OPENSSL_CRYPTO_LIBRARY}
         )
 
 target_link_libraries(enclave_test
-        ${JSONCPP_LIBRARIES}
-        ${JSONRPCCPP_LIBRARIES}
-        ${LOG4CXX_LIBRARY}
+        ${RPC_LIB_BUNDLE}
+        ${COMMON_LIBS}
         ${OPENSSL_CRYPTO_LIBRARY}
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
         ${LIB_MBEDTLS_PATH}

@@ -24,6 +24,8 @@ namespace po = boost::program_options;
 void print_key(sgx_enclave_id_t eid, const string &keyfile);
 void keygen(sgx_enclave_id_t eid, const string &keyfile, const string&subject_name);
 
+sgx_enclave_id_t eid;
+
 int main(int argc, const char *argv[]) {
   string key_input, key_output;
   string enclave_path;
@@ -61,7 +63,6 @@ int main(int argc, const char *argv[]) {
     std::exit(-1);
   }
 
-  sgx_enclave_id_t eid;
   int ret;
 
   ret = initialize_enclave(enclave_path, &eid);

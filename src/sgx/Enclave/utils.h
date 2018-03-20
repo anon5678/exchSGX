@@ -8,6 +8,16 @@
 #include <string>
 #include <vector>
 
+#define ECALL_WRAPPER_RET(expr) \
+  try { expr; return 0; }                          \
+  catch (const std::exception & e) { LL_CRITICAL("error happened: %s", e.what()); return -1; }\
+  catch (...) { LL_CRITICAL("unknown error happened"); return -1; }
+
+#define CATCH_STD_AND_ALL \
+  catch (const std::exception & e) { LL_CRITICAL("error happened: %s", e.what()); return -1; }\
+  catch (...) { LL_CRITICAL("unknown error happened"); return -1; }
+
+
 using bytes = std::vector<uint8_t>;
 
 namespace utils {

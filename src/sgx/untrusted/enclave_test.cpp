@@ -9,6 +9,8 @@
 
 using namespace std;
 
+sgx_enclave_id_t eid;
+
 void test_merkle_verify(sgx_enclave_id_t eid) {
   const vector<string> inp1 {
       "1141217f7db1bd3f3d098310e6f707eb249736cdf31ce3400705fa72bbc524f0",
@@ -63,7 +65,6 @@ using exch::enclave_test::logger;
 int main() {
   log4cxx::PropertyConfigurator::configure(LOGGING_CONF);
 
-  sgx_enclave_id_t eid;
   sgx_status_t st;
 
   if (0 != initialize_enclave(&eid)) {

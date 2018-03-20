@@ -51,17 +51,23 @@ public:
   bool addPeer(const securechannel::Peer &peer);
   void removePeer(const string &hostname, uint16_t port);
   void setLeader(const securechannel::Peer &peer);
+  void setSelf(bool is_leader, const securechannel::Peer &self);
   State() {}
 
 
 private:
-  fairness::Follower *fairnessFollower;
   tls::TLSCert fairnessCert;
   tls::TLSCert clientFacingCert;
+
+  /* fairness */
+  fairness::Follower *fairnessFollower;
   set<securechannel::Peer> fairnessPeers;
   securechannel::Peer currentLeader;
+  fairness::Leader* currentProtocol;
+  securechannel::Peer self;
+  bool isLeader;
 
-public:
+ public:
   // delete copy constructors
   State(const State &) = delete;
   void operator=(const State &) = delete;
@@ -70,9 +76,14 @@ public:
   const tls::TLSCert &getClientCert() const { return this->clientFacingCert; }
   const fairness::PeerList &getPeerList() const { return this->fairnessPeers; }
   const securechannel::Peer& getCurrentLeader() const {return currentLeader; }
+  const securechannel::Peer& getSelf() const {return this->self;}
+
+  fairness::Leader * initFairnessProtocol();
+  fairness::Leader *getCurrentProtocol() const { return currentProtocol; }
 
   ~State() {
     delete fairnessFollower;
+    delete currentProtocol;
   }
 };
 

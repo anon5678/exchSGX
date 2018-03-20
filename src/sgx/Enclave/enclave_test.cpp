@@ -61,32 +61,15 @@ int enclaveTest() {
   return 0;
 }
 
+#include "utils.h"
+
 int simulate_leader() {
   LL_NOTICE("launching leader...");
 
-  State& s = State::getInstance();
-
-  for (const auto& p : s.getPeerList()) {
-    LL_NOTICE("found peer %s:%d", p.getHostname().c_str(), p.getPort());
-  }
-
-  LL_NOTICE("found leader at %s:%d", s.getCurrentLeader().getHostname().c_str(), s.getCurrentLeader().getPort());
-
-  // TODO: replace this with sealed keys from untrusted world
-  string leaderSk;
-  string leaderPk = nacl_crypto_box_keypair(&leaderSk);
-  Peer leader_info(
-      s.getCurrentLeader().getHostname(),
-      s.getCurrentLeader().getPort(),
-      leaderPk,
-      leaderSk);
-
-  fairness::Message msg;
-  vector<Peer> peerList;
-  copy(s.getPeerList().begin(), s.getPeerList().end(), back_inserter(peerList));
-  fairness::Leader leader(leader_info, peerList, msg);
-
-  leader.disseminate();
-  return 0;
+  ECALL_WRAPPER_RET(
+      State& s = State::getInstance();
+      fairness::Leader* prot = s.initFairnessProtocol();
+      prot->disseminate();
+  )
 }
 

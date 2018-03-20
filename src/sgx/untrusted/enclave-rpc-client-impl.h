@@ -28,14 +28,16 @@ public:
     delete client;
   }
 
-  // call by a leader
-  void distributeSettlementPkg(const unsigned char *msg, size_t size) {
-    client->distributeSettlementPkg(string((char *) msg, size));
+  // leader -> followers
+  // called by sendMessagesToFairnessFollower
+  void distributeSettlementPkg(const string& msg) {
+    client->distributeSettlementPkg(msg);
   }
 
-  void ackSettlementPkg() {
-    // TODO: replace ack with a signature
-    client->ackSettlementPkg("ack");
+  // follower -> leader
+  // called by sendAckToFairnessLeader
+  void ackSettlementPkg(const string& msg) {
+    client->ackSettlementPkg(msg);
   }
 };
 

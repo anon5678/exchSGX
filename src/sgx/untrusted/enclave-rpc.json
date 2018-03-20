@@ -1,29 +1,39 @@
 [
-    {
-        "name": "appendBlock2FIFO",
-        "params": ["header"],
-        "returns": true
-    },
-    {
-        "name": "deposit",
-        "params": [
-            {
-                "tx": "hex",
-                "block": "hex",
-                "branch": ["hex", "hex"],
-                "dirvec": 321
-            },
-            "public key"],
-        "returns": true
-    },
-    {
-        "name": "distributeSettlementPkg",
-        "params": ["msg"],
-        "returns": true
-    },
-    {
-        "name": "ackSettlementPkg",
-        "params": ["ack"],
-        "returns": true
-    }
+  {
+    "name": "appendBlock2FIFO",
+    "params": [
+      "header"
+    ],
+    "returns": true
+  },
+  {
+    "name": "deposit",
+    "params": [
+      {
+        "tx": "hex",
+        "block": "hex",
+        "branch": [
+          "hex",
+          "hex"
+        ],
+        "dirvec": 321
+      },
+      "public key"
+    ],
+    "returns": true
+  },
+  {
+    "name": "distributeSettlementPkg",
+    "params": [
+      "msg"
+    ],
+    "returns": true
+  },
+  {
+    "name": "ackSettlementPkg",
+    "params": [
+      "ack"
+    ],
+    "returns": true
+  }
 ]

@@ -14,9 +14,17 @@ enclave {
         // fairness protocol
         public int onMessageFromFairnessLeader([user_check] const unsigned char* tx, size_t size);
         public int onAckFromFairnessFollower([user_check] const unsigned char* ack, size_t size);
+
+        // tx_1 committed on chain
+        public int onTxOneCommitted();
+
+        // fairness protocol: setup membership
         public int addFairnessFollower([in,string] const char* hostname, uint16_t port, [in,size=32] const uint8_t* pubkey);
         public int removeFairnessFollower([in,string] const char* hostname, uint16_t port);
         public int setLeader([in,string] const char* hostname, uint16_t port, [in,size=32] const uint8_t* pubkey);
+        // TODO: need to add secret key from sealed material
+        public int setSelf(int is_leader, [in,string] const char* hostname, uint16_t port, [in,size=32] const uint8_t* pubkey);
+
 
         // testing functions
         public int enclaveTest();
@@ -58,8 +66,10 @@ enclave {
     untrusted {
         // in = enclave -> app
         // https://download.01.org/intel-sgx/linux-2.1.2/docs/Intel_SGX_Developer_Reference_Linux_2.1.2_Open_Source.pdf
-        void sendMessagesToFairnessFollower([in, string] const char* host, int port, [in, size=size] const unsigned char* msg, size_t size);
-        void sendAckToFairnessLeader([in, string] const char* host, int port, [in, size=size] const unsigned char* msg, size_t size);
-        void settle();
+        int sendMessagesToFairnessFollower([in, string] const char* host, int port, [in, size=size] const unsigned char* msg, size_t size);
+        int sendAckToFairnessLeader([in, string] const char* host, int port, [in, size=size] const unsigned char* msg, size_t size);
+
+        // send tx_1
+        int commitTxOne();
     };
 };

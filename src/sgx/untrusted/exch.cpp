@@ -96,7 +96,7 @@ int main(int argc, const char *argv[]) {
   }
 #endif
 
-  // set followers and leader
+  // register followers and leader
   {
     string hostname;
     uint16_t port;
@@ -113,7 +113,6 @@ int main(int argc, const char *argv[]) {
 
     for (const auto& follower_addr: conf.getFollowerAddrList()) {
       parse_addr(follower_addr, &hostname, &port);
-      cout << hostname << port << endl;
 
       st = addFairnessFollower(eid, &ret, hostname.c_str(), port, pubkey);
       if (st != SGX_SUCCESS || ret != 0) {
@@ -123,19 +122,17 @@ int main(int argc, const char *argv[]) {
     }
   }
 
-  // start a RPC server (defined in enclave_rpc.cpp)
+  string rpc_hostname;
   uint16_t rpc_port = 0;
   if (conf.getIsFairnessLeader()) {
-    // if starting as a leader
     const string& leader_addr = conf.getLeaderAddr();
-    parse_addr(leader_addr, nullptr, &rpc_port);
-
+    parse_addr(leader_addr, &rpc_hostname, &rpc_port);
   }
   else {
-    // if starting as a follower
+    /* try to find a usable port from fairness.followers */
     for (const string& follower_addr : conf.getFollowerAddrList()) {
       uint16_t tmp_port = 0;
-      parse_addr(follower_addr, nullptr, &tmp_port);
+      parse_addr(follower_addr, &rpc_hostname, &tmp_port);
       jsonrpc::HttpServer server(tmp_port);
       if (server.StartListening()) {
         // if the port is not yet used
@@ -152,13 +149,24 @@ int main(int argc, const char *argv[]) {
     }
   }
 
-  int RPCSrvPort = rpc_port;
+  LOG4CXX_INFO(logger, "setting " << rpc_hostname << ":" << rpc_port << " as self id");
+  st = setSelf(eid,
+               &ret,
+               conf.getIsFairnessLeader(),
+               rpc_hostname.c_str(),
+               rpc_port,
+               vector<uint8_t>(32, 0x99).data());  /* temp public key */
+  if (st != SGX_SUCCESS || ret != 0) {
+    LOG4CXX_FATAL(logger, "cannot set self id");
+    exit(-1);
+  }
+
   bool RPCSrvRunning = false;
   jsonrpc::HttpServer httpserver(rpc_port);
   EnclaveRPC enclaveRPC(eid, httpserver);
   if(enclaveRPC.StartListening()) {
     RPCSrvRunning = true;
-    LOG4CXX_INFO(logger, "RPC server listening at localhost:" << RPCSrvPort);
+    LOG4CXX_INFO(logger, "RPC server listening at " << rpc_hostname << ":" << rpc_port);
   }
   else {
     LOG4CXX_INFO(logger, "Cannot start RPC server");
