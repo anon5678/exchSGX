@@ -1,14 +1,17 @@
 #include "enclave-rpc-server-impl.h"
-#include "Enclave_u.h"
-
-#include "sgx_error.h"
-#include "merkpath/merkpath.h"
 
 #include <iostream>
 #include <utility>
+#include <assert.h>
 
+#include "sgx_error.h"
 #include <log4cxx/logger.h>
 #include <log4cxx/propertyconfigurator.h>
+
+#include "../common/utils.h"
+#include "merkpath/merkpath.h"
+
+#include "Enclave_u.h"
 
 namespace exch {
 namespace rpc {
@@ -18,8 +21,7 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.RPC"));
 
 using exch::rpc::logger;
 
-EnclaveRPC::EnclaveRPC(sgx_enclave_id_t eid,
-                       jsonrpc::AbstractServerConnector &conn)
+EnclaveRPC::EnclaveRPC(sgx_enclave_id_t eid, jsonrpc::AbstractServerConnector &conn)
     : exch::rpc::AbsServer(conn), eid(eid) {}
 
 bool EnclaveRPC::appendBlock2FIFO(const std::string &block_header) {
@@ -118,11 +120,13 @@ bool EnclaveRPC::deposit(const Json::Value &merkle_proof, const string &public_k
   return true;
 }
 
-#include "../common/utils.h"
 // This function is called on a follower when receiving messages from the leader
 bool EnclaveRPC::distributeSettlementPkg(const std::string &settlementPkg) {
+  int ret;
   hd("receiving from leader", settlementPkg.data(), settlementPkg.size());
-  onMessageFromFairnessLeader(eid, reinterpret_cast<const unsigned char*>(settlementPkg.data()), settlementPkg.size());
+  onMessageFromFairnessLeader(eid, &ret, reinterpret_cast<const unsigned char*>(settlementPkg.data()), settlementPkg.size());
+
+  assert (ret == 0);
   return true;
 }
 
@@ -130,7 +134,10 @@ bool EnclaveRPC::distributeSettlementPkg(const std::string &settlementPkg) {
 
 // This function is called on a leader when receiving message from the followers
 bool EnclaveRPC::ackSettlementPkg(const std::string &ack) {
-  cout << "receiving ack from backup" << endl;
-  onAckFromFairnessFollower(eid, reinterpret_cast<const unsigned char*>(ack.data()), ack.size());
+  int ret;
+  LOG4CXX_INFO(logger, "receiving ack from a backup");
+  onAckFromFairnessFollower(eid, &ret, reinterpret_cast<const unsigned char*>(ack.data()), ack.size());
+
+  assert (ret == 0);
   return true;
 }

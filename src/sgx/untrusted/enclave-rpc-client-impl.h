@@ -22,7 +22,6 @@ private:
 public:
   Client(const string& host, uint16_t port) {
     string hostname = "http://" + host + ":" + to_string(port);
-    cout << "connecting to " << hostname << endl;
     connector = new HttpClient(hostname);
     client = new exch::rpc::AbsClient(*connector);
   }

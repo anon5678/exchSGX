@@ -11,8 +11,11 @@
 #include <boost/program_options.hpp>
 #include <boost/algorithm/hex.hpp>
 #include <boost/filesystem.hpp>
+
+#include <jsonrpccpp/server.h>
 #include <jsonrpccpp/client/connectors/httpclient.h>
 #include <jsonrpccpp/server/connectors/httpserver.h>
+
 #include <log4cxx/logger.h>
 #include <log4cxx/propertyconfigurator.h>
 
@@ -93,19 +96,78 @@ int main(int argc, const char *argv[]) {
   }
 #endif
 
+  // set followers and leader
+  {
+    string hostname;
+    uint16_t port;
+    parse_addr(conf.getLeaderAddr(), &hostname, &port);
+
+    // TODO: dummy pubkey
+    uint8_t pubkey[32] = {2};
+    st = setLeader(eid, &ret, hostname.c_str(), port, pubkey);
+    if (st != SGX_SUCCESS || ret != 0) {
+      LOG4CXX_FATAL(logger, "cannot set leader");
+      exit(-1);
+    }
+
+
+    for (const auto& follower_addr: conf.getFollowerAddrList()) {
+      parse_addr(follower_addr, &hostname, &port);
+      cout << hostname << port << endl;
+
+      st = addFairnessFollower(eid, &ret, hostname.c_str(), port, pubkey);
+      if (st != SGX_SUCCESS || ret != 0) {
+        LOG4CXX_FATAL(logger, "cannot add fairness followers");
+        exit(-1);
+      }
+    }
+  }
+
   // start a RPC server (defined in enclave_rpc.cpp)
-  int RPCSrvPort = conf.getRpcPort();
+  uint16_t rpc_port = 0;
+  if (conf.getIsFairnessLeader()) {
+    // if starting as a leader
+    const string& leader_addr = conf.getLeaderAddr();
+    parse_addr(leader_addr, nullptr, &rpc_port);
+
+  }
+  else {
+    // if starting as a follower
+    for (const string& follower_addr : conf.getFollowerAddrList()) {
+      uint16_t tmp_port = 0;
+      parse_addr(follower_addr, nullptr, &tmp_port);
+      jsonrpc::HttpServer server(tmp_port);
+      if (server.StartListening()) {
+        // if the port is not yet used
+        rpc_port = tmp_port;
+        server.StopListening();
+        break;
+      }
+    }
+
+    // if none of the client port is available
+    if (rpc_port == 0) {
+      LOG4CXX_FATAL(logger, "cannot start client rpc");
+      exit(-1);
+    }
+  }
+
+  int RPCSrvPort = rpc_port;
   bool RPCSrvRunning = false;
-  jsonrpc::HttpServer httpserver(RPCSrvPort);
+  jsonrpc::HttpServer httpserver(rpc_port);
   EnclaveRPC enclaveRPC(eid, httpserver);
   if(enclaveRPC.StartListening()) {
     RPCSrvRunning = true;
     LOG4CXX_INFO(logger, "RPC server listening at localhost:" << RPCSrvPort);
   }
+  else {
+    LOG4CXX_INFO(logger, "Cannot start RPC server");
+    exit(-1);
+  }
 
   // TODO: test only
   if (conf.getIsFairnessLeader()) {
-    simulate_leader(eid, &ret, 1234, RPCSrvPort);
+    simulate_leader(eid, &ret);
   }
 
   while(!exch::interrupt::quit.load())

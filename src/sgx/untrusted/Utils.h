@@ -26,7 +26,6 @@ void print_error_message(sgx_status_t ret);
 int initialize_enclave(sgx_enclave_id_t *eid);
 int initialize_enclave(std::string enclave_path, sgx_enclave_id_t *eid);
 
-
 std::string readTextFile(const std::string &fname);
 std::vector<uint8_t> readBinaryFile(const std::string &fname);
 
@@ -114,5 +113,22 @@ const sgx_errlist_t sgx_errlist[] = {
         NULL
     },
 };
+
+#include <climits>
+
+inline void parse_addr(const std::string &addr, std::string* hostname, uint16_t* port) {
+  auto delim = addr.find(':');
+  if (delim == addr.npos) {
+    throw std::invalid_argument("no : find in addr " + addr);
+  }
+  if (hostname) {
+    *hostname = addr.substr(0, delim);
+  }
+  *port = (uint16_t) strtol(addr.substr(delim + 1).c_str(), nullptr, 10);
+
+  if ((*port == 0 || *port == LONG_MAX || *port == LONG_MIN) && errno == ERANGE) {
+    throw std::invalid_argument("malformed address");
+  }
+}
 
 #endif

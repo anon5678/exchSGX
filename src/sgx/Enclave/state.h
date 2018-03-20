@@ -49,7 +49,8 @@ public:
   );
 
   bool addPeer(const securechannel::Peer &peer);
-  bool removePeer(const securechannel::Peer &peer);
+  void removePeer(const string &hostname, uint16_t port);
+  void setLeader(const securechannel::Peer &peer);
   State() {}
 
 
@@ -68,6 +69,7 @@ public:
   const tls::TLSCert &getFairnessCert() const { return fairnessCert; }
   const tls::TLSCert &getClientCert() const { return this->clientFacingCert; }
   const fairness::PeerList &getPeerList() const { return this->fairnessPeers; }
+  const securechannel::Peer& getCurrentLeader() const {return currentLeader; }
 
   ~State() {
     delete fairnessFollower;
