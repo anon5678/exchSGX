@@ -96,13 +96,13 @@ bool EnclaveRPC::deposit(const Json::Value &merkle_proof, const string &public_k
     merkle_proof_t *p = merkle_proof_init(proof.proof_size());
     proof.serialize(p);
 
-    bitcoin_deposit_t deposit {p,
-                               merkle_proof[deposit::JSON::TX_RAW].asCString(),
-                               merkle_proof[deposit::JSON::BLOCK_HASH].asCString(),
-                               merkle_proof[deposit::JSON::RECV_ADDR].asCString(),
-                               merkle_proof[deposit::JSON::REFUND_ADDR].asCString(),
-                               merkle_proof[deposit::JSON::DEPOSIT_TIMEOUT].asUInt64(),
-                               public_key.c_str() };
+    bitcoin_deposit_t deposit{p,
+                              merkle_proof[deposit::JSON::TX_RAW].asCString(),
+                              merkle_proof[deposit::JSON::BLOCK_HASH].asCString(),
+                              merkle_proof[deposit::JSON::RECV_ADDR].asCString(),
+                              merkle_proof[deposit::JSON::REFUND_ADDR].asCString(),
+                              merkle_proof[deposit::JSON::DEPOSIT_TIMEOUT].asUInt64(),
+                              public_key.c_str()};
 
     st = ecall_bitcoin_deposit(eid, &ret, &deposit);
     if (st != SGX_SUCCESS || ret != 0) {
@@ -124,19 +124,23 @@ bool EnclaveRPC::deposit(const Json::Value &merkle_proof, const string &public_k
 bool EnclaveRPC::distributeSettlementPkg(const std::string &settlementPkg) {
   int ret;
   hd("receiving from leader", settlementPkg.data(), settlementPkg.size());
-  onMessageFromFairnessLeader(eid, &ret, reinterpret_cast<const unsigned char*>(settlementPkg.data()), settlementPkg.size());
+  onMessageFromFairnessLeader(eid,
+                              &ret,
+                              reinterpret_cast<const unsigned char *>(settlementPkg.data()),
+                              settlementPkg.size());
 
   assert (ret == 0);
   return true;
 }
 
-#include "Enclave_u.h"
-
 // This function is called on a leader when receiving message from the followers
 bool EnclaveRPC::ackSettlementPkg(const std::string &ack) {
   int ret;
   LOG4CXX_INFO(logger, "receiving ack from a backup");
-  onAckFromFairnessFollower(eid, &ret, reinterpret_cast<const unsigned char*>(ack.data()), ack.size());
+  onAckFromFairnessFollower(eid,
+                            &ret,
+                            reinterpret_cast<const unsigned char *>(ack.data()),
+                            ack.size());
 
   assert (ret == 0);
   return true;

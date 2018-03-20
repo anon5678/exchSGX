@@ -8,7 +8,6 @@
 
 using namespace std;
 
-
 namespace exch {
 namespace rpc {
 
@@ -17,10 +16,10 @@ using namespace std;
 
 class Client {
 private:
-  HttpClient* connector;
-  exch::rpc::AbsClient* client;
+  HttpClient *connector;
+  exch::rpc::AbsClient *client;
 public:
-  Client(const string& host, uint16_t port) {
+  Client(const string &host, uint16_t port) {
     string hostname = "http://" + host + ":" + to_string(port);
     connector = new HttpClient(hostname);
     client = new exch::rpc::AbsClient(*connector);
@@ -30,8 +29,8 @@ public:
   }
 
   // call by a leader
-  void distributeSettlementPkg(const unsigned char* msg, size_t size) {
-    client->distributeSettlementPkg(string((char*) msg, size));
+  void distributeSettlementPkg(const unsigned char *msg, size_t size) {
+    client->distributeSettlementPkg(string((char *) msg, size));
   }
 
   void ackSettlementPkg() {
@@ -42,6 +41,5 @@ public:
 
 }
 }
-
 
 #endif //TESSERACT_ENCLAVE_RPC_CLIENT_IMPL_H
