@@ -7,7 +7,6 @@
 #include <string>
 
 #include "Enclave_u.h"
-#include "key_u.h"
 #include "Utils.h"
 
 #include "../common/base64.hxx"
@@ -84,37 +83,21 @@ int main(int argc, const char *argv[]) {
 }
 
 void print_key(sgx_enclave_id_t eid, const string &keyfile) {
-  cout << "printing key from " << keyfile << endl;
-  ifstream in_keyfile(keyfile, std::ios::binary);
-  if (!in_keyfile.is_open()) {
-    cerr << "cannot open key file" << endl;
-    exit(-1);
-  }
-
-  vector<unsigned char> sealed_secret((istreambuf_iterator<char>(in_keyfile)),
-                                      istreambuf_iterator<char>());
-
-  string pubkey_pem =
-      unseal_key(eid, sealed_secret, exch::keyUtils::HYBRID_ENCRYPTION_KEY);
-  cout << "PublicKey: \n" << pubkey_pem;
+  cout << "NOT IMPLEMENTED YET" << endl;
 }
 
 void keygen(sgx_enclave_id_t eid, const string &keyfile, const string& subject_name) {
   cout << "using subject name " << subject_name << endl;
 
   unsigned char secret_sealed[5000];
-  unsigned char pubkey[1000];
-  unsigned char csr[4096];
+  unsigned char pubkey[NACL_PUBLICKEY_SIZE];
 
   // call into enclave to fill the above buffers
-  int buffer_used = 0;
-  sgx_status_t ecall_status = rsa_keygen_in_seal(
+  size_t buffer_used = 0;
+  sgx_status_t ecall_status = nacl_keygen_in_seal(
       eid, &buffer_used,
-      subject_name.c_str(),
       secret_sealed, sizeof secret_sealed,
-      pubkey, sizeof pubkey,
-      csr, sizeof csr);
-
+      pubkey);
   if (ecall_status != SGX_SUCCESS || buffer_used < 0) {
     cerr << "ecall failed" << endl;
     print_error_message(ecall_status);
@@ -135,12 +118,5 @@ void keygen(sgx_enclave_id_t eid, const string &keyfile, const string& subject_n
   of << pubkey;
   of.close();
 
-  printf("public key dumped to %s\n", pubkey_fn.c_str());
-
-  string csr_fn = keyfile + ".csr";
-  of.open(csr_fn);
-  of << csr;
-  of.close();
-
-  printf("CSR dumped to %s\n", csr_fn.c_str());
+  cout << "public key dumped to " << pubkey_fn << endl;
 }

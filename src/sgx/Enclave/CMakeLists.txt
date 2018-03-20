@@ -16,16 +16,10 @@ set(SOURCE_FILES
         Enclave_t.c
         Enclave_t.h
 
-        log.c
-        pprint.c
+        log.cpp
+        pprint.cpp
 
-        tls.h
         fairness.cpp
-        rsa_utils.cpp
-
-        tls_client.cpp
-        tls_server_threaded_t.cpp
-        tls_exch_ca.cpp
 
         ../common/base64.cpp
 
@@ -38,8 +32,6 @@ set(SOURCE_FILES
         state_blockfifo.cpp
         state_balance.cpp
         state_fairness.cpp
-        state_keys.cpp
-        state_ssl.cpp
 
         bitcoin/uint256.cpp
         bitcoin/hash.cpp
@@ -80,14 +72,12 @@ include_directories(
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SGX_COMMON_CFLAGS} -Wall -Wno-deprecated -nostdinc -fvisibility=hidden -fpie -fstack-protector")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11 -nostdinc++")
 
-set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_t.a")
-
 set_target_properties(enclave PROPERTIES PREFIX "")
 
 target_link_libraries(enclave "${SGX_COMMON_CFLAGS} \
     -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L${SGX_LIBRARY_PATH} \
     -Wl,--whole-archive -l${SGX_TRTS_LIB} -Wl,--no-whole-archive \
-    -Wl,--start-group ${LIB_MBEDTLS_PATH} -lsgx_tstdc -lsgx_tcxx -lsgx_tcrypto -l${SGX_TSVC_LIB} -Wl,--end-group \
+    -Wl,--start-group -lsgx_tstdc -lsgx_tcxx -lsgx_tcrypto -l${SGX_TSVC_LIB} -Wl,--end-group \
     -Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
     -Wl,-pie,-eenclave_entry -Wl,--export-dynamic \
     -Wl,--defsym,__ImageBase=0")

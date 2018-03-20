@@ -6,7 +6,8 @@
 #define PROJECT_PORTABLE_H
 
 #ifdef IN_ENCLAVE
-extern "C" int printf_sgx(const char *fmt, ...);
+#include "../Enclave/utils.h"
+#define printf_sgx utils::printf_std
 #else
 #include <stdio.h>
 #define printf_sgx printf

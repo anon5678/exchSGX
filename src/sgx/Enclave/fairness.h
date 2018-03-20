@@ -6,21 +6,17 @@
 #include <map>
 #include <cstdint>
 
-#include "tls.h"
-#include "tls_client.h"
-#include "tls_server_threaded_t.h"
-
 #include "securechannel.h"
-
 #include "Enclave_t.h"
-
 #include "json11.hpp"
 
-using namespace exch::enclave::securechannel;
 
 namespace exch {
 namespace enclave {
 namespace fairness {
+
+using std::vector;
+using namespace exch::enclave::securechannel;
 
 struct CannotDisseminate : public std::exception {
   const char *what() const throw() override {

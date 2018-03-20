@@ -1,8 +1,6 @@
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SGX_COMMON_CFLAGS} -fPIC -Wall -Wno-sign-compare -Wno-deprecated")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11")
 
-set(LIB_MBEDTLS_PATH "${MBEDTLS_SGX_ROOT_DIR}/lib/libmbedtls_sgx_u.a")
-
 set(BRIDGE_SRC
         enclave-rpc-client-impl.cpp
         enclave-rpc-client-impl.h
@@ -20,7 +18,6 @@ add_custom_command(
         COMMAND ${SGX_EDGER8R} --untrusted Enclave.edl
         --search-path ${CMAKE_CURRENT_SOURCE_DIR}/../Enclave/ # Enclave.edl
         --search-path ${SGX_SDK}/include
-        --search-path ${MBEDTLS_SGX_ROOT_DIR}/lib # mbedtls_sgx.edl
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -33,8 +30,6 @@ add_executable(exch exch.cpp
         ../common/utils.cpp
         Utils.cpp
         ${BRIDGE_SRC}
-        mbedtls_error.c
-        mbedtls_net.c
         config.cpp)
 
 add_executable(enclave_test
@@ -47,7 +42,6 @@ add_executable(enclave_test
 
 add_executable(exch-keygen
         exch-keygen.cpp
-        key_u.cpp
         Utils.cpp
         ${BRIDGE_SRC}
         ../common/utils.cpp
@@ -94,7 +88,6 @@ target_link_libraries(exch
         ${Boost_LIBRARIES}
         ${OPENSSL_CRYPTO_LIBRARY}
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
-        ${LIB_MBEDTLS_PATH}
         -lpthread)
 
 target_link_libraries(exch-keygen
@@ -102,7 +95,6 @@ target_link_libraries(exch-keygen
         ${COMMON_LIBS}
         ${Boost_LIBRARIES}
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
-        ${LIB_MBEDTLS_PATH}
         -lpthread)
 
 target_link_libraries(exch-merkleproof
@@ -118,7 +110,6 @@ target_link_libraries(enclave_test
         ${COMMON_LIBS}
         ${OPENSSL_CRYPTO_LIBRARY}
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
-        ${LIB_MBEDTLS_PATH}
         -lpthread)
 
 add_dependencies(exch enclave)

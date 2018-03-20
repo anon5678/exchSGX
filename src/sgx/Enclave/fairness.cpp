@@ -25,7 +25,7 @@ void Leader::disseminate() throw(CannotDisseminate) {
       // mark follower as invalid if sending fails
       if (st != SGX_SUCCESS || ret != 0) {
         LL_CRITICAL("cannot send msg to %s", peer.toString().c_str());
-        long index = distance(peers.begin(), find(peers.begin(), peers.end(), peer));
+        auto index = distance(peers.begin(), find(peers.begin(), peers.end(), peer));
         if (index < peers.size()) {
           // mark this leader as invalid
           peers_ack[index] = false;

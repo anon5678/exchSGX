@@ -1,7 +1,8 @@
 #ifndef EXCH_COMMON_DATA_STRUCT_H
 #define EXCH_COMMON_DATA_STRUCT_H
 
-#define RSA_SECRET_KEY_SIZE 2048
+#define NACL_PUBLICKEY_SIZE 32
+#define NACL_SECRETKEY_SIZE 32
 
 #include "merkle_data.h"
 

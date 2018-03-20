@@ -1,9 +1,7 @@
 enclave {
-    from "mbedtls_sgx.edl" import *;
     from "sgx_tstdc.edl" import *;
     from "utils.edl" import *;
 
-    include "../common/ssl_context.h"
     include "../common/common.h"
     include "sgx_tseal.h"
 
@@ -29,38 +27,15 @@ enclave {
         // testing functions
         public int enclaveTest();
         public int simulate_leader();
+        public int merkle_proof_verify([user_check] const merkle_proof_t* proof);
 
         // state update
         public int ecall_append_block_to_fifo([in,string]const char *blockHeaderHex);
 
         // key management
-        public int rsa_keygen_in_seal(
-            [in,string] const char* subject_name,
-            [user_check] unsigned char *o_sealed, size_t cap_sealed,
-            [user_check] unsigned char *o_pubkey, size_t cap_pubkey,
-            [user_check] unsigned char *o_csr, size_t cap_csr);
-
-        public int unseal_secret_and_leak_public_key(
-            [in, size=secret_len] const sgx_sealed_data_t *secret,
-            size_t secret_len,
-            [user_check] unsigned char *pubkey,
-            size_t cap_pubkey);
-
-        // id management
-        public int provision_rsa_id(
-            [in, size=secret_len] const unsigned char* sealed_rsa_secret_key,
-            size_t secret_len,
-            [in, string] const char* cert_pem);
-
-        public int query_rsa_pubkey(
-            [user_check] unsigned char *pubkey,
-            size_t cap_pubkey,
-            [user_check] char* cert_pem,
-            size_t cap_cert_pem);
-
-        // merkle proof test
-        public int merkle_proof_verify(
-            [user_check] const merkle_proof_t* proof);
+        public size_t nacl_keygen_in_seal(
+            [user_check] unsigned char *o_sealed, size_t cap_sealed_buf,
+            [user_check] unsigned char *o_pubkey);
     };
 
     untrusted {

@@ -20,7 +20,6 @@
 #include <log4cxx/propertyconfigurator.h>
 
 #include "bitcoindrpcclient.h"
-#include "tls_server_threaded_u.h"
 #include "enclave-rpc-server-impl.h"
 #include "interrupt.h"
 #include "config.h"

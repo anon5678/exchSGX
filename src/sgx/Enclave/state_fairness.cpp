@@ -1,7 +1,7 @@
 #include "state.h"
 
 using namespace exch::enclave;
-
+using namespace exch::enclave::fairness;
 
 // ecall
 int setLeader(const char *hostname, uint16_t port, const uint8_t *pubkey) {
@@ -73,7 +73,6 @@ int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
 int onAckFromFairnessFollower(const unsigned char *ack, size_t size) {
   try {
     State &s = State::getInstance();
-    auto p = s.getCurrentProtocol();
     string ack_str((char *) ack, size);
 
     string err;

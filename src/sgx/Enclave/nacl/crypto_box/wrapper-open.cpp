@@ -11,7 +11,7 @@ string nacl_crypto_box_open(const string &c,const string &n,const string &pk,con
   size_t clen = c.size() + crypto_box_BOXZEROBYTES;
   unsigned char cpad[clen];
   for (int i = 0;i < crypto_box_BOXZEROBYTES;++i) cpad[i] = 0;
-  for (int i = crypto_box_BOXZEROBYTES;i < clen;++i) cpad[i] = c[i - crypto_box_BOXZEROBYTES];
+  for (auto i = crypto_box_BOXZEROBYTES;i < clen;++i) cpad[i] = c[i - crypto_box_BOXZEROBYTES];
   unsigned char mpad[clen];
   if (crypto_box_open(mpad,cpad,clen,
                        (const unsigned char *) n.c_str(),

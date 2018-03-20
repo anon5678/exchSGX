@@ -1,12 +1,10 @@
 #include "state.h"
 
 using namespace exch::enclave;
+using namespace exch::enclave::fairness;
 
 BlockFIFO<1000> state::blockFIFO;
 BalanceBook state::balanceBook;
-
-// SSL servers & clients
-TLSClient* state::tlsClient;
 
 sgx_thread_mutex_t state_mutex = SGX_THREAD_MUTEX_INITIALIZER;
 

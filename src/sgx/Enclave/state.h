@@ -3,10 +3,7 @@
 
 #include "blockfifo.hpp"
 #include "balancebook.hpp"
-#include "tls_server_threaded_t.h"
-#include "tls_client.h"
 #include "fairness.h"
-#include "tls.h"
 #include <sgx_thread.h>
 
 #include "../common/merkle_data.h"
@@ -23,7 +20,6 @@ namespace enclave {
 namespace state {
 extern BalanceBook balanceBook;
 extern BlockFIFO<1000> blockFIFO;
-extern TLSClient *tlsClient;
 }
 }
 }
@@ -37,9 +33,6 @@ enum CertType {
 
 class State {
  private:
-  tls::TLSCert fairnessCert;
-  tls::TLSCert clientFacingCert;
-
   /* fairness */
   fairness::Follower *fairnessFollower;
   set<securechannel::Peer> fairnessPeers;
@@ -79,8 +72,6 @@ class State {
   );
 
   // read-only interface
-  const tls::TLSCert &getFairnessCert() const { return fairnessCert; }
-  const tls::TLSCert &getClientCert() const { return this->clientFacingCert; }
   const fairness::PeerList &getPeerList() const { return this->fairnessPeers; }
   const securechannel::Peer &getCurrentLeader() const { return currentLeader; }
   const securechannel::Peer &getSelf() const { return this->self; }
