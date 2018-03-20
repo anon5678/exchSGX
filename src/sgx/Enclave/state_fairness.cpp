@@ -2,36 +2,6 @@
 
 using namespace exch::enclave;
 
-fairness::Leader *State::initFairnessProtocol() {
-  for (const auto &p : this->fairnessPeers) {
-    LL_NOTICE("found peer %s:%d", p.getHostname().c_str(), p.getPort());
-  }
-
-  LL_NOTICE("found leader at %s:%d",
-            this->currentLeader.getHostname().c_str(),
-            this->currentLeader.getPort());
-
-  // TODO: replace this with sealed keys from untrusted world
-  string leaderSk;
-  string leaderPk = nacl_crypto_box_keypair(&leaderSk);
-  Peer leader_info(
-      currentLeader.getHostname(),
-      currentLeader.getPort(),
-      leaderPk,
-      leaderSk);
-
-  fairness::Message msg;
-
-  // FIXME: avoid copy
-  vector<Peer> peerList;
-  copy(this->fairnessPeers.begin(), this->fairnessPeers.end(), back_inserter(peerList));
-  auto p = new fairness::Leader(leader_info, peerList, msg);
-
-  // record the current protocol
-  this->currentProtocol = p;
-
-  return p;
-}
 
 // ecall
 int setLeader(const char *hostname, uint16_t port, const uint8_t *pubkey) {

@@ -7,9 +7,12 @@
 #include "tls_client.h"
 #include "fairness.h"
 #include "tls.h"
+#include <sgx_thread.h>
 
 #include "../common/merkle_data.h"
 #include "../common/common.h"
+
+extern sgx_thread_mutex_t state_mutex;
 
 // this file is meant to be used to
 // collect the states maintained by a enclave
@@ -33,11 +36,38 @@ enum CertType {
 };
 
 class State {
-public:
+ private:
+  tls::TLSCert fairnessCert;
+  tls::TLSCert clientFacingCert;
+
+  /* fairness */
+  fairness::Follower *fairnessFollower;
+  set<securechannel::Peer> fairnessPeers;
+  securechannel::Peer currentLeader;
+  fairness::Leader *currentProtocol;
+  securechannel::Peer self;
+  bool isLeader;
+
+ public:
   static State &getInstance() {
     static State instance;
     return instance;
   }
+
+  State() = default;
+  ~State() {
+    delete fairnessFollower;
+    delete currentProtocol;
+  }
+  State(const State &) = delete;
+  void operator=(const State &) = delete;
+
+  // read-write interface
+  bool addPeer(const securechannel::Peer &peer);
+  void removePeer(const string &hostname, uint16_t port);
+  void setLeader(const securechannel::Peer &peer);
+  void setSelf(bool is_leader, const securechannel::Peer &self);
+  fairness::Leader *initFairnessProtocol();
 
   int setCert(CertType, const unsigned char *, size_t, const char *);
   int getPubkey(
@@ -48,43 +78,14 @@ public:
       size_t cap_cert_pem
   );
 
-  bool addPeer(const securechannel::Peer &peer);
-  void removePeer(const string &hostname, uint16_t port);
-  void setLeader(const securechannel::Peer &peer);
-  void setSelf(bool is_leader, const securechannel::Peer &self);
-  State() {}
-
-
-private:
-  tls::TLSCert fairnessCert;
-  tls::TLSCert clientFacingCert;
-
-  /* fairness */
-  fairness::Follower *fairnessFollower;
-  set<securechannel::Peer> fairnessPeers;
-  securechannel::Peer currentLeader;
-  fairness::Leader* currentProtocol;
-  securechannel::Peer self;
-  bool isLeader;
-
- public:
-  // delete copy constructors
-  State(const State &) = delete;
-  void operator=(const State &) = delete;
-
+  // read-only interface
   const tls::TLSCert &getFairnessCert() const { return fairnessCert; }
   const tls::TLSCert &getClientCert() const { return this->clientFacingCert; }
   const fairness::PeerList &getPeerList() const { return this->fairnessPeers; }
-  const securechannel::Peer& getCurrentLeader() const {return currentLeader; }
-  const securechannel::Peer& getSelf() const {return this->self;}
-
-  fairness::Leader * initFairnessProtocol();
+  const securechannel::Peer &getCurrentLeader() const { return currentLeader; }
+  const securechannel::Peer &getSelf() const { return this->self; }
   fairness::Leader *getCurrentProtocol() const { return currentProtocol; }
 
-  ~State() {
-    delete fairnessFollower;
-    delete currentProtocol;
-  }
 };
 
 #ifdef __cplusplus
