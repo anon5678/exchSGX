@@ -122,8 +122,7 @@ bool EnclaveRPC::distributeSettlementPkg(const std::string &settlementPkg) {
                               reinterpret_cast<const unsigned char *>(settlementPkg.data()),
                               settlementPkg.size());
 
-  assert (ret == 0);
-  return true;
+  return (ret == 0);
 }
 
 // This function is called on a leader when receiving message from the followers
@@ -135,6 +134,5 @@ bool EnclaveRPC::ackSettlementPkg(const std::string &ack) {
                             reinterpret_cast<const unsigned char *>(ack.data()),
                             ack.size());
 
-  assert (ret == 0);
-  return true;
+  return (ret == 0);
 }

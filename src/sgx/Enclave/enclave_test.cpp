@@ -1,13 +1,13 @@
 #include <algorithm>
+#include <sgx_trts.h>
 
 #include "lest.hpp"
-
 #include "bitcoin/uint256.h"
 #include "blockfifo.hpp"
-
-#include "sgx_trts.h"
 #include "crypto_box.h"
 #include "securechannel.h"
+#include "state.h"
+#include "fairness.h"
 
 using namespace std;
 
@@ -51,10 +51,6 @@ int test_securechannel() {
   return 0;
 }
 
-#include "state.h"
-#include "fairness.h"
-#include <algorithm>
-
 using namespace exch::enclave;
 
 int enclaveTest() {
@@ -69,6 +65,7 @@ int simulate_leader() {
   ECALL_WRAPPER_RET(
       State& s = State::getInstance();
       fairness::Leader* prot = s.initFairnessProtocol();
+      LL_NOTICE("starting settlement...");
       prot->disseminate();
   )
 }

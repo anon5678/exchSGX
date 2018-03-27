@@ -14,7 +14,7 @@ enclave {
         public int onAckFromFairnessFollower([user_check] const unsigned char* ack, size_t size);
 
         // tx_1 committed on chain
-        public int onTxOneCommitted();
+        public int onTxOneCommitted([user_check] const merkle_proof_t* merkle_proof);
 
         // fairness protocol: setup membership
         public int addFairnessFollower([in,string] const char* hostname, uint16_t port, [in,size=32] const uint8_t* pubkey);
@@ -45,6 +45,6 @@ enclave {
         int sendAckToFairnessLeader([in, string] const char* host, int port, [in, size=size] const unsigned char* msg, size_t size);
 
         // send tx_1
-        int commitTxOne();
+        int commitTxOne([in, size=size] const unsigned char* tx1, size_t size);
     };
 };

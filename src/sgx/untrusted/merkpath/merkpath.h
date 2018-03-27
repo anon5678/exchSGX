@@ -34,6 +34,8 @@ class MerkleProof {
   vector<string> branch;
   int direction;
 
+  merkle_proof_t* serialized_proof;
+
   // helper data. not necessary but it helps
   // block_hash
   string block_hash_hex;
@@ -41,20 +43,17 @@ class MerkleProof {
 
  public:
   MerkleProof(const string &tx, const vector<string> &branch, int dirvec)
-      : tx_hash_hex(tx), branch(branch), direction(dirvec) {
+      : tx_hash_hex(tx), branch(branch), direction(dirvec), serialized_proof(nullptr) {
     for (auto &b : branch) {
       if (!b.empty() && b.size() != 2 * BITCOIN_HASH_LENGTH) {
         throw invalid_argument("branch " + b + " doesn't have 64 letters");
       }
     }
   }
-  MerkleProof(const string &tx, vector<string> &&branch, int dirvec)
-      : tx_hash_hex(tx), branch(branch), direction(dirvec) {
-  }
 
   ~MerkleProof() = default;
 
-  size_t proof_size() {
+  size_t proof_size() const {
     return branch.size();
   }
 
@@ -96,6 +95,7 @@ class MerkleProof {
   }
 
   void serialize(merkle_proof_t *o) const;
+  const merkle_proof_t * serialize();
   string verify() const;
 };
 

@@ -4,7 +4,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11")
 set(BRIDGE_SRC
         enclave-rpc-client-impl.cpp
         enclave-rpc-client-impl.h
-        fariness_ocall.cpp
+        fariness-ocall.cpp
+        bitcoind-rpc.cpp
+        bitcoind-merkleproof.cpp
+        merkpath/merkpath.cpp
+        merkle_data.cpp
         Enclave_u.c
         Enclave_u.h
         )
@@ -49,8 +53,9 @@ add_executable(exch-keygen
 
 add_executable(exch-merkleproof
         exch-merkleproof.cpp
-        merkpath/merkpath.cpp
+        bitcoind-merkleproof.cpp
         bitcoind-rpc.cpp
+        merkpath/merkpath.cpp
         ../common/utils.cpp
         merkle_data.cpp)
 
@@ -94,6 +99,7 @@ target_link_libraries(exch-keygen
         ${RPC_LIB_BUNDLE}
         ${COMMON_LIBS}
         ${Boost_LIBRARIES}
+        ${OPENSSL_CRYPTO_LIBRARY}
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
         -lpthread)
 
@@ -103,6 +109,8 @@ target_link_libraries(exch-merkleproof
         ${Boost_LIBRARIES}
         ${LOG4CXX_LIBRARY}
         ${OPENSSL_CRYPTO_LIBRARY}
+        -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
+        -lpthread
         )
 
 target_link_libraries(enclave_test

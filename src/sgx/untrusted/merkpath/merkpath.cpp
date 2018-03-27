@@ -1,16 +1,10 @@
 #include "merkpath.h"
-#include "../../common/merkle_data.h"
 #include "../../common/utils.h"
 
 #include <cstring>
 #include <iomanip>
-#include <iostream>
-#include <openssl/ripemd.h>
 #include <openssl/sha.h>
-#include <iostream>
 #include <algorithm>
-#include <array>
-#include <stdexcept>
 
 #include <log4cxx/logger.h>
 #include <log4cxx/propertyconfigurator.h>
@@ -25,16 +19,7 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("merkpath.merkpath"));
 
 using exch::merkpath::logger;
 
-#if 0
-void hexdump(const unsigned char *data, int len) {
-  std::cout << std::hex;
-  for (int i = 0; i < len; ++i)
-    std::cout << std::setfill('0') << std::setw(2) << (int) data[i];
-  std::cout << std::dec << std::endl;
-}
-#endif
-
-string tohex(const sha256buf& data) {
+string tohex(const sha256buf &data) {
   stringstream ss;
   ss << std::hex;
   for (auto d : data) {
@@ -59,8 +44,6 @@ void sha256double(void const *const s1, void const *const s2, void *const dst) {
   SHA256_Update(&h2, tmp, SHA256_DIGEST_LENGTH);
   SHA256_Final((unsigned char *) dst, &h2);
 }
-
-
 
 MerkleProof loopMerkleProof(const vector<string> &leaf_nodes, long index) {
   LOG4CXX_ASSERT(logger, leaf_nodes.size() > 1, "need at least two transactions");
@@ -94,7 +77,7 @@ MerkleProof loopMerkleProof(const vector<string> &leaf_nodes, long index) {
     next_level.resize(next_level_size);
 
     for (int i = 0; i < next_level_size; ++i) {
-      auto left_node = &level[2*i];
+      auto left_node = &level[2 * i];
       auto right_node = ((2 * i + 1) == size ? left_node : &level[2 * i + 1]);
 
       sha256double(left_node->data(), right_node->data(), next_level[i].data());
@@ -148,15 +131,30 @@ void MerkleProof::serialize(merkle_proof_t *o) const {
   for (int i = 0; i < branch.size(); i++) {
     if (branch[i].empty()) {
       o->merkle_branch[i] = nullptr;
-    }
-    else {
-      o->merkle_branch[i] = (bitcoin_hash_t*) malloc(BITCOIN_HASH_LENGTH);
-      hex2bin((unsigned char*) o->merkle_branch[i], branch[i].c_str());
+    } else {
+      o->merkle_branch[i] = (bitcoin_hash_t *) malloc(BITCOIN_HASH_LENGTH);
+      hex2bin((unsigned char *) o->merkle_branch[i], branch[i].c_str());
     }
   }
 
   // 4. put in the dir vec
   o->dirvec = direction;
+}
+
+const merkle_proof_t *MerkleProof::serialize() {
+  // reuse the proof buffer if possible
+  if (serialized_proof && serialized_proof->merkle_branch_len == proof_size()) {
+    goto resel;
+  }
+
+  if (serialized_proof) {
+    merkle_proof_free(serialized_proof);
+  }
+  serialized_proof = merkle_proof_init(proof_size());
+
+  resel:
+  this->serialize(serialized_proof);
+  return this->serialized_proof;
 }
 
 #if 0
@@ -217,18 +215,17 @@ void merkGenPath(const vector<string> &leaf_nodes, int index) {
 }
 #endif
 
-string MerkleProof::verify() const{
+string MerkleProof::verify() const {
   sha256buf curr;
   sha256buf tmp;
 
-  hex2bin(curr.data(),  tx_hash_hex.c_str());
+  hex2bin(curr.data(), tx_hash_hex.c_str());
   byte_swap(curr.data(), 32);
 
-  if (!tx_raw_hex.empty())
-  {
+  if (!tx_raw_hex.empty()) {
     auto tx_raw_bin = hex2bin(tx_raw_hex.c_str());
 
-    SHA256_CTX h1,h2;
+    SHA256_CTX h1, h2;
     unsigned char t1[SHA256_DIGEST_LENGTH];
     SHA256_Init(&h1);
     SHA256_Update(&h1, tx_raw_bin.data(), tx_raw_bin.size());
@@ -273,22 +270,21 @@ string MerkleProof::verify() const{
 
 #endif
 
-
 void testMerk() {
   // b42be2d0403e5a7336b1f5e2b5c344827177d191b1cbced3565b7ba138d8a83d
-  const vector<string> inp1 {
+  const vector<string> inp1{
       "1141217f7db1bd3f3d098310e6f707eb249736cdf31ce3400705fa72bbc524f0",
       "a3f83c7f6e77ce74c978b3d42fd46a38863fb1f8170feb162382e634e9fd4336",
       "65650a7ab3da07409fa7833958f83df9327f02bd3f703322b7b973935c2c08f1",
       "a0819a177c89b04e3bbb2710e2d89007da32f09f705718cb9e85a7dcc464e3e6",
       "585ae7e330f29a13ddeca437c948489de8d885fec32684f2131d24cd854a0593"};
-  const vector<string> path1 {
+  const vector<string> path1{
       "e6e364c4dca7859ecb1857709ff032da0790d8e21027bb3b4eb0897c179a81a0",
       "396d16d4747f871a1528a0425f9db4023a49aa9dba3345decd8fbee0180f472f",
       "a3b4fb0ca4f26695bd61b5835458d9c9f4bfb75602c2173211e19eb2f0bcb29d"};
-  const vector<string> path2 {string(),
-                              string(),
-                              "10b038ab01c5f4048ebe7b4b66def9725dbd29d6f571474ac0c95949f74113d3"};
+  const vector<string> path2{string(),
+                             string(),
+                             "10b038ab01c5f4048ebe7b4b66def9725dbd29d6f571474ac0c95949f74113d3"};
   // merkGenPath(inp1, 2);
   MerkleProof proof = loopMerkleProof(inp1, 4);
   proof.output(cout);

@@ -56,18 +56,22 @@ void Leader::receiveAck(const string &hostname, uint16_t port) {
   if (all_of(peers_ack.begin(), peers_ack.end(), [](bool x) { return x; })) {
     LL_NOTICE("received ack from all backup. Now proceed to the next step.");
     // TODO: next step
-    int ret;
-    auto st = commitTxOne(&ret);
-    if (st != SGX_SUCCESS || ret != 0) {
-      throw invalid_argument("cannot send tx1 to blockchain");
-    }
+
+    this->sendTransaction1();
 
     LL_NOTICE("tx_1 committed");
   }
 }
 
 void Leader::sendTransaction1() {
-  LL_NOTICE("sending tx1");
+  // TODO: tx hash can be obtained from the first message
+  const string txid = "288bcaaa05389922d5da1ee0e6d2d08e72770754e0c830adba50e0daa95efd48";
+  LL_NOTICE("sending %s to bitcoin", txid.c_str());
+  int ret;
+  auto st = commitTxOne(&ret, (unsigned char*) txid.data(), txid.size());
+  if (st != SGX_SUCCESS || ret != 0) {
+    throw invalid_argument("cannot send tx1 to blockchain");
+  }
 }
 
 void Leader::sendTransaction2() {

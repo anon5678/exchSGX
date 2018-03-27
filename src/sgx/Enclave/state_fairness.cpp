@@ -94,9 +94,10 @@ int onAckFromFairnessFollower(const unsigned char *ack, size_t size) {
 }
 
 // ecall
-int onTxOneCommitted() {
+int onTxOneCommitted(const merkle_proof_t* merkle_proof) {
   LL_NOTICE("tx1 one been committed");
 
+  merkle_proof_verify(merkle_proof);
   return 0;
 }
 
