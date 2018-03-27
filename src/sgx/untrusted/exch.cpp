@@ -161,7 +161,7 @@ int main(int argc, const char *argv[]) {
   }
 
   bool RPCSrvRunning = false;
-  jsonrpc::HttpServer httpserver(rpc_port);
+  jsonrpc::HttpServer httpserver(rpc_port, "", "", 2);
   EnclaveRPC enclaveRPC(eid, httpserver);
   if(enclaveRPC.StartListening()) {
     RPCSrvRunning = true;

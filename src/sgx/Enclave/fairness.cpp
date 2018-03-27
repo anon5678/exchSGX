@@ -75,7 +75,7 @@ void Leader::sendTransaction1() {
 }
 
 void Leader::sendTransaction2() {
-  LL_NOTICE("sending tx2");
+  LL_NOTICE("sending tx2 to Ethereum blockchain");
 }
 
 Follower::Follower(const Peer &me, const Peer &leader)

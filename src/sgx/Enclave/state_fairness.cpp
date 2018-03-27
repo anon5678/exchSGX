@@ -97,7 +97,12 @@ int onAckFromFairnessFollower(const unsigned char *ack, size_t size) {
 int onTxOneCommitted(const merkle_proof_t* merkle_proof) {
   LL_NOTICE("tx1 one been committed");
 
+  // TODO verify merkle proof
   merkle_proof_verify(merkle_proof);
+
+  State& s = State::getInstance();
+
+  s.getCurrentProtocol()->sendTransaction2();
   return 0;
 }
 

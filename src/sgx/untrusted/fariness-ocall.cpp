@@ -7,7 +7,7 @@
 namespace exch {
 namespace fairness {
 namespace ocalls {
-log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("fairness_call.cpp"));
+log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("fairness-ocall.cpp"));
 }
 }
 };
@@ -19,9 +19,10 @@ extern sgx_enclave_id_t eid;
 
 #include "bitcoind-merkleproof.h"
 #include "../common/merkle_data.h"
+#include "Utils.h"
 
 void expectTxOnBitcoin(const string& txid) {
-  LOG4CXX_INFO(logger, "waiting for " << txid);
+  LOG4CXX_INFO(logger, "confirming " << txid);
 
   MerkleProof proof = buildTxInclusionProof(txid);
 
@@ -33,6 +34,7 @@ void expectTxOnBitcoin(const string& txid) {
   auto st = onTxOneCommitted(eid, &ret, serialized);
   if (st != SGX_SUCCESS || ret != 0) {
     LOG4CXX_WARN(logger, "failed to call enclave");
+    print_error_message(st);
   }
 }
 

@@ -50,7 +50,7 @@ MerkleProof buildTxInclusionProof(const string& txid) {
       throw runtime_error("invalid block");
     };
 
-    LOG4CXX_INFO(logger, "Generating proof for tx (index=" << tx_idx << ") in block #" << block["height"]);
+    LOG4CXX_INFO(logger, "generating a merkle proof for tx (index=" << tx_idx << ") in block #" << block["height"]);
     LOG4CXX_INFO(logger, "block hash=" << block_hash);
 
     MerkleProof proof = loopMerkleProof(merkle_leaves, tx_idx);
@@ -60,7 +60,7 @@ MerkleProof buildTxInclusionProof(const string& txid) {
 
     string calc_root = proof.verify();
     if (calc_root == block["merkleroot"].asString()) {
-      LOG4CXX_INFO(logger, "succeed. Merkle root is: " << calc_root);
+      LOG4CXX_INFO(logger, "succeed. merkle root in block header is: " << calc_root);
       return proof;
     }
     else {
