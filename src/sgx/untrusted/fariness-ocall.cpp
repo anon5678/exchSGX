@@ -40,7 +40,7 @@ int commitTxOne(
   LOG4CXX_INFO(logger, "sending tx1 to blockchain")
 
   // set a small timeout so that the leader can optimistically proceed
-  fairnessProtocolForFollower(tx_one_id, tx_one_cancel_id, 1);
+  fairnessProtocolForFollower(tx_one_id, tx_one_cancel_id, 0);
 
   return 0;
 }

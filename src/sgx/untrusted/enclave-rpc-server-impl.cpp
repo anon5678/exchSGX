@@ -50,6 +50,11 @@ constexpr auto DEPOSIT_TIMEOUT = "deposit_timeout";
 
 using namespace exch::bitcoin;
 
+#include <boost/asio/io_service.hpp>
+
+extern shared_ptr<boost::asio::io_service> io_service;
+extern sgx_enclave_id_t eid;
+
 bool EnclaveRPC::deposit(const Json::Value &merkle_proof, const string &public_key) {
   int ret;
   sgx_status_t st;
@@ -113,27 +118,38 @@ bool EnclaveRPC::deposit(const Json::Value &merkle_proof, const string &public_k
   }
 }
 
-// This function is called on a follower when receiving messages from the leader
-bool EnclaveRPC::distributeSettlementPkg(const std::string &settlementPkg) {
+void _onMessageFromFairnessLeader(string settlementPkg) {
   int ret;
-  LOG4CXX_INFO(logger, "get " << settlementPkg.size() << " from the leader");
   onMessageFromFairnessLeader(eid,
                               &ret,
                               reinterpret_cast<const unsigned char *>(settlementPkg.data()),
                               settlementPkg.size());
-
-  // TODO: initiate a waiting on TX1 and TX2
-  return (ret == 0);
 }
 
-// This function is called on a leader when receiving message from the followers
-bool EnclaveRPC::ackSettlementPkg(const std::string &ack) {
+void _ackSettlementPkg(string ack) {
   int ret;
-  LOG4CXX_DEBUG(logger, "receiving ack from a backup");
   onAckFromFairnessFollower(eid,
                             &ret,
                             reinterpret_cast<const unsigned char *>(ack.data()),
                             ack.size());
 
-  return (ret == 0);
+}
+
+#include <boost/bind/bind.hpp>
+
+
+// This function is called on a follower when receiving messages from the leader
+bool EnclaveRPC::distributeSettlementPkg(const std::string &settlementPkg) {
+  LOG4CXX_INFO(logger, "get " << settlementPkg.size() << " from the leader");
+  io_service->post(boost::bind(&_onMessageFromFairnessLeader, settlementPkg));
+
+  return true;
+}
+
+// This function is called on a leader when receiving message from the followers
+bool EnclaveRPC::ackSettlementPkg(const std::string &ack) {
+  LOG4CXX_DEBUG(logger, "receiving ack from a backup");
+  io_service->post(boost::bind(&_ackSettlementPkg, ack));
+
+  return true;
 }

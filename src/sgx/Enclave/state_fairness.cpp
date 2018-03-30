@@ -60,7 +60,7 @@ int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
       return -1;
     }
 
-    fairnessProtocolForFollower( "a", "b", 10);
+    fairnessProtocolForFollower("a", "b", 10);
 
     return 0;
   }

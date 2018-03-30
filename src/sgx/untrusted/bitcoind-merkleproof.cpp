@@ -22,10 +22,12 @@ using exch::bitcoin::logger;
 bool isTxIncluded(const string &txid) {
   bitcoinRPC rpc;
   int i = 0;
+  LOG4CXX_INFO(logger, "testing if " << txid << " is confirmed");
   while (true) {
     try {
       Json::Value txn = rpc.getrawtransaction(txid, false);
-      return txn.isNull();
+      LOG4CXX_INFO(logger, "receiving " << txn << " from rpc");
+      return (!txn.isNull());
     }
     catch (const exception &e) {
       LOG4CXX_ERROR(logger, "cannot call isTxIncluded: " << e.what());

@@ -68,12 +68,16 @@ void workerThread(shared_ptr<aio::io_service> io_service){
   LOG4CXX_INFO(logger, "worker thread finishes.");
 }
 
+#include "bitcoind-merkleproof.h"
 
 int main(int argc, const char *argv[]) {
   // initialize logging and stuff
   Config conf(argc, argv);
   log4cxx::PropertyConfigurator::configure(LOGGING_CONF);
   exch::interrupt::init_signal_handler();
+
+  cout << isTxIncluded("288bcaaa05389922d5da1ee0e6d2d08e72770754e0c830adba50e0daa95efd41") << endl;
+  return 0;
 
   // create the global io_service
   io_service = std::make_shared<aio::io_service>();
