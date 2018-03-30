@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <sgx_trts.h>
 
 #include "lest.hpp"
 #include "bitcoin/uint256.h"
@@ -7,7 +6,6 @@
 #include "crypto_box.h"
 #include "securechannel.h"
 #include "state.h"
-#include "fairness.h"
 
 using namespace std;
 
@@ -33,7 +31,7 @@ int test_securechannel() {
   string skB;
   string pkB = nacl_crypto_box_keypair(&skB);
 
-  string msg {1,2,3,4,5};
+  string msg{1, 2, 3, 4, 5};
 
   Peer peerA("localhost", 1234, pkA, skA);
   Peer peerB("localhost", 4321, pkB, skB);
@@ -45,7 +43,7 @@ int test_securechannel() {
       hexdump("B received:", msgB.data(), msgB.size());
     }
   }
-  catch (const exception& e) {
+  catch (const exception &e) {
     LL_CRITICAL("%s", e.what());
   }
   return 0;
@@ -57,14 +55,26 @@ int enclaveTest() {
   return 0;
 }
 
-#include "utils.h"
-
 int simulate_leader() {
   LL_NOTICE("launching leader...");
 
   try {
     State &s = State::getInstance();
-    fairness::Leader *prot = s.initFairnessProtocol();
+
+    // TODO: put real data in here
+    string tx_1_id = "288bcaaa05389922d5da1ee0e6d2d08e72770754e0c830adba50e0daa95efd48";
+    string tx_1_cancel_id = "288bcaaa05389922d5da1ee0e6d2d08e72770754e0c830adba50e0daa95efd40";
+    bytes tx1{1, 2, 3, 4};
+    bytes tx2{1, 2, 3, 4};
+    bytes tx1_cancel{1, 2, 3, 4};
+    bytes tx2_cancel{1, 2, 3, 4};
+
+    fairness::SettlementPkg msg(
+        tx_1_id, tx_1_cancel_id,
+        tx1, tx2,
+        tx1_cancel, tx2_cancel);
+
+    fairness::Leader *prot = s.initFairnessProtocol(move(msg));
     LL_NOTICE("starting settlement...");
     prot->disseminate();
 

@@ -8,6 +8,8 @@ BalanceBook state::balanceBook;
 
 sgx_thread_mutex_t state_mutex = SGX_THREAD_MUTEX_INITIALIZER;
 
+const int State::FOLLOWER_TIMEOUT_MINUTES;
+
 bool State::addPeer(const securechannel::Peer &peer) {
   sgx_thread_mutex_lock(&state_mutex);
   auto r = fairnessPeers.insert(peer);
@@ -39,7 +41,7 @@ void State::setSelf(bool is_leader, const securechannel::Peer &self) {
   sgx_thread_mutex_unlock(&state_mutex);
 }
 
-fairness::Leader *State::initFairnessProtocol() {
+fairness::Leader *State::initFairnessProtocol(SettlementPkg&& msg) {
   for (const auto &p : this->fairnessPeers) {
     LL_NOTICE("found peer %s:%d", p.getHostname().c_str(), p.getPort());
   }
@@ -57,16 +59,16 @@ fairness::Leader *State::initFairnessProtocol() {
       leaderPk,
       leaderSk);
 
-  fairness::Message msg;
-
   // FIXME: avoid copy
   vector<Peer> peerList;
   copy(this->fairnessPeers.begin(), this->fairnessPeers.end(), back_inserter(peerList));
 
+
+
   sgx_thread_mutex_lock(&state_mutex);
 
   // record the current protocol
-  auto p = new fairness::Leader(leader_info, peerList, msg);
+  auto p = new fairness::Leader(leader_info, peerList, move(msg));
   this->currentProtocol = p;
   sgx_thread_mutex_unlock(&state_mutex);
 

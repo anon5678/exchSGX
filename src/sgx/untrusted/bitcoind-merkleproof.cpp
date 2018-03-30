@@ -22,19 +22,17 @@ using exch::bitcoin::logger;
 bool isTxIncluded(const string &txid) {
   bitcoinRPC rpc;
   int i = 0;
-  LOG4CXX_INFO(logger, "testing if " << txid << " is confirmed");
+  LOG4CXX_DEBUG(logger, "testing if " << txid << " is confirmed");
   while (true) {
     try {
       Json::Value txn = rpc.getrawtransaction(txid, false);
-      LOG4CXX_INFO(logger, "receiving " << txn << " from rpc");
       return (!txn.isNull());
     }
-    catch (const bitcoinRPCException& e) {
-      LOG4CXX_INFO(logger, "bitcoinRPCException: " << e.what());
-      return false;
-    }
     catch (const exception &e) {
-      LOG4CXX_ERROR(logger, "cannot call isTxIncluded: " << e.what());
+      LOG4CXX_INFO(logger, "bitcoinRPCException: " << e.what());
+      if (string(e.what()).find("No such mempool or blockchain transaction") != string::npos) {
+          return false;
+      }
       // TODO: handle the error and retry
       if (i++ > 10) {
         return false;

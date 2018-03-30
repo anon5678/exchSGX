@@ -38,10 +38,9 @@ int setSelf(int is_leader, const char *hostname, uint16_t port, const uint8_t *p
 // ecall
 int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
   try {
-    hexdump("receiving msg from leader", msg, size);
+    SettlementPkg pkg = SettlementPkg::deserialize(string((char*) msg, size));
 
     LL_NOTICE("sending ack to leader");
-
     State &s = State::getInstance();
 
     // TODO compute an actual ack message
@@ -60,7 +59,10 @@ int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
       return -1;
     }
 
-    fairnessProtocolForFollower("a", "b", 10);
+    fairnessProtocolForFollower(
+        pkg.tx_1_id_hex.c_str(),
+        pkg.tx_1_cancel_id_hex.c_str(),
+        State::FOLLOWER_TIMEOUT_MINUTES);
 
     return 0;
   }
@@ -68,24 +70,11 @@ int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
 }
 
 // ecall
-int onAckFromFairnessFollower(const unsigned char *ack, size_t size) {
+int onAckFromFairnessFollower(const unsigned char *_ack, size_t size) {
   try {
     State &s = State::getInstance();
-    string ack_str((char *) ack, size);
-
-    string err;
-    const auto ack_json = json11::Json::parse(ack_str, err);
-
-    if (!err.empty()) {
-      LL_CRITICAL("cannot parse ack message: %s", err.c_str());
-      return -1;
-    }
-
-    auto hostname = ack_json["hostname"].string_value();
-    auto port = ack_json["port"].int_value();
-
-    s.getCurrentProtocol()->receiveAck(hostname, port);
-
+    AcknowledgeMessage ack = AcknowledgeMessage::deserailize(string( (char*) _ack, size));
+    s.getCurrentProtocol()->receiveAck(ack);
     LL_NOTICE("onAckFromFairnessFollower exits");
     return 0;
   }

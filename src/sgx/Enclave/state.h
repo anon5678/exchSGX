@@ -55,21 +55,15 @@ class State {
   State(const State &) = delete;
   void operator=(const State &) = delete;
 
+  // read-only values
+  static const int FOLLOWER_TIMEOUT_MINUTES = 2;
+
   // read-write interface
   bool addPeer(const securechannel::Peer &peer);
   void removePeer(const string &hostname, uint16_t port);
   void setLeader(const securechannel::Peer &peer);
   void setSelf(bool is_leader, const securechannel::Peer &self);
-  fairness::Leader *initFairnessProtocol();
-
-  int setCert(CertType, const unsigned char *, size_t, const char *);
-  int getPubkey(
-      CertType type,
-      unsigned char *o_pubkey,
-      size_t cap_pubkey,
-      char *o_cert_pem,
-      size_t cap_cert_pem
-  );
+  fairness::Leader *initFairnessProtocol(fairness::SettlementPkg&& msg);
 
   // read-only interface
   const fairness::PeerList &getPeerList() const { return this->fairnessPeers; }

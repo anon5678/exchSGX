@@ -4,11 +4,18 @@
 using namespace exch::enclave::fairness;
 using namespace std;
 
-Leader::Leader(const Peer &me, const vector<Peer> &peers, Message &msg)
+constexpr const char* SettlementPkg::TX_ONE_ID;
+constexpr const char* SettlementPkg::TX_ONE_CANCEL_ID;
+constexpr const char* SettlementPkg::TX_ONE;
+constexpr const char* SettlementPkg::TX_TWO;
+constexpr const char* SettlementPkg::TX_ONE_CANCEL;
+constexpr const char* SettlementPkg::TX_TWO_CANCEL;
+
+Leader::Leader(const Peer &me, const vector<Peer> &peers, SettlementPkg &&msg)
     : me(me), msg(move(msg)), peers(peers), peers_ack(peers.size(), false) {
 }
 
-void Leader::disseminate() throw(CannotDisseminate) {
+void Leader::disseminate() noexcept (false) {
   try {
     for (const auto &peer : peers) {
       Box cipher = me.createBoxToPeer(peer, msg.serialize());
@@ -19,13 +26,13 @@ void Leader::disseminate() throw(CannotDisseminate) {
           &ret,
           peer.getHostname().c_str(),
           peer.getPort(),
+          // TODO: send the actual box
           (const unsigned char *) msg.serialize().data(),
           msg.serialize().size());
 
       // mark follower as invalid if sending fails
       if (st != SGX_SUCCESS || ret != 0) {
         LL_CRITICAL("cannot send msg to %s", peer.toString().c_str());
-        /*
         auto index = distance(peers.begin(), find(peers.begin(), peers.end(), peer));
         if (index < peers.size()) {
           // mark this leader as invalid
@@ -33,7 +40,6 @@ void Leader::disseminate() throw(CannotDisseminate) {
         } else {
           throw runtime_error("cannot find peer in peer list");
         }
-        */
       }
     }
   }
@@ -43,8 +49,8 @@ void Leader::disseminate() throw(CannotDisseminate) {
   }
 }
 
-void Leader::receiveAck(const string &hostname, uint16_t port) {
-  Peer peer(hostname, port, string(32, 0xcc));
+void Leader::receiveAck(const AcknowledgeMessage& ack) {
+  Peer peer(ack.hostname, ack.port, string(32, 0xcc));
   long index = distance(peers.begin(), find(peers.begin(), peers.end(), peer));
   if (index < peers.size()) {
     // mark this leader as invalid
@@ -66,17 +72,15 @@ void Leader::receiveAck(const string &hostname, uint16_t port) {
 }
 
 void Leader::sendTransaction1() {
-  // TODO: tx hash can be obtained from the first message
-  const string tx_one_id = "288bcaaa05389922d5da1ee0e6d2d08e72770754e0c830adba50e0daa95efd48";
-  const string tx_one_cancel_id = "288bcaaa05389922d5da1ee0e6d2d08e72770754e0c830adba50e0daa95efd48";
-
-  // TODO: a fake tx
-  bytes tx_one {1,2,3,4};
-
-  LL_NOTICE("sending %s to bitcoin", tx_one_id.c_str());
+  LL_NOTICE("sending %s to bitcoin", msg.tx_1_id_hex.c_str());
 
   int ret;
-  auto st = commitTxOne(&ret,tx_one_id.c_str(), tx_one_cancel_id.c_str(), tx_one.data(), tx_one.size());
+  auto st = commitTxOne(&ret,
+                        msg.tx_1_id_hex.c_str(),
+                        msg.tx_1_cancel_id_hex.c_str(),
+                        msg.tx_1.data(),
+                        msg.tx_1.size());
+
   if (st != SGX_SUCCESS || ret != 0) {
     throw invalid_argument("cannot send tx1 to blockchain");
   }
