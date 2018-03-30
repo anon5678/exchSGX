@@ -29,6 +29,10 @@ bool isTxIncluded(const string &txid) {
       LOG4CXX_INFO(logger, "receiving " << txn << " from rpc");
       return (!txn.isNull());
     }
+    catch (const bitcoinRPCException& e) {
+      LOG4CXX_INFO(logger, "bitcoinRPCException: " << e.what());
+      return false;
+    }
     catch (const exception &e) {
       LOG4CXX_ERROR(logger, "cannot call isTxIncluded: " << e.what());
       // TODO: handle the error and retry
