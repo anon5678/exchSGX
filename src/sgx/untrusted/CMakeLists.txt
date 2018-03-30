@@ -2,8 +2,6 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SGX_COMMON_CFLAGS} -fPIC -Wall -Wno-sign-c
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11")
 
 set(BRIDGE_SRC
-        enclave-rpc-client-impl.cpp
-        enclave-rpc-client-impl.h
         fariness-ocall.cpp
         bitcoind-rpc.cpp
         bitcoind-merkleproof.cpp
@@ -36,21 +34,6 @@ add_executable(exch exch.cpp
         ${BRIDGE_SRC}
         config.cpp)
 
-add_executable(enclave_test
-        enclave_test.cpp Utils.cpp
-        ${BRIDGE_SRC}
-        merkpath/merkpath.cpp
-        merkle_data.cpp
-        ../common/utils.cpp
-        )
-
-add_executable(exch-keygen
-        exch-keygen.cpp
-        Utils.cpp
-        ${BRIDGE_SRC}
-        ../common/utils.cpp
-        ../common/base64.cpp)
-
 add_executable(exch-merkleproof
         exch-merkleproof.cpp
         bitcoind-merkleproof.cpp
@@ -62,7 +45,7 @@ add_executable(exch-merkleproof
 find_package(Jsoncpp REQUIRED)
 find_package(JsonCppRpc REQUIRED)
 find_package(CURL REQUIRED)
-find_package(Boost REQUIRED COMPONENTS program_options filesystem)
+find_package(Boost REQUIRED COMPONENTS program_options filesystem thread)
 find_package(OpenSSL REQUIRED)
 find_package(Log4CXX REQUIRED)
 
@@ -95,14 +78,6 @@ target_link_libraries(exch
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
         -lpthread)
 
-target_link_libraries(exch-keygen
-        ${RPC_LIB_BUNDLE}
-        ${COMMON_LIBS}
-        ${Boost_LIBRARIES}
-        ${OPENSSL_CRYPTO_LIBRARY}
-        -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
-        -lpthread)
-
 target_link_libraries(exch-merkleproof
         ${RPC_LIB_BUNDLE}
         ${COMMON_LIBS}
@@ -112,13 +87,6 @@ target_link_libraries(exch-merkleproof
         -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
         -lpthread
         )
-
-target_link_libraries(enclave_test
-        ${RPC_LIB_BUNDLE}
-        ${COMMON_LIBS}
-        ${OPENSSL_CRYPTO_LIBRARY}
-        -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
-        -lpthread)
 
 add_dependencies(exch enclave)
 

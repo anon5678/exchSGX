@@ -4,17 +4,27 @@ enclave {
 
     include "../common/common.h"
     include "sgx_tseal.h"
+    include "stdint.h"
 
     trusted {
         // deposit
         public int ecall_bitcoin_deposit([user_check] const bitcoin_deposit_t * deposit);
 
         // fairness protocol
-        public int onMessageFromFairnessLeader([user_check] const unsigned char* tx, size_t size);
-        public int onAckFromFairnessFollower([user_check] const unsigned char* ack, size_t size);
-
-        // tx_1 committed on chain
-        public int onTxOneCommitted([user_check] const merkle_proof_t* merkle_proof);
+        public int onMessageFromFairnessLeader(
+            [user_check] const unsigned char* tx, size_t size
+        );
+        public int onAckFromFairnessFollower(
+            [user_check] const unsigned char* ack, size_t size
+        );
+        public int onTxOneCommitted(
+            [user_check] const merkle_proof_t* merkle_proof,
+            [user_check] uint8_t* tx2, size_t cap_tx2
+        );
+        public int onTxOneNotCommitted(
+            [user_check] uint8_t* tx1_cancnel,
+            size_t cap
+        );
 
         // fairness protocol: setup membership
         public int addFairnessFollower([in,string] const char* hostname, uint16_t port, [in,size=32] const uint8_t* pubkey);
@@ -22,7 +32,6 @@ enclave {
         public int setLeader([in,string] const char* hostname, uint16_t port, [in,size=32] const uint8_t* pubkey);
         // TODO: need to add secret key from sealed material
         public int setSelf(int is_leader, [in,string] const char* hostname, uint16_t port, [in,size=32] const uint8_t* pubkey);
-
 
         // testing functions
         public int enclaveTest();
@@ -44,7 +53,17 @@ enclave {
         int sendMessagesToFairnessFollower([in, string] const char* host, int port, [in, size=size] const unsigned char* msg, size_t size);
         int sendAckToFairnessLeader([in, string] const char* host, int port, [in, size=size] const unsigned char* msg, size_t size);
 
-        // send tx_1
-        int commitTxOne([in, size=size] const unsigned char* tx1, size_t size);
+        // called after the leader receives all acks from all followers
+        int commitTxOne(
+            [in, string] const char* tx_one_id,
+            [in, string] const char* tx_one_cancel_id,
+            [in, size=size] const unsigned char* tx1,
+            size_t size);
+
+        // called after the follower receives the settlement package from the leader
+        void fairnessProtocolForFollower (
+            [in, string] const char* tx_one_id,
+            [in, string] const char* tx_one_cancel_id,
+            unsigned int minutes);
     };
 };

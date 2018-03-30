@@ -11,6 +11,8 @@
 #include <boost/program_options.hpp>
 #include <boost/algorithm/hex.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/thread/thread.hpp>
 
 #include <jsonrpccpp/server.h>
 #include <jsonrpccpp/client/connectors/httpclient.h>
@@ -31,6 +33,7 @@
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
+namespace aio = boost::asio;
 
 using namespace std;
 
@@ -42,13 +45,42 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.cpp"));
 
 using exch::main::logger;
 
+shared_ptr<aio::io_service> io_service;
 sgx_enclave_id_t eid;
+
+void workerThread(shared_ptr<aio::io_service> io_service){
+  LOG4CXX_INFO(logger, "worker thread starts.");
+  while (true) {
+    try {
+      boost::system::error_code ec;
+      io_service->run(ec);
+      if (ec) {
+        LOG4CXX_ERROR(logger, "Error: " << ec.message());
+      }
+      // the run() function blocks until [...] the io_service has been stopped.
+      // so break is only hit if io_service is stopped
+      break;
+    }
+    catch (const std::exception& ex) {
+      LOG4CXX_ERROR(logger, "Exception: " << ex.what());
+    }
+  }
+  LOG4CXX_INFO(logger, "worker thread finishes.");
+}
+
 
 int main(int argc, const char *argv[]) {
   // initialize logging and stuff
   Config conf(argc, argv);
   log4cxx::PropertyConfigurator::configure(LOGGING_CONF);
   exch::interrupt::init_signal_handler();
+
+  // create the global io_service
+  io_service = std::make_shared<aio::io_service>();
+  aio::io_service::work io_work(*io_service);
+
+  boost::thread_group worker_threads;
+  for (auto i = 0; i < 5; ++i) { worker_threads.create_thread(boost::bind(&workerThread, io_service)); }
 
   // try to create an enclave
   if (0 != initialize_enclave(&eid)) {
@@ -161,7 +193,7 @@ int main(int argc, const char *argv[]) {
   }
 
   bool RPCSrvRunning = false;
-  jsonrpc::HttpServer httpserver(rpc_port, "", "", 2);
+  jsonrpc::HttpServer httpserver(rpc_port, "", "");
   EnclaveRPC enclaveRPC(eid, httpserver);
   if(enclaveRPC.StartListening()) {
     RPCSrvRunning = true;
@@ -185,9 +217,14 @@ int main(int argc, const char *argv[]) {
   if (RPCSrvRunning)
   {
     enclaveRPC.StopListening();
-    LOG4CXX_INFO(logger, "shutting down the RPC server...")
+    LOG4CXX_INFO(logger, "RPC server shutdown")
   }
 
+  LOG4CXX_INFO(logger, "stopping io_service");
+  io_service->stop();
+  worker_threads.join_all();
+
+  // destroy the enclave last
   sgx_destroy_enclave(eid);
 }
 

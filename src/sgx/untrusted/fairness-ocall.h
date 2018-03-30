@@ -6,8 +6,6 @@
 
 #include <iostream>
 
-using namespace std;
-
 namespace exch {
 namespace rpc {
 
@@ -21,6 +19,7 @@ private:
 public:
   Client(const string &host, uint16_t port) {
     string hostname = "http://" + host + ":" + to_string(port);
+    std::cout << "connect to " << hostname << std::endl;
     connector = new HttpClient(hostname);
     client = new exch::rpc::AbsClient(*connector);
   }

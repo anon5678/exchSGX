@@ -122,6 +122,7 @@ bool EnclaveRPC::distributeSettlementPkg(const std::string &settlementPkg) {
                               reinterpret_cast<const unsigned char *>(settlementPkg.data()),
                               settlementPkg.size());
 
+  // TODO: initiate a waiting on TX1 and TX2
   return (ret == 0);
 }
 

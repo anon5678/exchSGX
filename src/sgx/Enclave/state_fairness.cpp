@@ -35,8 +35,6 @@ int setSelf(int is_leader, const char *hostname, uint16_t port, const uint8_t *p
   )
 }
 
-using namespace exch::enclave::fairness;
-
 // ecall
 int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
   try {
@@ -46,10 +44,9 @@ int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
 
     State &s = State::getInstance();
 
+    // TODO compute an actual ack message
     AcknowledgeMessage ack{s.getSelf().getHostname(), s.getSelf().getPort()};
     auto ack_msg = ack.serialize();
-
-    // TODO compute an ack message
 
     int ret;
     auto st = sendAckToFairnessLeader(
@@ -59,10 +56,11 @@ int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
         (const unsigned char *) ack_msg.data(), ack_msg.size());
 
     if (st != SGX_SUCCESS || ret != 0) {
-      // TODO
       LL_CRITICAL("cannot send ack to the leader");
       return -1;
     }
+
+    fairnessProtocolForFollower( "a", "b", 10);
 
     return 0;
   }
@@ -88,13 +86,14 @@ int onAckFromFairnessFollower(const unsigned char *ack, size_t size) {
 
     s.getCurrentProtocol()->receiveAck(hostname, port);
 
+    LL_NOTICE("onAckFromFairnessFollower exits");
     return 0;
   }
   CATCH_STD_AND_ALL
 }
 
 // ecall
-int onTxOneCommitted(const merkle_proof_t* merkle_proof) {
+int onTxOneCommitted(const merkle_proof_t* merkle_proof, uint8_t* tx2, size_t cap) {
   LL_NOTICE("tx1 one been committed");
 
   // TODO verify merkle proof
@@ -106,3 +105,9 @@ int onTxOneCommitted(const merkle_proof_t* merkle_proof) {
   return 0;
 }
 
+// ecall
+int onTxOneNotCommitted(uint8_t* cancel_tx_one, size_t cap) {
+  LL_CRITICAL("tx1 is not committed, to send tx1 cancel");
+
+  return 0;
+}

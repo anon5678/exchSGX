@@ -1,7 +1,3 @@
-//
-// Created by fanz on 9/21/17.
-//
-
 #ifndef PROJECT_INTERRUPT_H
 #define PROJECT_INTERRUPT_H
 

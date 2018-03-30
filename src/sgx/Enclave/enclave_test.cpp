@@ -62,11 +62,14 @@ int enclaveTest() {
 int simulate_leader() {
   LL_NOTICE("launching leader...");
 
-  ECALL_WRAPPER_RET(
-      State& s = State::getInstance();
-      fairness::Leader* prot = s.initFairnessProtocol();
-      LL_NOTICE("starting settlement...");
-      prot->disseminate();
-  )
+  try {
+    State &s = State::getInstance();
+    fairness::Leader *prot = s.initFairnessProtocol();
+    LL_NOTICE("starting settlement...");
+    prot->disseminate();
+
+    return 0;
+  }
+  CATCH_STD_AND_ALL
 }
 

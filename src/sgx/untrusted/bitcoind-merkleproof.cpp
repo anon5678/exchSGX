@@ -10,7 +10,6 @@
 #include "bitcoind-rpc.h"
 #include "merkpath/merkpath.h"
 
-
 namespace exch {
 namespace bitcoin {
 log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("bitcoind-merkleproof.cpp"));
@@ -20,7 +19,25 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("bitcoind-merkleproof.cpp")
 using namespace std;
 using exch::bitcoin::logger;
 
-MerkleProof buildTxInclusionProof(const string& txid) {
+bool isTxIncluded(const string &txid) {
+  bitcoinRPC rpc;
+  int i = 0;
+  while (true) {
+    try {
+      Json::Value txn = rpc.getrawtransaction(txid, false);
+      return txn.isNull();
+    }
+    catch (const exception &e) {
+      LOG4CXX_ERROR(logger, "cannot call isTxIncluded: " << e.what());
+      // TODO: handle the error and retry
+      if (i++ > 10) {
+        return false;
+      }
+    }
+  }
+}
+
+MerkleProof buildTxInclusionProof(const string &txid) {
   bitcoinRPC rpc;
 
   try {
@@ -38,7 +55,7 @@ MerkleProof buildTxInclusionProof(const string& txid) {
     if (!block.isMember("tx")) {
       throw runtime_error("invalid txn");
     }
-    for (auto& tx : block["tx"]) {
+    for (auto &tx : block["tx"]) {
       merkle_leaves.push_back(tx.asString());
     }
 
@@ -62,8 +79,7 @@ MerkleProof buildTxInclusionProof(const string& txid) {
     if (calc_root == block["merkleroot"].asString()) {
       LOG4CXX_INFO(logger, "succeed. merkle root in block header is: " << calc_root);
       return proof;
-    }
-    else {
+    } else {
       throw runtime_error("failed to generate a valid proof. Try again later.");
     }
   } catch (const bitcoinRPCException &e) {

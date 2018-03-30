@@ -1,7 +1,3 @@
-//
-// Created by fanz on 9/21/17.
-//
-
 #include "interrupt.h"
 #include <csignal>
 
