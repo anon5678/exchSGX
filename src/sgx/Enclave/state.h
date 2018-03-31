@@ -26,11 +26,6 @@ extern BlockFIFO<1000> blockFIFO;
 
 using namespace exch::enclave;
 
-enum CertType {
-  CLIENT_FACING,
-  FAIRNESS,
-};
-
 class State {
  private:
   /* fairness */
@@ -56,7 +51,7 @@ class State {
   void operator=(const State &) = delete;
 
   // read-only values
-  static const int FOLLOWER_TIMEOUT_MINUTES = 2;
+  static const int FOLLOWER_TIMEOUT_SECONDS = 120;
 
   // read-write interface
   bool addPeer(const securechannel::Peer &peer);
@@ -70,7 +65,6 @@ class State {
   const securechannel::Peer &getCurrentLeader() const { return currentLeader; }
   const securechannel::Peer &getSelf() const { return this->self; }
   fairness::Leader *getCurrentProtocol() const { return currentProtocol; }
-
 };
 
 #ifdef __cplusplus

@@ -4,7 +4,13 @@
 #include <string>
 #include "merkpath/merkpath.h"
 
+enum TxInclusion {
+  Yes,
+  No,
+  NotSure,
+};
+
 MerkleProof buildTxInclusionProof(const std::string& txid);
-bool isTxIncluded(const string &txid);
+TxInclusion isTxIncluded(const string &txid);
 
 #endif //TESSERACT_BITCOIND_MERKLEPROOF_H

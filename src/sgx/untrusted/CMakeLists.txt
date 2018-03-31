@@ -18,7 +18,7 @@ set_directory_properties(PROPERTIES
 add_custom_command(
         OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Enclave_u.c ${CMAKE_CURRENT_SOURCE_DIR}/Enclave_u.h
         COMMAND ${SGX_EDGER8R} --untrusted Enclave.edl
-        --search-path ${CMAKE_CURRENT_SOURCE_DIR}/../Enclave/ # Enclave.edl
+        --search-path ${CMAKE_SOURCE_DIR}/common/ # Enclave.edl
         --search-path ${SGX_SDK}/include
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -54,7 +54,6 @@ include_directories(
         ${JSONCPP_INCLUDE_DIRS}/${JSONCPP_INCLUDE_PREFIX}
         ${JSONRPCCPP_INCLUDE_DIRS}
         ${SGXSDK_INCLUDE_DIRS}
-        ${MBEDTLS_SGX_ROOT_DIR}/include
         ${Boost_INCLUDE_DIRS}
         ${OPENSSL_INCLUDE_DIR}
         ${LOG4CXX_INCLUDE_DIR}

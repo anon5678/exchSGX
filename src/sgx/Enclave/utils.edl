@@ -1,6 +1,0 @@
-enclave {
-    untrusted {
-        int ocall_print_to_std([in, string] const char *str);
-        int ocall_print_to_err([in, string] const char *str);
-    };
-};

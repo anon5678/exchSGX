@@ -67,27 +67,25 @@ void Leader::receiveAck(const AcknowledgeMessage& ack) {
 
     this->sendTransaction1();
 
-    LL_NOTICE("tx_1 committed");
+    LL_NOTICE("sending %s (%d bytes) to bitcoin", msg.tx_1_id_hex.c_str(), msg.tx_1.size());
+
+    int ret;
+    auto st = fairnessProtocolForLeader(&ret,
+                                        msg.tx_1_id_hex.c_str(),
+                                        msg.tx_1_cancel_id_hex.c_str(),
+                                        msg.tx_1.data(),
+                                        msg.tx_1.size());
+
+    if (st != SGX_SUCCESS || ret != 0) {
+      throw invalid_argument("cannot send tx1 to blockchain");
+    }
   }
 }
 
 void Leader::sendTransaction1() {
-  LL_NOTICE("sending %s to bitcoin", msg.tx_1_id_hex.c_str());
-
-  int ret;
-  auto st = commitTxOne(&ret,
-                        msg.tx_1_id_hex.c_str(),
-                        msg.tx_1_cancel_id_hex.c_str(),
-                        msg.tx_1.data(),
-                        msg.tx_1.size());
-
-  if (st != SGX_SUCCESS || ret != 0) {
-    throw invalid_argument("cannot send tx1 to blockchain");
-  }
 }
 
 void Leader::sendTransaction2() {
-  LL_NOTICE("sending tx2 to Ethereum blockchain");
 }
 
 Follower::Follower(const Peer &me, const Peer &leader)

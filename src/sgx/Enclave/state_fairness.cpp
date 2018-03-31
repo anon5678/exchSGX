@@ -59,10 +59,16 @@ int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
       return -1;
     }
 
-    fairnessProtocolForFollower(
+    st = fairnessProtocolForFollower(
+        &ret,
         pkg.tx_1_id_hex.c_str(),
         pkg.tx_1_cancel_id_hex.c_str(),
-        State::FOLLOWER_TIMEOUT_MINUTES);
+        State::FOLLOWER_TIMEOUT_SECONDS);
+
+    if (st != SGX_SUCCESS || ret != 0) {
+      LL_CRITICAL("fairnessProtocolForFollower fails with %d", ret);
+      return -1;
+    }
 
     return 0;
   }
@@ -75,7 +81,6 @@ int onAckFromFairnessFollower(const unsigned char *_ack, size_t size) {
     State &s = State::getInstance();
     AcknowledgeMessage ack = AcknowledgeMessage::deserailize(string( (char*) _ack, size));
     s.getCurrentProtocol()->receiveAck(ack);
-    LL_NOTICE("onAckFromFairnessFollower exits");
     return 0;
   }
   CATCH_STD_AND_ALL

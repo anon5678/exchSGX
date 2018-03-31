@@ -19,23 +19,24 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("bitcoind-merkleproof.cpp")
 using namespace std;
 using exch::bitcoin::logger;
 
-bool isTxIncluded(const string &txid) {
+TxInclusion isTxIncluded(const string &txid) {
   bitcoinRPC rpc;
   int i = 0;
   LOG4CXX_DEBUG(logger, "testing if " << txid << " is confirmed");
   while (true) {
     try {
       Json::Value txn = rpc.getrawtransaction(txid, false);
-      return (!txn.isNull());
+      if (! txn.isNull())
+        return TxInclusion::Yes;
     }
     catch (const exception &e) {
-      LOG4CXX_INFO(logger, "bitcoinRPCException: " << e.what());
+      LOG4CXX_DEBUG(logger, "bitcoinRPCException: " << e.what());
       if (string(e.what()).find("No such mempool or blockchain transaction") != string::npos) {
-          return false;
+        return TxInclusion::No;
       }
       // TODO: handle the error and retry
       if (i++ > 10) {
-        return false;
+        return TxInclusion::NotSure;
       }
     }
   }

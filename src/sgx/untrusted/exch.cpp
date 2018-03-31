@@ -12,6 +12,7 @@
 #include <boost/algorithm/hex.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/asio/io_service.hpp>
+#include <boost/asio/deadline_timer.hpp>
 #include <boost/thread/thread.hpp>
 
 #include <jsonrpccpp/server.h>
@@ -44,6 +45,7 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.cpp"));
 using exch::main::logger;
 
 shared_ptr<aio::io_service> io_service;
+unique_ptr<boost::asio::deadline_timer> fairnessTimer;
 sgx_enclave_id_t eid;
 
 void workerThread(shared_ptr<aio::io_service> io_service){
@@ -223,6 +225,7 @@ int main(int argc, const char *argv[]) {
 
   LOG4CXX_INFO(logger, "stopping io_service");
   io_service->stop();
+  fairnessTimer->cancel();
   worker_threads.join_all();
 
   // destroy the enclave last

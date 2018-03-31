@@ -8,7 +8,7 @@ BalanceBook state::balanceBook;
 
 sgx_thread_mutex_t state_mutex = SGX_THREAD_MUTEX_INITIALIZER;
 
-const int State::FOLLOWER_TIMEOUT_MINUTES;
+const int State::FOLLOWER_TIMEOUT_SECONDS;
 
 bool State::addPeer(const securechannel::Peer &peer) {
   sgx_thread_mutex_lock(&state_mutex);
