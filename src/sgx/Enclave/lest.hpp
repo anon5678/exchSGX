@@ -16,7 +16,6 @@
 #include <cstddef>
 
 #include "utils.h"
-using utils::printf_std;
 
 #ifdef __clang__
 # pragma clang diagnostic ignored "-Wunused-value"

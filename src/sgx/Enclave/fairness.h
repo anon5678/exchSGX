@@ -32,7 +32,7 @@ struct AcknowledgeMessage {
     const auto ack_json = json11::Json::parse(json, err);
 
     if (!err.empty()) {
-      throw("cannot parse ack message: %s", err.c_str());
+      throw(string("cannot parse ack message: ") + err.c_str());
     }
 
     auto hostname = ack_json["hostname"].string_value();
@@ -133,7 +133,7 @@ struct SettlementPkg {
     const auto ack_json = json11::Json::parse(json, err);
 
     if (!err.empty()) {
-      throw("cannot parse ack message: %s", err.c_str());
+      throw(string("cannot parse ack message: ") + err.c_str());
     }
 
     bytes tx_one = jsonArrayToBytes(ack_json[TX_ONE].array_items());

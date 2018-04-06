@@ -1,7 +1,3 @@
-//
-// Created by fanz on 9/21/17.
-//
-
 #include "state.h"
 #include "pprint.h"
 #include "log.h"
@@ -213,4 +209,126 @@ int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit) {
   LL_NOTICE("done deposit");
 
   return 0;
+}
+
+#include "script/script.h"
+#include "primitives/transaction.h"
+#include "pubkey.h"
+#include "key.h"
+#include "utilstrencodings.h"
+//#include "base58.h"
+#include "streams.h"
+#include "script/sign.h"
+#include "amount.h"
+
+bool IsValidRedeemScript(CScript redeemScript, CScript scriptPubKey){
+  std::vector<unsigned char> redeemScript_bytes = ToByteVector(redeemScript);
+  unsigned char hash_redeemScript[20];
+  hash160((unsigned char*)(&redeemScript_bytes[0]), redeemScript_bytes.size(), hash_redeemScript);
+  std::vector<unsigned char> hash_redeemScript_bytes(hash_redeemScript, hash_redeemScript+20);
+
+  std::vector<unsigned char> scriptHash;
+  if (!scriptPubKey.IsPayToScriptHash(scriptHash)) {
+    return false;
+  }
+  else {
+    for (int i = 0; i < 20; i++){
+      if (hash_redeemScript[i] != scriptHash[i]){
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
+uint32_t lock_time = 1000; //
+const CAmount txFee = 5000;
+
+static const char* SAMPLE_TRANSACTION = "0100000001a6bf314de32ad81fcce8f62f7a174b68eff8cc80555dadd9c05f8345712187b7010000006a473044022040f4fa959e240fe7e79022138eb8a69d4d1fbe2904f719789206739d8c04fdb702201000602bec686433ccfd07b02cc1df4657a483c5a4e00f17787da27ddaf7a198012102b98ff151995ed7b084c906b9a3bcbfd6308fd4c0e988f0e2b7ddaad388a52bd7ffffffff02204e00000000000017a914fefc9b378293ec29c7684da9da67f294c6ba6c0d87c8fb1d00000000001976a914de3abf317bd3dac3b2a51081c51cd860ec23f21e88ac00000000";
+
+bool DecodeHexTx(CMutableTransaction& tx, const std::string& strHexTx, bool fTryNoWitness){
+  if (!IsHex(strHexTx))
+    return false;
+  vector<unsigned char> txData(ParseHex(strHexTx));
+  if (fTryNoWitness) {
+    CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS);
+    try {
+      ssData >> tx;
+      if (ssData.eof()) {
+        return true;
+      }
+    }
+    catch (const std::exception&) {
+      // Fall through.
+    }
+  }
+  CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
+  try {
+    ssData >> tx;
+  }
+  catch (const std::exception&) {
+    return false;
+  }
+  return true;
+}
+
+CScript generate_redeem_script(const CPubKey user_pubkey, const CPubKey mixer_pubkey, const uint32_t lock_time){
+  CScript redeemScript;
+  redeemScript << OP_IF << ToByteVector(mixer_pubkey) << OP_CHECKSIG << OP_ELSE << lock_time << OP_CHECKLOCKTIMEVERIFY << OP_DROP << ToByteVector(user_pubkey) << OP_CHECKSIG << OP_ENDIF;
+  return redeemScript;
+}
+
+bool craft_refund(const CTransaction& prevTx,
+                  const CPubKey& user_key,
+                  const CPubKey& mixer_pubkey,
+                  CMutableTransaction &unsignedTx){
+  CScript redeemScript = generate_redeem_script(user_key, mixer_pubkey, lock_time);
+  // CMutableTransaction unsignedTx;
+  CScript script2 = prevTx.vout[1].scriptPubKey;
+  /*
+  if (!IsValidRedeemScript(redeemScript, script2)){
+    LL_CRITICAL("Redeem Script hash does not match");
+    return false;
+  }
+   */
+  CTxIn in(COutPoint(prevTx.GetHash(), 1), CScript(), 0);
+  unsignedTx.vin.push_back(in);
+  CScript script1;
+  script1 << OP_DUP << OP_HASH160 << ToByteVector(user_key.GetID()) << OP_EQUALVERIFY << OP_CHECKSIG;
+  CTxOut vout(prevTx.vout[1].nValue-txFee, script1);
+
+  unsignedTx.vout.push_back(vout);
+  unsignedTx.nLockTime = lock_time;
+
+  CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+  ssTx << unsignedTx;
+  string hexRawTx = HexStr(ssTx.begin(), ssTx.end());
+  LL_NOTICE("Unsigned Refund  TX: %s", hexRawTx.c_str());
+  return true;
+}
+
+CPubKey get_btc_pkey(){
+  std::vector<unsigned char> btc_pkey_data(ParseHex("0450863AD64A87AE8A2FE83C1AF1A8403CB53F53E486D8511DAD8A04887E5B23522CD470243453A299FA9E77237716103ABC11A1DF38855ED6F2EE187E9C582BA6"));
+  CPubKey btc_pkey(btc_pkey_data);
+  return btc_pkey;
+}
+
+void test_bitcoin_transaction() {
+  CMutableTransaction _prevTx;
+  DecodeHexTx(_prevTx, SAMPLE_TRANSACTION, true);
+
+  CTransaction prevTx(_prevTx);
+  CPubKey user_key = get_btc_pkey();
+
+  CPubKey sgx_key(ParseHex(
+      "0479BE667EF9DCBBAC55A06295CE870B07029"
+      "BFCDB2DCE28D959F2815B16F81798483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68"
+      "554199C47D08FFB10D4B8"));
+
+  CMutableTransaction tx;
+  craft_refund(prevTx, user_key, sgx_key,tx);
+
+  CTransaction tx_final(tx);
+
+  LL_NOTICE("tx: %s", tx_final.ToString().c_str());
 }

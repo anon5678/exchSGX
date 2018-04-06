@@ -51,7 +51,9 @@ int test_securechannel() {
 
 using namespace exch::enclave;
 
+extern void test_bitcoin_transaction();
 int enclaveTest() {
+  test_bitcoin_transaction();
   return 0;
 }
 

@@ -30,7 +30,7 @@ extern const char *log_level_strings[];
 
 #define LOG(level, fmt, arg...) do {    \
     if ( LOG_SHOULD_I(level) ) { \
-        utils::printf_std("[%s] (%s:%d) " fmt "\n", log_level_strings[level], strrchr(__FILE__, '/')+1,__LINE__, ##arg); \
+        printf_std("[%s] (%s:%d) " fmt "\n", log_level_strings[level], strrchr(__FILE__, '/')+1,__LINE__, ##arg); \
     } \
 } while(false)
 

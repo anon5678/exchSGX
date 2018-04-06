@@ -256,26 +256,22 @@ uint64_t ReadCompactSize(Stream& is)
     {
         nSizeRet = ser_readdata16(is);
         if (nSizeRet < 253)
-//            throw std::ios_base::failure("non-canonical ReadCompactSize()");
-            throw std::system_error("non-canonical ReadCompactSize()");
+            throw std::runtime_error("non-canonical ReadCompactSize()");
     }
     else if (chSize == 254)
     {
         nSizeRet = ser_readdata32(is);
         if (nSizeRet < 0x10000u)
-//            throw std::ios_base::failure("non-canonical ReadCompactSize()");
-            throw std::system_error("non-canonical ReadCompactSize()");
+            throw std::runtime_error("non-canonical ReadCompactSize()");
     }
     else
     {
         nSizeRet = ser_readdata64(is);
         if (nSizeRet < 0x100000000ULL)
-//            throw std::ios_base::failure("non-canonical ReadCompactSize()");
-            throw std::system_error("non-canonical ReadCompactSize()");
+            throw std::runtime_error("non-canonical ReadCompactSize()");
     }
     if (nSizeRet > (uint64_t)MAX_SIZE)
-//        throw std::ios_base::failure("ReadCompactSize(): size too large");
-        throw std::system_error("ReadCompactSize(): size too large");
+        throw std::runtime_error("ReadCompactSize(): size too large");
     return nSizeRet;
 }
 

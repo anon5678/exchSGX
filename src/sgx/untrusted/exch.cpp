@@ -75,9 +75,6 @@ int main(int argc, const char *argv[]) {
   log4cxx::PropertyConfigurator::configure(LOGGING_CONF);
   exch::interrupt::init_signal_handler();
 
-  // cout << isTxIncluded("288bcaaa05389922d5da1ee0e6d2d08e72770754e0c830adba50e0daa95efd48") << endl;
-  // return 0;
-
   // create the global io_service
   io_service = std::make_shared<aio::io_service>();
   aio::io_service::work io_work(*io_service);
@@ -93,6 +90,9 @@ int main(int argc, const char *argv[]) {
 
   sgx_status_t st;
   int ret = 0;
+
+  enclaveTest(eid, &ret);
+  return 0;
 
   // try to load sealed secret keys
 #if false
@@ -225,7 +225,9 @@ int main(int argc, const char *argv[]) {
 
   LOG4CXX_INFO(logger, "stopping io_service");
   io_service->stop();
-  fairnessTimer->cancel();
+  if (fairnessTimer) {
+    fairnessTimer->cancel();
+  }
   worker_threads.join_all();
 
   // destroy the enclave last
