@@ -4,3 +4,5 @@ build
 
 Enclave_u.*
 Enclave_t.*
+
+Enclave/secp256k1/
