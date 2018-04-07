@@ -4,6 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "amount.h"
+#include "portable-sgx.h"
 
 const std::string CURRENCY_UNIT = "BTC";
 
@@ -35,11 +36,7 @@ CAmount CFeeRate::GetFee(size_t nBytes_) const
     return nFee;
 }
 
-#include <cstdio>
-
 std::string CFeeRate::ToString() const
 {
-    char str[128];
-    snprintf(str, sizeof str, "%d.%08d %s/kB", nSatoshisPerK / COIN, nSatoshisPerK % COIN, CURRENCY_UNIT);
-    return std::string(str);
+    return strprintf("%d.%08d %s/kB", nSatoshisPerK / COIN, nSatoshisPerK % COIN, CURRENCY_UNIT.c_str());
 }

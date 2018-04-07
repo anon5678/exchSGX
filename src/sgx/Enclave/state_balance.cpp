@@ -33,21 +33,13 @@ static void sha256double(
 
 static void hash160(const unsigned char *src, size_t len, unsigned char *dst) {
   CSHA256 h1;
-  // SHA256_CTX h1;
   unsigned char tmp[CSHA256::OUTPUT_SIZE];
-  // SHA256_Init(&h1);
-  // SHA256_Update(&h1, (unsigned char *) src, len);
   h1.Write(src, len);
-  // SHA256_Final(tmp, &h1);
   h1.Finalize(tmp);
 
   CRIPEMD160 h2;
-  // RIPEMD160_CTX h2;
   h2.Write(tmp, sizeof tmp);
-  // RIPEMD160_Init(&h2);
-  // RIPEMD160_Update(&h2, tmp, SHA256_DIGEST_LENGTH);
   h2.Finalize(dst);
-  // RIPEMD160_Final((unsigned char *) dst, &h2);
 }
 
 static uint256 __merkle_proof_verify(const merkle_proof_t *proof) {
@@ -216,7 +208,6 @@ int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit) {
 #include "pubkey.h"
 #include "key.h"
 #include "utilstrencodings.h"
-//#include "base58.h"
 #include "streams.h"
 #include "script/sign.h"
 #include "amount.h"
@@ -316,6 +307,8 @@ CPubKey get_btc_pkey(){
 void test_bitcoin_transaction() {
   CMutableTransaction _prevTx;
   DecodeHexTx(_prevTx, SAMPLE_TRANSACTION, true);
+  CTransaction t(_prevTx);
+  LL_NOTICE("tx: %s\n%s", t.GetHash().ToString().c_str(), t.ToString().c_str());
 
   CTransaction prevTx(_prevTx);
   CPubKey user_key = get_btc_pkey();

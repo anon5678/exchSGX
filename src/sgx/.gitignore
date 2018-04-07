@@ -6,3 +6,4 @@ Enclave_u.*
 Enclave_t.*
 
 Enclave/secp256k1/
+Enclave/bolos/secp256k1/

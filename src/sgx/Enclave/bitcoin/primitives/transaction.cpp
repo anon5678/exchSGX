@@ -5,21 +5,11 @@
 
 #include "primitives/transaction.h"
 
+#include <cstdio>
 #include "hash.h"
 #include "utilstrencodings.h"
+#include "portable-sgx.h"
 
-#include <cstdio>
-
-static std::string strprintf(const char* fmt, ...) {
-    va_list ap;
-    constexpr size_t BUFSIZE = 512;
-    char buf[BUFSIZE] = {'\0'};
-    va_start(ap, fmt);
-    vsnprintf(buf, BUFSIZE, fmt, ap);
-    va_end(ap);
-
-    return std::string(buf);
-}
 
 std::string COutPoint::ToString() const
 {
