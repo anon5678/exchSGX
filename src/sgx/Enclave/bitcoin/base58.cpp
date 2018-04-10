@@ -12,6 +12,8 @@
 #include <string.h>
 #include <vector>
 #include <string>
+//#include <boost/variant/apply_visitor.hpp>
+//#include <boost/variant/static_visitor.hpp>
 
 /** All alphanumeric characters except for "0", "I", "O", and "l" */
 static const char* pszBase58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -209,7 +211,6 @@ int CBase58Data::CompareTo(const CBase58Data& b58) const
 }
 
 #ifndef SGX
-
 namespace
 {
 class CBitcoinAddressVisitor : public boost::static_visitor<bool>
@@ -226,6 +227,7 @@ public:
 };
 
 } // anon namespace
+#endif
 
 bool CBitcoinAddress::Set(const CKeyID& id)
 {
@@ -239,10 +241,12 @@ bool CBitcoinAddress::Set(const CScriptID& id)
     return true;
 }
 
+#ifndef SGX
 bool CBitcoinAddress::Set(const CTxDestination& dest)
 {
     return boost::apply_visitor(CBitcoinAddressVisitor(this), dest);
 }
+#endif
 
 bool CBitcoinAddress::IsValid() const
 {
@@ -305,6 +309,7 @@ CKey CBitcoinSecret::GetKey()
 bool CBitcoinSecret::IsValid() const
 {
     bool fExpectedFormat = vchData.size() == 32 || (vchData.size() == 33 && vchData[32] == 1);
+    Params();
     bool fCorrectVersion = vchVersion == Params().Base58Prefix(CChainParams::SECRET_KEY);
     return fExpectedFormat && fCorrectVersion;
 }
@@ -316,6 +321,6 @@ bool CBitcoinSecret::SetString(const char* pszSecret)
 
 bool CBitcoinSecret::SetString(const std::string& strSecret)
 {
-    return SetString(strSecret.c_str());
+    bool a = SetString(strSecret.c_str());
+    return a;
 }
-#endif
