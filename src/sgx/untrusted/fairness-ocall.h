@@ -5,6 +5,7 @@
 #include <jsonrpccpp/client/connectors/httpclient.h>
 
 #include <iostream>
+#include <memory>
 
 namespace exch {
 namespace rpc {
@@ -14,17 +15,13 @@ using namespace std;
 
 class Client {
 private:
-  HttpClient *connector;
-  exch::rpc::AbsClient *client;
+  HttpClient connector;
+  std::unique_ptr<exch::rpc::AbsClient> client;
 public:
-  Client(const string &host, uint16_t port) {
-    string hostname = "http://" + host + ":" + to_string(port);
-    connector = new HttpClient(hostname);
-    client = new exch::rpc::AbsClient(*connector);
+  Client(const string &host, uint16_t port): connector("http://" + host + ":" + to_string(port)) {
+    client = std::unique_ptr<exch::rpc::AbsClient>(new exch::rpc::AbsClient(connector));
   }
-  ~Client() {
-    delete client;
-  }
+  ~Client() {}
 
   // leader -> followers
   // called by sendMessagesToFairnessFollower

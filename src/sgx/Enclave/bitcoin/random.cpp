@@ -162,7 +162,10 @@ void GetStrongRandBytes(unsigned char* out, int num)
 #include <sgx_trts.h>
 void GetRandBytes(unsigned char* buf, int num)
 {
-    sgx_read_rand(buf, num);
+    auto st = sgx_read_rand(buf, num);
+    if (st != SGX_SUCCESS) {
+        LL_CRITICAL("cannot call sgx_read_rand");
+    }
 }
 
 void GetStrongRandBytes(unsigned char* out, int num)
