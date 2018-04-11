@@ -328,11 +328,11 @@ CTransaction spendP2SH(const CTransaction &prevTx,
                        const CKey &privKey,
                        const CKeyID &address) {
   const CTxOut &prevOutput = prevTx.vout[nOut];
-  const CScript &sigPubkey = prevOutput.scriptPubKey;
+  const CScript &scriptPubKey = prevOutput.scriptPubKey;
 
-  LL_NOTICE("sigPubKey: %s", HexStr(sigPubkey).c_str());
+  LL_NOTICE("sigPubKey: %s", HexStr(scriptPubKey).c_str());
 
-  if (!IsValidRedeemScript(redeemScript, sigPubkey)) {
+  if (!IsValidRedeemScript(redeemScript, scriptPubKey)) {
     throw invalid_argument("Invalid redeemScript");
   }
 
@@ -357,8 +357,6 @@ CTransaction spendP2SH(const CTransaction &prevTx,
   std::vector<unsigned char> vchSig;
   uint256 hash = SignatureHash(redeemScript, unsignedTx, 0, SIGHASH_ALL, amount, SIGVERSION_BASE);
 
-  //FIXME: temp. fix
-  // byte_swap(hash.begin(), hash.size());
   LL_NOTICE("signature hash XXXXXXX: %s", hash.GetHex().c_str());
 
   privKey.Sign(hash, vchSig);
@@ -386,7 +384,7 @@ CTransaction spendP2SH(const CTransaction &prevTx,
 
   ScriptError serror = SCRIPT_ERR_OK;
   if (!VerifyScript(vin.scriptSig,
-                    sigPubkey,
+                    scriptPubKey,
                     nullptr,
                     STANDARD_SCRIPT_VERIFY_FLAGS,
                     TransactionSignatureChecker(&tmpTx, 0, amount),
