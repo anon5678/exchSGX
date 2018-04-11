@@ -323,6 +323,7 @@ void UpdateTransaction(CMutableTransaction &tx, unsigned int nIn, const Signatur
 
 CTransaction spendP2SH(const CTransaction &prevTx,
                        int nOut,
+                       CAmount fee,
                        const CScript &redeemScript,
                        uint32_t nLockTime,
                        const CKey &privKey,
@@ -350,17 +351,21 @@ CTransaction spendP2SH(const CTransaction &prevTx,
   unsignedTx.nLockTime = nLockTime;
 
   // generate scriptSig for input
-  const CAmount &amount = prevOutput.nValue;
+  const CAmount amount = prevOutput.nValue - fee;
+  LL_NOTICE("amount: %ld", amount);
+
   SignatureData sigdata;
   std::vector<unsigned char> vchSig;
-  uint256 hash = SignatureHash(redeemScript, unsignedTx, 0, SIGHASH_ALL, amount, SIGVERSION_BASE);
+  uint256 hash = SignatureHash(redeemScript, unsignedTx, 0, SIGHASH_ALL, amount + 1, SIGVERSION_BASE);
+
+  LL_NOTICE("signature hash: %s", hash.GetHex().c_str());
+
   privKey.Sign(hash, vchSig);
   vchSig.push_back((unsigned char) SIGHASH_ALL);
 
   // create complete signature
   std::vector<valtype> ret;
   ret.push_back(vchSig);
-  CScript flow;
   ret.emplace_back(redeemScript.begin(), redeemScript.end());
   sigdata.scriptSig = flatten(ret);
 
@@ -369,10 +374,8 @@ CTransaction spendP2SH(const CTransaction &prevTx,
 
   CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
   ssTx << tmpTx;
-  LL_NOTICE("Final Tx: %s", HexStr(ssTx).c_str());
-  LL_NOTICE("Refer Tx: 01000000014841c345ebe5905d40aec1ba224fc5613439a89d6229025241eaf31404a5bcab0000000074483045022100f55a6a3154fa58c0eb63fca4e9f59a866662f309c409875b5653df5cd69646a902203269b9eb060bf68e4976f8a5f98f18efa88a008058525c87b235683c27a3cfbc012a04b122cd5ab17521025c6cc70c0701405625c130a43621fe3ee35d7a8a664ffc59bb623b60d5afb657ac000000000144c29a3b000000001976a91467405e48a42e6642c7a01d20083ce80bfe5e5df588acb122cd5a");
-
-  LL_NOTICE("tx: %s", tmpTx.ToString().c_str());
+  LL_NOTICE("Final raw tx: %s", HexStr(ssTx).c_str());
+  LL_NOTICE("Interpreted as: %s", tmpTx.ToString().c_str());
 
   ScriptError serror = SCRIPT_ERR_OK;
   if (!VerifyScript(vin.scriptSig,
@@ -486,7 +489,7 @@ CTransaction build_settlement_tx(const map<CPubKey, CTransaction> &deposits, con
 CScript generate_cltv_script(uint32_t cltv, const CKey &privKey) {
   CScript redeemScript;
   redeemScript << cltv << OP_CHECKLOCKTIMEVERIFY << OP_DROP << ToByteVector(privKey.GetPubKey()) << OP_CHECKSIG;
-  LL_NOTICE("redeemscript %s", HexStr(redeemScript).c_str());
+  LL_NOTICE("redeemscript: %s", HexStr(redeemScript).c_str());
 
   return redeemScript;
 }
@@ -494,19 +497,21 @@ CScript generate_cltv_script(uint32_t cltv, const CKey &privKey) {
 #include "base58.h"
 
 void test_bitcoin_transaction() {
+  //=======
   const string sgxPrivKey = "cURgah32X7tNqK9NCkpXVVd4bbocWm3UjgwyAGpdVfxicAZynLs5";
-  const uint32_t cltvTimeout = 1523393201;
+  const uint32_t cltvTimeout = 1523415529;
+  const int nIn = 0;
 
-  // txid = 2ac4a2a3a31d873df3119e84cda01c828c58296ebbd47b6a99f6506029889e43
-  const string rawPrevTxP2SH =
-      "02000000000102439e88296050f6996a7bd4bb6e29588c821ca0cd849e11f33d871da3a3a2c42a00000000171600141a70c43931b3a5a8f1dac0ace75685e337ad7a2dfeffffffe6d4145830b185209d83cca12d3b23411900cff541afd9b5cd973261a8f7e64c00000000171600149f2c6857ee702fca7100af7a20248014cec71e02feffffff0200ca9a3b0000000017a914d5a4f94120e08c57890a808178cfcf3cc6838c95871c5cf5050000000017a914e7c424079d69f0bd6f724667952950827c8c9bf48702483045022100d47dfdbf311f3793f1b3a3493794066b3bf514d1cc605e61bfcb3424eefddd28022078870b49064aa430328bd011fe30c1dcf1c1ea30c58d89f63b2c8bc45114a55a01210357d7cb2f73a55aad7e655658a058e3505cdc843ee9deae32258156518da137ac02483045022100976d5d4e488a1e9eed828a663bf3de44fc52a777cc66676196d3adff189d256502207204a98a58ca22e4e026ffe1546d1ebeadb7b9568a1d7979fe330c2e98f07df9012102cb0331b66bc60f3ca33b4f1f1ada0ec90425c8e4c0a2f9b0230b7c28934f903585000000";
+  // txid = 848ebdefbe43e044e4d43fc692eec2a3e459c7ca453d3a49416447bf5d461a5f
+  const string rawPrevTxP2SH = "0200000000010243dc273398a2015eb47b770be9c8e563e1ca95b7ce84a6c44992ce1e7fb32615000000001716001434d18eb19e307bb62b50382075ef96cacc0915b0feffffff5ceb03f06c68e365f1b77024e260345450497ea0f36df9c0727686313613f068000000004847304402203639a0b163d4a5ceb7a007c019638bc164100aa87b05ed44566844b4b9acd80d02204b1006d0027a1f740f2838fcc7455729bdcbd1b0785fd51fc789c1ea71ab4f2901feffffff0200f2052a0100000017a914898f7e6ebcbbfe217aacd4756b7c038cfcf42f0687dcd8f4050000000017a9147c972ee73706c7df4715f2aa27cd88a7cf0777f787024730440220072c1a3823a52b2625b09ae05e616cf07b52f9b1cc18c871edcf793c66cb360d02206f93ceb4d775197b3dba3c8ca7d822e18d27cf337b3ff356e3c786ffbe4a7fd3012103de89aba32e737499c2deb88f0ce0ac789bca6ae757f1f43b0aaff9f61aadb0450098000000";
+  // to generate rereference spend transaction
+  // python3 hodl.py -vt cURgah32X7tNqK9NCkpXVVd4bbocWm3UjgwyAGpdVfxicAZynLs5 1523415529 spend 848ebdefbe43e044e4d43fc692eec2a3e459c7ca453d3a49416447bf5d461a5f:0 mpvu1CZbTQE9fiJ82b8UxQYTWy1z62eeAA
+  //=======
 
-  // reference spending tx
-  // 0100000001439e88296050f6996a7bd4bb6e29588c821ca0cd849e11f33d871da3a3a2c42a0100000073473044022007d379a2f344929aa9abed71b53b82958560bd4256bc2ba844e58453a99720ed02207609d0286451a4640fb69448aa4fa7df8438c0dab727fc238c005fce00d1f669012a0439f4cc5ab17521025c6cc70c0701405625c130a43621fe3ee35d7a8a664ffc59bb623b60d5afb657ac000000000144fb154e0200000017a91422d7fe2b01d33824e3bd5086aeb762d62b3e75828739f4cc5a
 
   // goal: construct a tx that spends rawPrevTxP2SH
-  ECC_Start();
   SelectParams(CBaseChainParams::REGTEST);
+  ECC_Start();
 
   try {
     CBitcoinSecret secret;
@@ -519,6 +524,8 @@ void test_bitcoin_transaction() {
     DecodeHexTx(_prevTx, rawPrevTxP2SH, false);
     CTransaction prevTx(_prevTx);
 
+    LL_NOTICE("prevTx amount: %ld", prevTx.vout[nIn].nValue);
+
 
     CBitcoinAddress toAddress;
     toAddress.Set(sgxKey.GetPubKey().GetID());
@@ -527,7 +534,8 @@ void test_bitcoin_transaction() {
 
     CTransaction t = spendP2SH(
         prevTx,
-        0,
+        nIn,
+        static_cast<CAmount>(1980),
         generate_cltv_script(cltvTimeout, sgxKey),
         cltvTimeout,
         sgxKey, secret.GetKey().GetPubKey().GetID());
