@@ -225,7 +225,6 @@ bool IsValidRedeemScript(const CScript& redeemScript, const CScript& scriptPubKe
     LL_CRITICAL("not an P2SH");
     return false;
   } else {
-    LL_NOTICE("P2SH=%s", HexStr(scriptHash).c_str());
     for (int i = 0; i < 20; i++) {
       if (hash_redeemScript[i] != scriptHash[i]) {
         return false;
@@ -339,28 +338,39 @@ CTransaction spendP2SH(const CTransaction &prevTx,
 
   CMutableTransaction unsignedTx;
 
+  // FIXME: fixed version to be one
+  unsignedTx.nVersion = 1;
+
   CTxIn vin(COutPoint(prevTx.GetHash(), nOut), CScript(), 0);
   unsignedTx.vin.push_back(vin);
 
   CScript newOutScriptPubkey;
   newOutScriptPubkey << OP_DUP << OP_HASH160 << ToByteVector(address) << OP_EQUALVERIFY << OP_CHECKSIG;
 
-  CTxOut vout(prevOutput.nValue - txFee, newOutScriptPubkey);
+  const CAmount amount = prevOutput.nValue - fee;
+  LL_NOTICE("amount: %ld", amount);
+
+  CTxOut vout(amount, newOutScriptPubkey);
   unsignedTx.vout.push_back(vout);
 
   unsignedTx.nLockTime = nLockTime;
 
   // generate scriptSig for input
-  const CAmount amount = prevOutput.nValue - fee;
-  LL_NOTICE("amount: %ld", amount);
-
   SignatureData sigdata;
   std::vector<unsigned char> vchSig;
-  uint256 hash = SignatureHash(redeemScript, unsignedTx, 0, SIGHASH_ALL, amount + 1, SIGVERSION_BASE);
+  uint256 hash = SignatureHash(redeemScript, unsignedTx, 0, SIGHASH_ALL, amount, SIGVERSION_BASE);
 
-  LL_NOTICE("signature hash: %s", hash.GetHex().c_str());
+  //FIXME: temp. fix
+  // byte_swap(hash.begin(), hash.size());
+  LL_NOTICE("signature hash XXXXXXX: %s", hash.GetHex().c_str());
 
   privKey.Sign(hash, vchSig);
+
+  auto globalHandle = unique_ptr<ECCVerifyHandle>(new ECCVerifyHandle());
+
+  bool IsVerified = privKey.GetPubKey().Verify(hash, vchSig);
+  LL_NOTICE("Signature %s", IsVerified ? "looks good" : "doesn't verify");
+
   vchSig.push_back((unsigned char) SIGHASH_ALL);
 
   // create complete signature
@@ -497,16 +507,17 @@ CScript generate_cltv_script(uint32_t cltv, const CKey &privKey) {
 #include "base58.h"
 
 void test_bitcoin_transaction() {
-  //=======
+  //===PASTE THIS INTO C++ CODE====
   const string sgxPrivKey = "cURgah32X7tNqK9NCkpXVVd4bbocWm3UjgwyAGpdVfxicAZynLs5";
-  const uint32_t cltvTimeout = 1523415529;
-  const int nIn = 0;
+  const uint32_t cltvTimeout = 1523467325;
+  const int nIn = 1;
 
-  // txid = 848ebdefbe43e044e4d43fc692eec2a3e459c7ca453d3a49416447bf5d461a5f
-  const string rawPrevTxP2SH = "0200000000010243dc273398a2015eb47b770be9c8e563e1ca95b7ce84a6c44992ce1e7fb32615000000001716001434d18eb19e307bb62b50382075ef96cacc0915b0feffffff5ceb03f06c68e365f1b77024e260345450497ea0f36df9c0727686313613f068000000004847304402203639a0b163d4a5ceb7a007c019638bc164100aa87b05ed44566844b4b9acd80d02204b1006d0027a1f740f2838fcc7455729bdcbd1b0785fd51fc789c1ea71ab4f2901feffffff0200f2052a0100000017a914898f7e6ebcbbfe217aacd4756b7c038cfcf42f0687dcd8f4050000000017a9147c972ee73706c7df4715f2aa27cd88a7cf0777f787024730440220072c1a3823a52b2625b09ae05e616cf07b52f9b1cc18c871edcf793c66cb360d02206f93ceb4d775197b3dba3c8ca7d822e18d27cf337b3ff356e3c786ffbe4a7fd3012103de89aba32e737499c2deb88f0ce0ac789bca6ae757f1f43b0aaff9f61aadb0450098000000";
-  // to generate rereference spend transaction
-  // python3 hodl.py -vt cURgah32X7tNqK9NCkpXVVd4bbocWm3UjgwyAGpdVfxicAZynLs5 1523415529 spend 848ebdefbe43e044e4d43fc692eec2a3e459c7ca453d3a49416447bf5d461a5f:0 mpvu1CZbTQE9fiJ82b8UxQYTWy1z62eeAA
-  //=======
+// txid = 39be74b0606b69c9eddbdd70e09ca2915448941ad7905d1e00ebf20f4b81fe94
+  const string rawPrevTxP2SH = "020000000001026e8fcaf6687c5de5aefbc30157d41e5a68a6758bdff49823829038f944de485501000000171600140d2f79e81df44aa8540c4c5122825bc05437eb96fefffffff028c25247f13da7bd4622ae36a702b5d2fb2d3ef47cb13fea3c3ef51639a35400000000494830450221009b61d209b7022ed44926425ad52aa31d3cdd5b3b9b90dc708506251609ba355a02201188be71296571abfcfc6448ddc3ad09d5f5818ebcf749056ed892f67b79ffcf01feffffff021cadf4050000000017a9146605b6c2d80b4a348dbe5fce99e197887e9ca9c58700f2052a0100000017a91433815c21c2c5a76b6953ac7626a6b62a783643f487024730440220214fa159da3dba30e4ceb63c5a5ffc4294fb8c7ec95ed30a04675b0dbe60029e022054d19390cc8659d492f7c59625e5ec44f4cbcc87b001f6aaf53a30b9a3a5d6e20121020cf586efc2704aaeba611743ffe44f3a752abcdb116cb71cddfe2d35976ffbeb00ae000000";
+// to generate rereference spend transaction
+// python3 hodl.py -vt cURgah32X7tNqK9NCkpXVVd4bbocWm3UjgwyAGpdVfxicAZynLs5 1523467325 spend 39be74b0606b69c9eddbdd70e09ca2915448941ad7905d1e00ebf20f4b81fe94:1 mpvu1CZbTQE9fiJ82b8UxQYTWy1z62eeAA
+//===END OF PASTE THIS INTO C++ CODE====
+
 
 
   // goal: construct a tx that spends rawPrevTxP2SH

@@ -1,6 +1,7 @@
-diff -ur /tmp/secp256k1/src/ecmult_impl.h ./ecmult_impl.h
---- /tmp/secp256k1/src/ecmult_impl.h	2017-05-19 07:42:47.490335205 +0200
-+++ ./ecmult_impl.h	2017-05-08 12:51:18.164538841 +0200
+diff --git src/ecmult_impl.h src/ecmult_impl.h
+index 4e40104..189b8c4 100644
+--- src/ecmult_impl.h
++++ src/ecmult_impl.h
 @@ -29,15 +29,27 @@
  #  endif
  #else
@@ -29,24 +30,32 @@ diff -ur /tmp/secp256k1/src/ecmult_impl.h ./ecmult_impl.h
  #endif
  #endif
  
-diff -ur /tmp/secp256k1/src/secp256k1.c ./secp256k1.c
---- /tmp/secp256k1/src/secp256k1.c	2017-05-19 07:43:08.427182744 +0200
-+++ ./secp256k1.c	2017-03-29 11:52:16.455827366 +0200
-@@ -27,7 +27,7 @@
+diff --git src/secp256k1.c src/secp256k1.c
+index a709bea..3b3b650 100644
+--- src/secp256k1.c
++++ src/secp256k1.c
+@@ -25,10 +25,12 @@
+     } \
+ } while(0)
  
++
++extern int printf_std(const char *fmt, ...);
++
  static void default_illegal_callback_fn(const char* str, void* data) {
      (void)data;
 -    fprintf(stderr, "[libsecp256k1] illegal argument: %s\n", str);
-+    /*fprintf(stderr, "[libsecp256k1] illegal argument: %s\n", str);*/
-     abort();
+-    abort();
++    printf_std("[libsecp256k1] illegal argument: %s\n", str);
  }
  
-@@ -38,7 +38,7 @@
+ static const secp256k1_callback default_illegal_callback = {
+@@ -38,8 +40,7 @@ static const secp256k1_callback default_illegal_callback = {
  
  static void default_error_callback_fn(const char* str, void* data) {
      (void)data;
 -    fprintf(stderr, "[libsecp256k1] internal consistency check failed: %s\n", str);
-+    /*fprintf(stderr, "[libsecp256k1] internal consistency check failed: %s\n", str);*/
-     abort();
+-    abort();
++    printf_std("[libsecp256k1] internal consistency check failed: %s\n", str);
  }
  
+ static const secp256k1_callback default_error_callback = {
