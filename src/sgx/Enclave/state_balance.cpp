@@ -338,9 +338,6 @@ CTransaction spendP2SH(const CTransaction &prevTx,
 
   CMutableTransaction unsignedTx;
 
-  // FIXME: fixed version to be one
-  unsignedTx.nVersion = 1;
-
   CTxIn vin(COutPoint(prevTx.GetHash(), nOut), CScript(), 0);
   unsignedTx.vin.push_back(vin);
 
@@ -507,18 +504,7 @@ CScript generate_cltv_script(uint32_t cltv, const CKey &privKey) {
 #include "base58.h"
 
 void test_bitcoin_transaction() {
-  //===PASTE THIS INTO C++ CODE====
-  const string sgxPrivKey = "cURgah32X7tNqK9NCkpXVVd4bbocWm3UjgwyAGpdVfxicAZynLs5";
-  const uint32_t cltvTimeout = 1523467325;
-  const int nIn = 1;
-
-// txid = 39be74b0606b69c9eddbdd70e09ca2915448941ad7905d1e00ebf20f4b81fe94
-  const string rawPrevTxP2SH = "020000000001026e8fcaf6687c5de5aefbc30157d41e5a68a6758bdff49823829038f944de485501000000171600140d2f79e81df44aa8540c4c5122825bc05437eb96fefffffff028c25247f13da7bd4622ae36a702b5d2fb2d3ef47cb13fea3c3ef51639a35400000000494830450221009b61d209b7022ed44926425ad52aa31d3cdd5b3b9b90dc708506251609ba355a02201188be71296571abfcfc6448ddc3ad09d5f5818ebcf749056ed892f67b79ffcf01feffffff021cadf4050000000017a9146605b6c2d80b4a348dbe5fce99e197887e9ca9c58700f2052a0100000017a91433815c21c2c5a76b6953ac7626a6b62a783643f487024730440220214fa159da3dba30e4ceb63c5a5ffc4294fb8c7ec95ed30a04675b0dbe60029e022054d19390cc8659d492f7c59625e5ec44f4cbcc87b001f6aaf53a30b9a3a5d6e20121020cf586efc2704aaeba611743ffe44f3a752abcdb116cb71cddfe2d35976ffbeb00ae000000";
-// to generate rereference spend transaction
-// python3 hodl.py -vt cURgah32X7tNqK9NCkpXVVd4bbocWm3UjgwyAGpdVfxicAZynLs5 1523467325 spend 39be74b0606b69c9eddbdd70e09ca2915448941ad7905d1e00ebf20f4b81fe94:1 mpvu1CZbTQE9fiJ82b8UxQYTWy1z62eeAA
-//===END OF PASTE THIS INTO C++ CODE====
-
-
+  #include "cltvtest"
 
   // goal: construct a tx that spends rawPrevTxP2SH
   SelectParams(CBaseChainParams::REGTEST);
