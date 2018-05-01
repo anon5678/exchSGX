@@ -6,6 +6,8 @@ using namespace exch::enclave::fairness;
 BlockFIFO<1000> state::blockFIFO;
 BalanceBook state::balanceBook;
 
+Server state::server;
+
 sgx_thread_mutex_t state_mutex = SGX_THREAD_MUTEX_INITIALIZER;
 
 const int State::FOLLOWER_TIMEOUT_SECONDS;

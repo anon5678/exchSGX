@@ -9,6 +9,8 @@
 #include "../common/merkle_data.h"
 #include "../common/common.h"
 
+#include "eth/orderbook/Server.h"
+
 extern sgx_thread_mutex_t state_mutex;
 
 // this file is meant to be used to
@@ -20,6 +22,7 @@ namespace enclave {
 namespace state {
 extern BalanceBook balanceBook;
 extern BlockFIFO<1000> blockFIFO;
+extern Server server;
 }
 }
 }
@@ -103,6 +106,13 @@ int unseal_secret_and_leak_public_key(const sgx_sealed_data_t *secret,
 int provision_rsa_id(const unsigned char *secret_key, size_t secret_key_len, const char *cert_pem);
 
 int query_rsa_pubkey(unsigned char *o_pubkey, size_t cap_pubkey, char *o_cert_pem, size_t cap_cert_pem);
+
+int ecall_eth_add_new_header(const char *st);
+//int eth_balance_proof_verify(const char *proof);
+//int eth_receipt_proof_verify(const char *proof);
+
+//void eth_send_tx(const char *content);
+
 
 #ifdef __cplusplus
 }

@@ -43,6 +43,13 @@ enclave {
         public size_t nacl_keygen_in_seal(
             [user_check] unsigned char *o_sealed, size_t cap_sealed_buf,
             [user_check] unsigned char *o_pubkey);
+
+	//ethereum
+        public int ecall_eth_add_new_header([in,string]const char* st);
+        public int eth_balance_proof_verify([in,string]const char* proof);
+        public int eth_receipt_proof_verify([in,string]const char* proof);
+        public void eth_send_tx([user_check] char* content);
+
     };
 
     untrusted {

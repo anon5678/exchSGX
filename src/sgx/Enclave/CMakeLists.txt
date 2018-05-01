@@ -22,6 +22,58 @@ set(BITCOIN_SRC_FILES
         bitcoin/script/script.cpp
         libsecp256k1.a)
 
+set(ETH_SRC_FILES
+	eth/common/Account.h
+        eth/common/AccountProof.h
+        eth/common/AccountSys.h
+        eth/common/Address.cpp
+        eth/common/Address.h
+        eth/common/Bytes.cpp
+        eth/common/Bytes.h
+        eth/common/ContentProof.h
+        eth/common/Header.cpp
+        eth/common/Header.h
+        eth/common/Keccak.h
+        eth/common/Keccak.cpp
+        eth/common/Node.cpp
+        eth/common/Node.h
+        eth/common/Proof.cpp
+        eth/common/Proof.h
+        eth/common/Queue.cpp
+        eth/common/Queue.h
+        eth/common/Receipt.h
+        eth/common/ReceiptProof.cpp
+        eth/common/ReceiptProof.h
+        eth/common/RLP.cpp
+        eth/common/RLP.h
+        eth/common/Transform.cpp
+        eth/common/Transform.h
+        eth/common/uint128_t.cpp
+        eth/common/uint128_t.h
+        eth/common/uint256_t.cpp
+        eth/common/uint256_t.cpp
+        eth/common/uint256_t.h
+        eth/common/Utils.h
+        eth/common/Utils.cpp
+        eth/common/ValueProof.h
+
+        eth/libethash/ethash.h
+        eth/libethash/internal.c
+        eth/libethash/internal.h
+        eth/libethash/sha3.c
+        eth/libethash/sha3.h
+
+        eth/orderbook/FixedDecimal.h
+        eth/orderbook/Order.h
+        eth/orderbook/OrderBook.cpp
+        eth/orderbook/OrderBook.h
+        eth/orderbook/Server.cpp
+        eth/orderbook/Server.h
+        eth/orderbook/Tx.h
+        eth/orderbook/TxPool.cpp
+        eth/orderbook/TxPool.h
+)
+
 set(SOURCE_FILES
         # basic stuff
         Enclave_t.c
@@ -46,9 +98,15 @@ set(SOURCE_FILES
         state_blockfifo.cpp
         state_balance.cpp
         state_fairness.cpp
+		state_eth_queue.cpp
+        state_eth_merkle.cpp
+		state_eth_send_tx.cpp
 
         # bitcoin
         ${BITCOIN_SRC_FILES}
+
+	# ethereum
+	${ETH_SRC_FILES}
 
         # nacl
         nacl/tweetnacl.c
