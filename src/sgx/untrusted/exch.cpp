@@ -36,7 +36,7 @@ namespace aio = boost::asio;
 
 using namespace std;
 
-namespace exch{
+namespace exch {
 namespace main {
 log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.cpp"));
 }
@@ -48,7 +48,7 @@ shared_ptr<aio::io_service> io_service;
 unique_ptr<boost::asio::deadline_timer> fairnessTimer;
 sgx_enclave_id_t eid;
 
-void workerThread(shared_ptr<aio::io_service> io_service){
+void workerThread(shared_ptr<aio::io_service> io_service) {
   LOG4CXX_INFO(logger, "worker thread starts.");
   while (true) {
     try {
@@ -61,13 +61,12 @@ void workerThread(shared_ptr<aio::io_service> io_service){
       // so break is only hit if io_service is stopped
       break;
     }
-    catch (const std::exception& ex) {
+    catch (const std::exception &ex) {
       LOG4CXX_ERROR(logger, "Exception: " << ex.what());
     }
   }
   LOG4CXX_INFO(logger, "worker thread finishes.");
 }
-
 
 int main(int argc, const char *argv[]) {
   // initialize logging and stuff
@@ -90,9 +89,6 @@ int main(int argc, const char *argv[]) {
 
   sgx_status_t st;
   int ret = 0;
-
-  enclaveTest(eid, &ret);
-  return 0;
 
   // try to load sealed secret keys
 #if false
@@ -144,8 +140,7 @@ int main(int argc, const char *argv[]) {
       exit(-1);
     }
 
-
-    for (const auto& follower_addr: conf.getFollowerAddrList()) {
+    for (const auto &follower_addr: conf.getFollowerAddrList()) {
       parse_addr(follower_addr, &hostname, &port);
 
       st = addFairnessFollower(eid, &ret, hostname.c_str(), port, pubkey);
@@ -159,12 +154,11 @@ int main(int argc, const char *argv[]) {
   string rpc_hostname;
   uint16_t rpc_port = 0;
   if (conf.getIsFairnessLeader()) {
-    const string& leader_addr = conf.getLeaderAddr();
+    const string &leader_addr = conf.getLeaderAddr();
     parse_addr(leader_addr, &rpc_hostname, &rpc_port);
-  }
-  else {
+  } else {
     /* try to find a usable port from fairness.followers */
-    for (const string& follower_addr : conf.getFollowerAddrList()) {
+    for (const string &follower_addr : conf.getFollowerAddrList()) {
       uint16_t tmp_port = 0;
       parse_addr(follower_addr, &rpc_hostname, &tmp_port);
       jsonrpc::HttpServer server(tmp_port);
@@ -198,11 +192,10 @@ int main(int argc, const char *argv[]) {
   bool RPCSrvRunning = false;
   jsonrpc::HttpServer httpserver(rpc_port, "", "");
   EnclaveRPC enclaveRPC(eid, httpserver);
-  if(enclaveRPC.StartListening()) {
+  if (enclaveRPC.StartListening()) {
     RPCSrvRunning = true;
     LOG4CXX_INFO(logger, "RPC server listening at " << rpc_hostname << ":" << rpc_port);
-  }
-  else {
+  } else {
     LOG4CXX_INFO(logger, "Cannot start RPC server");
     exit(-1);
   }
@@ -212,13 +205,11 @@ int main(int argc, const char *argv[]) {
     simulate_leader(eid, &ret);
   }
 
-  while(!exch::interrupt::quit.load())
-  {
+  while (!exch::interrupt::quit.load()) {
     this_thread::sleep_for(chrono::seconds(2));
   }
 
-  if (RPCSrvRunning)
-  {
+  if (RPCSrvRunning) {
     enclaveRPC.StopListening();
     LOG4CXX_INFO(logger, "RPC server shutdown")
   }

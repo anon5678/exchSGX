@@ -21,7 +21,7 @@ namespace po = boost::program_options;
 #include <sgx_urts.h>
 
 void print_key(sgx_enclave_id_t eid, const string &keyfile);
-void keygen(sgx_enclave_id_t eid, const string &keyfile, const string&subject_name);
+void keygen(sgx_enclave_id_t eid, const string &keyfile, const string &subject_name);
 
 sgx_enclave_id_t eid;
 
@@ -36,7 +36,9 @@ int main(int argc, const char *argv[]) {
     desc.add_options()("enclave,e", po::value(&enclave_path)->required(), "which enclave to use?");
     desc.add_options()("print,p", po::value(&key_input), "print existing keys");
     desc.add_options()("keygen,g", po::value(&key_output), "generate a new key");
-    desc.add_options()("subject,s", po::value<string>()->default_value("C=US,O=exch,CN=exch-encalve-1"), "subject name (used in cert)");
+    desc.add_options()("subject,s",
+                       po::value<string>()->default_value("C=US,O=exch,CN=exch-encalve-1"),
+                       "subject name (used in cert)");
 
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
@@ -86,7 +88,7 @@ void print_key(sgx_enclave_id_t eid, const string &keyfile) {
   cout << "NOT IMPLEMENTED YET" << endl;
 }
 
-void keygen(sgx_enclave_id_t eid, const string &keyfile, const string& subject_name) {
+void keygen(sgx_enclave_id_t eid, const string &keyfile, const string &subject_name) {
   cout << "using subject name " << subject_name << endl;
 
   unsigned char secret_sealed[5000];
@@ -107,7 +109,7 @@ void keygen(sgx_enclave_id_t eid, const string &keyfile, const string& subject_n
 
   string privkey_fn = keyfile + ".priv";
   ofstream of(privkey_fn, std::ios::binary);
-  of.write((char *)secret_sealed, buffer_used);
+  of.write((char *) secret_sealed, buffer_used);
   of.close();
 
   cout << "secret sealed to " << privkey_fn << endl;

@@ -7,17 +7,17 @@
 #include "merkle_data.h"
 
 typedef struct {
-  const merkle_proof_t* merkle_proof;
-  const char* tx_raw;
-  const char* block;
-  const char* deposit_recipient_addr;
-  const char* deposit_refund_addr;
+  const merkle_proof_t *merkle_proof;
+  const char *tx_raw;
+  const char *block;
+  const char *deposit_recipient_addr;
+  const char *deposit_refund_addr;
   unsigned long deposit_timeout;
-  const char* pubkey_pem;
+  const char *pubkey_pem;
 } bitcoin_deposit_t;
 
 typedef struct {
-  const char* fairness;
+  const char *fairness;
 } init_param;
 
 #endif

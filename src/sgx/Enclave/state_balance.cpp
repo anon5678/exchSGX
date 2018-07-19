@@ -212,7 +212,7 @@ int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit) {
 #include "script/sign.h"
 #include "amount.h"
 
-bool IsValidRedeemScript(const CScript& redeemScript, const CScript& scriptPubKey) {
+bool IsValidRedeemScript(const CScript &redeemScript, const CScript &scriptPubKey) {
   std::vector<unsigned char> redeemScript_bytes = ToByteVector(redeemScript);
   unsigned char hash_redeemScript[20];
   hash160(redeemScript_bytes.data(), redeemScript_bytes.size(), hash_redeemScript);
@@ -240,7 +240,7 @@ bytes GetScriptHash(const CScript &script) {
 
   hash160(redeemScript_bytes.data(), redeemScript_bytes.size(), hash_redeemScript);
 
-  return std::vector<unsigned char>{hash_redeemScript, hash_redeemScript + 20};
+  return std::vector < unsigned char > {hash_redeemScript, hash_redeemScript + 20};
 }
 
 const CAmount txFee = 5000; // fee that will be deducted
@@ -502,7 +502,7 @@ CScript generate_cltv_script(uint32_t cltv, const CKey &privKey) {
 #include "base58.h"
 
 void test_bitcoin_transaction() {
-  #include "cltvtest"
+#include "cltvtest"
 
   // goal: construct a tx that spends rawPrevTxP2SH
   SelectParams(CBaseChainParams::REGTEST);
@@ -520,7 +520,6 @@ void test_bitcoin_transaction() {
     CTransaction prevTx(_prevTx);
 
     LL_NOTICE("prevTx amount: %ld", prevTx.vout[nIn].nValue);
-
 
     CBitcoinAddress toAddress;
     toAddress.Set(sgxKey.GetPubKey().GetID());

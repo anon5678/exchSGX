@@ -21,7 +21,6 @@
   catch (const std::exception & e) { LL_CRITICAL("error happened: %s", e.what()); }\
   catch (...) { LL_CRITICAL("unknown error happened"); }
 
-
 using bytes = std::vector<uint8_t>;
 
 #ifdef __cplusplus

@@ -24,7 +24,7 @@ namespace fs = boost::filesystem;
 using namespace std;
 
 class Config {
-private:
+ private:
   string identity;
   string identity_dir;
   bool is_fairness_leader;
@@ -32,7 +32,7 @@ private:
   string leader_addr;
   vector<string> follower_addr_list;
 
-public:
+ public:
   Config(int argc, const char *argv[]) {
     try {
       po::options_description desc("Allowed options");
@@ -69,11 +69,11 @@ public:
     }
 
     try {
-      const toml::Value& v = pr.value;
+      const toml::Value &v = pr.value;
       leader_addr = v.get<string>("fairness.leader");
-      follower_addr_list = v.get<vector<string>>("fairness.followers");
+      follower_addr_list = v.get < vector < string >> ("fairness.followers");
     }
-    catch (const exception& e) {
+    catch (const exception &e) {
       cerr << "invalid config file: " << e.what() << endl;
       exit(-1);
     }

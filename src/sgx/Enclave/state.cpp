@@ -41,7 +41,7 @@ void State::setSelf(bool is_leader, const securechannel::Peer &self) {
   sgx_thread_mutex_unlock(&state_mutex);
 }
 
-fairness::Leader *State::initFairnessProtocol(SettlementPkg&& msg) {
+fairness::Leader *State::initFairnessProtocol(SettlementPkg &&msg) {
   for (const auto &p : this->fairnessPeers) {
     LL_NOTICE("found peer %s:%d", p.getHostname().c_str(), p.getPort());
   }
@@ -62,8 +62,6 @@ fairness::Leader *State::initFairnessProtocol(SettlementPkg&& msg) {
   // FIXME: avoid copy
   vector<Peer> peerList;
   copy(this->fairnessPeers.begin(), this->fairnessPeers.end(), back_inserter(peerList));
-
-
 
   sgx_thread_mutex_lock(&state_mutex);
 

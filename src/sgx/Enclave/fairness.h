@@ -27,18 +27,18 @@ struct AcknowledgeMessage {
   string hostname;
   int port;
 
-  static AcknowledgeMessage deserailize(const string& json) noexcept (false) {
+  static AcknowledgeMessage deserailize(const string &json) noexcept(false) {
     string err;
     const auto ack_json = json11::Json::parse(json, err);
 
     if (!err.empty()) {
-      throw(string("cannot parse ack message: ") + err.c_str());
+      throw (string("cannot parse ack message: ") + err.c_str());
     }
 
     auto hostname = ack_json["hostname"].string_value();
     auto port = ack_json["port"].int_value();
 
-    return AcknowledgeMessage {hostname, port};
+    return AcknowledgeMessage{hostname, port};
   }
 
   string serialize() {
@@ -59,12 +59,12 @@ struct SettlementPkg {
   bytes tx_1_cancel;
   bytes tx_2_cancel;
 
-  static constexpr const char* TX_ONE_ID = "tx_1_id";
-  static constexpr const char* TX_ONE_CANCEL_ID = "tx_1_cancel_id";
-  static constexpr const char* TX_ONE = "tx_1";
-  static constexpr const char* TX_TWO = "tx_2";
-  static constexpr const char* TX_ONE_CANCEL = "tx_1_cancel";
-  static constexpr const char* TX_TWO_CANCEL = "tx_2_cancel";
+  static constexpr const char *TX_ONE_ID = "tx_1_id";
+  static constexpr const char *TX_ONE_CANCEL_ID = "tx_1_cancel_id";
+  static constexpr const char *TX_ONE = "tx_1";
+  static constexpr const char *TX_TWO = "tx_2";
+  static constexpr const char *TX_ONE_CANCEL = "tx_1_cancel";
+  static constexpr const char *TX_TWO_CANCEL = "tx_2_cancel";
 
   SettlementPkg(const string &tx_1_id, const string &tx_1_cancel_id,
                 const bytes &tx_1, const bytes &tx_2,
@@ -122,18 +122,18 @@ struct SettlementPkg {
         arr.begin(),
         arr.end(),
         std::back_inserter(bytearray),
-        [] (json11::Json b) -> uint8_t { return (uint8_t) b.int_value(); }
+        [](json11::Json b) -> uint8_t { return (uint8_t) b.int_value(); }
     );
 
     return bytearray;
   }
 
-  SettlementPkg static deserialize(const string& json) noexcept (false){
+  SettlementPkg static deserialize(const string &json) noexcept(false) {
     string err;
     const auto ack_json = json11::Json::parse(json, err);
 
     if (!err.empty()) {
-      throw(string("cannot parse ack message: ") + err.c_str());
+      throw (string("cannot parse ack message: ") + err.c_str());
     }
 
     bytes tx_one = jsonArrayToBytes(ack_json[TX_ONE].array_items());
@@ -148,7 +148,7 @@ struct SettlementPkg {
         tx_two,
         tx_one_c,
         tx_two_c
-        );
+    );
   }
 
 };
@@ -184,9 +184,9 @@ class Leader : public FairnessProtocol {
   Leader(const Peer &me, const vector<Peer> &peers, SettlementPkg &&msg);
 
   // send msg to all peers and wait for ACKs
-  void disseminate() noexcept (false);
+  void disseminate() noexcept(false);
 
-  void receiveAck(const AcknowledgeMessage& ack);
+  void receiveAck(const AcknowledgeMessage &ack);
 
   // send the first tx to blockchain 1
   void sendTransaction1();

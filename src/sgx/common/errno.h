@@ -5,8 +5,6 @@
 #ifndef PROJECT_ERRNO_H
 #define PROJECT_ERRNO_H
 
-
-
 #define SECRETKEY_SEALED_LEN 1024
 #define SECKEY_LEN  32
 #define PUBKEY_LEN  65

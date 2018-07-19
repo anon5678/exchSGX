@@ -114,7 +114,7 @@ int fairnessProtocolForFollower(
   fairnessTimer->expires_from_now(boost::posix_time::seconds(sec));
   fairnessTimer->async_wait(boost::bind(fairnessTimerHandler, _1, string(tx_one_id), string(tx_one_cancel_id)));
 
-  LOG4CXX_DEBUG(logger, "fairnessTimerHandler will be called after " << sec << " seconds.") ;
+  LOG4CXX_DEBUG(logger, "fairnessTimerHandler will be called after " << sec << " seconds.");
 
   return 0;
 }

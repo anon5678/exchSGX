@@ -9,18 +9,18 @@ typedef unsigned char bitcoin_hash_t[BITCOIN_HASH_LENGTH];
 
 typedef struct {
   bitcoin_hash_t tx;
-  const char* tx_raw_hex;
+  const char *tx_raw_hex;
 
   int dirvec;
 
   size_t merkle_branch_len;
-  bitcoin_hash_t* merkle_branch[];
+  bitcoin_hash_t *merkle_branch[];
 } merkle_proof_t;
 
 #ifndef IN_ENCLAVE
-merkle_proof_t* merkle_proof_init(size_t n);
-void merkle_proof_dump(const merkle_proof_t* p);
-void merkle_proof_free(merkle_proof_t* p);
+merkle_proof_t *merkle_proof_init(size_t n);
+void merkle_proof_dump(const merkle_proof_t *p);
+void merkle_proof_free(merkle_proof_t *p);
 #endif
 
 #endif //PROJECT_MERKLE_H

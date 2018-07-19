@@ -196,7 +196,7 @@ int ext::b64_pton(const char *src, unsigned char *target, size_t targsize) {
   tarindex = 0;
 
   while ((ch = *src++) != '\0') {
-    if (isspace((unsigned char)ch)) /* Skip whitespace anywhere. */
+    if (isspace((unsigned char) ch)) /* Skip whitespace anywhere. */
       continue;
 
     if (ch == Pad64)
@@ -207,53 +207,52 @@ int ext::b64_pton(const char *src, unsigned char *target, size_t targsize) {
       return (-1);
 
     switch (state) {
-    case 0:
-      if (target) {
-        if ((size_t)tarindex >= targsize)
-          return (-1);
-        target[tarindex] = (pos - Base64) << 2;
-      }
-      state = 1;
-      break;
-    case 1:
-      if (target) {
-        if ((size_t)tarindex >= targsize)
-          return (-1);
-        target[tarindex] |= (pos - Base64) >> 4;
-        nextbyte = ((pos - Base64) & 0x0f) << 4;
-        if ((size_t)tarindex + 1 < targsize)
-          target[tarindex + 1] = nextbyte;
-        else if (nextbyte)
-          return (-1);
-      }
-      tarindex++;
-      state = 2;
-      break;
-    case 2:
-      if (target) {
-        if ((size_t)tarindex >= targsize)
-          return (-1);
-        target[tarindex] |= (pos - Base64) >> 2;
-        nextbyte = ((pos - Base64) & 0x03) << 6;
-        if ((size_t)tarindex + 1 < targsize)
-          target[tarindex + 1] = nextbyte;
-        else if (nextbyte)
-          return (-1);
-      }
-      tarindex++;
-      state = 3;
-      break;
-    case 3:
-      if (target) {
-        if ((size_t)tarindex >= targsize)
-          return (-1);
-        target[tarindex] |= (pos - Base64);
-      }
-      tarindex++;
-      state = 0;
-      break;
-    default:
-      abort();
+      case 0:
+        if (target) {
+          if ((size_t) tarindex >= targsize)
+            return (-1);
+          target[tarindex] = (pos - Base64) << 2;
+        }
+        state = 1;
+        break;
+      case 1:
+        if (target) {
+          if ((size_t) tarindex >= targsize)
+            return (-1);
+          target[tarindex] |= (pos - Base64) >> 4;
+          nextbyte = ((pos - Base64) & 0x0f) << 4;
+          if ((size_t) tarindex + 1 < targsize)
+            target[tarindex + 1] = nextbyte;
+          else if (nextbyte)
+            return (-1);
+        }
+        tarindex++;
+        state = 2;
+        break;
+      case 2:
+        if (target) {
+          if ((size_t) tarindex >= targsize)
+            return (-1);
+          target[tarindex] |= (pos - Base64) >> 2;
+          nextbyte = ((pos - Base64) & 0x03) << 6;
+          if ((size_t) tarindex + 1 < targsize)
+            target[tarindex + 1] = nextbyte;
+          else if (nextbyte)
+            return (-1);
+        }
+        tarindex++;
+        state = 3;
+        break;
+      case 3:
+        if (target) {
+          if ((size_t) tarindex >= targsize)
+            return (-1);
+          target[tarindex] |= (pos - Base64);
+        }
+        tarindex++;
+        state = 0;
+        break;
+      default:abort();
     }
   }
 
@@ -265,42 +264,41 @@ int ext::b64_pton(const char *src, unsigned char *target, size_t targsize) {
   if (ch == Pad64) { /* We got a pad char. */
     ch = *src++;     /* Skip it, get next. */
     switch (state) {
-    case 0: /* Invalid = in first position */
-    case 1: /* Invalid = in second position */
-      return (-1);
-
-    case 2: /* Valid, means one byte of info */
-      /* Skip any number of spaces. */
-      for ((void)NULL; ch != '\0'; ch = *src++)
-        if (!isspace((unsigned char)ch))
-          break;
-      /* Make sure there is another trailing = sign. */
-      if (ch != Pad64)
+      case 0: /* Invalid = in first position */
+      case 1: /* Invalid = in second position */
         return (-1);
-      ch = *src++; /* Skip the = */
-    /* Fall through to "single trailing =" case. */
-    /* FALLTHROUGH */
 
-    case 3: /* Valid, means two bytes of info */
-            /*
-             * We know this char is an =.  Is there anything but
-             * whitespace after it?
-             */
-      for ((void)NULL; ch != '\0'; ch = *src++)
-        if (!isspace((unsigned char)ch))
+      case 2: /* Valid, means one byte of info */
+        /* Skip any number of spaces. */
+        for ((void) NULL; ch != '\0'; ch = *src++)
+          if (!isspace((unsigned char) ch))
+            break;
+        /* Make sure there is another trailing = sign. */
+        if (ch != Pad64)
           return (-1);
+        ch = *src++; /* Skip the = */
+        /* Fall through to "single trailing =" case. */
+        /* FALLTHROUGH */
 
-      /*
-       * Now make sure for cases 2 and 3 that the "extra"
-       * bits that slopped past the last full byte were
-       * zeros.  If we don't check them, they become a
-       * subliminal channel.
-       */
-      if (target && (size_t)tarindex < targsize && target[tarindex] != 0)
-        return (-1);
-      break;
-    default:
-      abort();
+      case 3: /* Valid, means two bytes of info */
+        /*
+         * We know this char is an =.  Is there anything but
+         * whitespace after it?
+         */
+        for ((void) NULL; ch != '\0'; ch = *src++)
+          if (!isspace((unsigned char) ch))
+            return (-1);
+
+        /*
+         * Now make sure for cases 2 and 3 that the "extra"
+         * bits that slopped past the last full byte were
+         * zeros.  If we don't check them, they become a
+         * subliminal channel.
+         */
+        if (target && (size_t) tarindex < targsize && target[tarindex] != 0)
+          return (-1);
+        break;
+      default:abort();
     }
   } else {
     /*
@@ -317,7 +315,7 @@ int ext::b64_pton(const char *src, unsigned char *target, size_t targsize) {
 using namespace std;
 
 string ext::b64_encode(const unsigned char *src, size_t src_len) {
-  char target[2*src_len];
+  char target[2 * src_len];
 
   int len = b64_ntop(src, src_len, target, sizeof target);
   if (len < 0) {

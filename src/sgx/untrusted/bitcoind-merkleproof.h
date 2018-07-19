@@ -10,7 +10,7 @@ enum TxInclusion {
   NotSure,
 };
 
-MerkleProof buildTxInclusionProof(const std::string& txid);
+MerkleProof buildTxInclusionProof(const std::string &txid);
 TxInclusion isTxIncluded(const string &txid);
 
 #endif //TESSERACT_BITCOIND_MERKLEPROOF_H

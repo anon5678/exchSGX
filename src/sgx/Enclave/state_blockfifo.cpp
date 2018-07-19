@@ -40,7 +40,7 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex) {
     uint256 block_hash;
     CHash256 _hash_ctx;
     _hash_ctx.Write(header_bin.data(), header_bin.size());
-    _hash_ctx.Finalize((unsigned char *)&block_hash);
+    _hash_ctx.Finalize((unsigned char *) &block_hash);
 
     if (block_hash != block_header.GetHash()) {
       LL_CRITICAL("invalid header: wrong hash");
@@ -61,7 +61,7 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex) {
   }
 }
 
-int ecall_get_latest_block_hash(unsigned char* o_buf, size_t cap_obuf) {
+int ecall_get_latest_block_hash(unsigned char *o_buf, size_t cap_obuf) {
   uint256 last = state::blockFIFO.last_block();
   if (cap_obuf < last.size()) {
     LL_CRITICAL("buffer too small");
@@ -71,7 +71,7 @@ int ecall_get_latest_block_hash(unsigned char* o_buf, size_t cap_obuf) {
   return 0;
 }
 
-int ecall_submit_fork(const char* prev_hash, const char* block_hdrs[], size_t n) {
+int ecall_submit_fork(const char *prev_hash, const char *block_hdrs[], size_t n) {
   LL_CRITICAL("not implemented");
   return 0;
 }

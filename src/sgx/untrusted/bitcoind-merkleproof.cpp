@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <thread>
+#include <chrono>
 
 #include <log4cxx/logger.h>
 #include <log4cxx/propertyconfigurator.h>
@@ -26,7 +28,7 @@ TxInclusion isTxIncluded(const string &txid) {
   while (true) {
     try {
       Json::Value txn = rpc.getrawtransaction(txid, false);
-      if (! txn.isNull())
+      if (!txn.isNull())
         return TxInclusion::Yes;
     }
     catch (const exception &e) {
@@ -38,6 +40,8 @@ TxInclusion isTxIncluded(const string &txid) {
       if (i++ > 10) {
         return TxInclusion::NotSure;
       }
+      /// Sleep for one second then retry
+      this_thread::sleep_for(chrono::seconds(1));
     }
   }
 }
@@ -90,5 +94,4 @@ MerkleProof buildTxInclusionProof(const string &txid) {
   } catch (const bitcoinRPCException &e) {
     throw runtime_error(e.what());
   }
-
 }

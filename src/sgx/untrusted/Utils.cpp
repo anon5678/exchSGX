@@ -9,7 +9,6 @@
 #include <fstream>
 #include <vector>
 
-
 #define MAX_PATH FILENAME_MAX
 
 /* Check error conditions for loading enclave */
@@ -80,7 +79,7 @@ int initialize_enclave(std::string enclave_path, sgx_enclave_id_t *eid) {
   }
 
   /* Step 3: save the launch token if it is updated */
-  if (updated ==  0 || fp == NULL) {
+  if (updated == 0 || fp == NULL) {
     /* if the token is not updated, or file handler is invalid, do not perform saving */
     if (fp != NULL) fclose(fp);
     return 0;

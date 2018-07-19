@@ -1,7 +1,3 @@
-//
-// Created by fanz on 7/16/17.
-//
-
 #ifndef PROJECT_BYTESTREAM_H
 #define PROJECT_BYTESTREAM_H
 

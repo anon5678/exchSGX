@@ -92,6 +92,6 @@ add_dependencies(exch enclave)
 add_custom_command(TARGET exch
         POST_BUILD
         COMMAND cp -f ${CMAKE_CURRENT_SOURCE_DIR}/logging.conf
-                ${CMAKE_SOURCE_DIR}/config.toml
-                ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+        ${CMAKE_SOURCE_DIR}/config.toml
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
         COMMENT "Installing the configuration files")

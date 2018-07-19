@@ -116,7 +116,7 @@ const sgx_errlist_t sgx_errlist[] = {
 
 #include <climits>
 
-inline void parse_addr(const std::string &addr, std::string* hostname, uint16_t* port) {
+inline void parse_addr(const std::string &addr, std::string *hostname, uint16_t *port) {
   auto delim = addr.find(':');
   if (delim == addr.npos) {
     throw std::invalid_argument("no : find in addr " + addr);

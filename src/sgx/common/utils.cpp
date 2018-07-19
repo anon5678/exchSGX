@@ -12,7 +12,7 @@ using std::to_string;
 
 static int char2int(char c) {
   if (c >= '0' && c <= '9') return c - '0';
-  if(c >= 'A' && c <= 'F') return c - 'A' + 10;
+  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
   if (c >= 'a' && c <= 'f') return c - 'a' + 10;
   throw std::invalid_argument("bad hex");
 }
@@ -24,15 +24,14 @@ void hex2bin(unsigned char *dest, const char *src) {
   }
 }
 
-
 std::vector<unsigned char> hex2bin(const char *src) {
   if (strlen(src) % 2)
     throw std::invalid_argument("bad hex");
 
-  unsigned char buf[strlen(src)/2];
+  unsigned char buf[strlen(src) / 2];
   hex2bin(buf, src);
 
-  return std::vector<unsigned char>(buf, buf + strlen(src)/2);
+  return std::vector<unsigned char>(buf, buf + strlen(src) / 2);
 }
 
 void byte_swap(unsigned char *data, int len) {
@@ -49,41 +48,39 @@ void byte_swap(unsigned char *data, int len) {
   }
 }
 
-void hd(const char *title, void const *data, size_t len)
-{
+void hd(const char *title, void const *data, size_t len) {
   unsigned int i;
-  unsigned int r,c;
+  unsigned int r, c;
 
   if (!data)
     return;
 
   printf_sgx("%s\n", title);
 
-  for (r=0,i=0; r<(len/16+(len%16!=0)); r++,i+=16)
-  {
-    printf_sgx("0x%04X:   ",i); /* location of first byte in line */
+  for (r = 0, i = 0; r < (len / 16 + (len % 16 != 0)); r++, i += 16) {
+    printf_sgx("0x%04X:   ", i); /* location of first byte in line */
 
-    for (c=i; c<i+8; c++) /* left half of hex dump */
-      if (c<len)
-        printf_sgx("%02X ",((unsigned char const *)data)[c]);
+    for (c = i; c < i + 8; c++) /* left half of hex dump */
+      if (c < len)
+        printf_sgx("%02X ", ((unsigned char const *) data)[c]);
       else
         printf_sgx("   "); /* pad if short line */
 
     printf_sgx("  ");
 
-    for (c=i+8; c<i+16; c++) /* right half of hex dump */
-      if (c<len)
-        printf_sgx("%02X ",((unsigned char const *)data)[c]);
+    for (c = i + 8; c < i + 16; c++) /* right half of hex dump */
+      if (c < len)
+        printf_sgx("%02X ", ((unsigned char const *) data)[c]);
       else
         printf_sgx("   "); /* pad if short line */
 
     printf_sgx("   ");
 
-    for (c=i; c<i+16; c++) /* ASCII dump */
-      if (c<len)
-        if (((unsigned char const *)data)[c]>=32 &&
-            ((unsigned char const *)data)[c]<127)
-          printf_sgx("%c",((char const *)data)[c]);
+    for (c = i; c < i + 16; c++) /* ASCII dump */
+      if (c < len)
+        if (((unsigned char const *) data)[c] >= 32 &&
+            ((unsigned char const *) data)[c] < 127)
+          printf_sgx("%c", ((char const *) data)[c]);
         else
           printf_sgx("."); /* put this for non-printables */
       else
@@ -96,19 +93,17 @@ void hd(const char *title, void const *data, size_t len)
 // make sure the output array is large enough
 #include <string>
 
-std::string bin2hex(const unsigned char *bin, size_t len)
-{
-  char          hex_str[]= "0123456789abcdef";
-  unsigned int  i;
+std::string bin2hex(const unsigned char *bin, size_t len) {
+  char hex_str[] = "0123456789abcdef";
+  unsigned int i;
 
-  char tmp[2*len + 1];
-  tmp[2*len] = 0;
+  char tmp[2 * len + 1];
+  tmp[2 * len] = 0;
 
-  for (i = 0; i < len; i++)
-  {
+  for (i = 0; i < len; i++) {
     tmp[i * 2 + 0] = hex_str[(bin[i] >> 4) & 0x0F];
-    tmp[i * 2 + 1] = hex_str[(bin[i]     ) & 0x0F];
+    tmp[i * 2 + 1] = hex_str[(bin[i]) & 0x0F];
   }
 
-  return std::string(tmp, tmp + 2*len);
+  return std::string(tmp, tmp + 2 * len);
 }

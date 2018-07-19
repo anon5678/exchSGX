@@ -18,13 +18,13 @@ class BalanceBook {
   BalanceBook() = default;
 
   void deposit(string user_id, int amount) {
-      try{
+    try {
 
-        book[user_id] = amount;
-      }
-      catch (const std::exception& e) {
-          LL_CRITICAL("%s", e.what());
-      }
+      book[user_id] = amount;
+    }
+    catch (const std::exception &e) {
+      LL_CRITICAL("%s", e.what());
+    }
   }
 };
 

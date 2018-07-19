@@ -21,7 +21,7 @@ class bitcoinRPC {
   jsonrpc::HttpClient connector;
   bitcoindRPCClient bitcoindClient;
 
-public:
+ public:
   bitcoinRPC()
       : connector(BITCOIND_RPC_ADDR),
         bitcoindClient(connector, jsonrpc::JSONRPC_CLIENT_V1) {}
@@ -39,11 +39,11 @@ public:
  */
 
 class bitcoinRPCException : public std::exception {
-private:
+ private:
   int code;
   std::string msg;
 
-public:
+ public:
   explicit bitcoinRPCException(int errcode, const std::string &message) {
     /* Connection error */
     if (errcode == Errors::ERROR_CLIENT_CONNECTOR) {
@@ -51,7 +51,7 @@ public:
       this->msg = removePrefix(message, " -> ");
       /* Authentication error */
     } else if (errcode == Errors::ERROR_RPC_INTERNAL_ERROR &&
-               message.size() == 18) {
+        message.size() == 18) {
       this->code = errcode;
       this->msg = "Failed to authenticate successfully";
       /* Miscellaneous error */
@@ -61,12 +61,11 @@ public:
     }
   }
 
-  ~bitcoinRPCException() throw(){};
+  ~bitcoinRPCException() throw() {};
 
   int getCode() { return code; }
 
-
-  const char* what() const throw() { return msg.c_str(); }
+  const char *what() const throw() { return msg.c_str(); }
 
   std::string removePrefix(const std::string &in, const std::string &pattern) {
     std::string ret = in;

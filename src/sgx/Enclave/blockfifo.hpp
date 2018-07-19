@@ -26,21 +26,21 @@ constexpr unsigned int bitcoinDifficulty = 8;
  */
 unsigned int nLeadingZero(const uint256 &hash);
 
-template <unsigned int QUEUE_LENGTH>
+template<unsigned int QUEUE_LENGTH>
 class BlockFIFO {
-private:
+ private:
   deque<CBlockHeader> _blocks;
 
   struct hashPredicate {
     const uint256 hash;
-    explicit hashPredicate(const uint256& hash): hash(hash) {}
+    explicit hashPredicate(const uint256 &hash) : hash(hash) {}
 
-    bool operator()(const CBlockHeader& header) {
+    bool operator()(const CBlockHeader &header) {
       return header.GetHash() == hash;
     }
   };
 
-public:
+ public:
   bool is_valid_successor(const CBlockHeader &new_block) const {
     if (_blocks.empty())
       return true;
@@ -57,7 +57,7 @@ public:
     return false;
   }
 
-  const CBlockHeader* find_block(const uint256& hash) {
+  const CBlockHeader *find_block(const uint256 &hash) {
     deque<CBlockHeader>::iterator it = find_if(_blocks.begin(), _blocks.end(), hashPredicate(hash));
     if (it == _blocks.end())
       return nullptr;

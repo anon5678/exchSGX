@@ -3,11 +3,11 @@
 #include <iostream>
 #include <assert.h>
 
+#include <boost/bind/bind.hpp>
 #include <log4cxx/logger.h>
 #include <log4cxx/propertyconfigurator.h>
 
 #include "merkpath/merkpath.h"
-
 #include "Enclave_u.h"
 
 namespace exch {
@@ -55,11 +55,12 @@ using namespace exch::bitcoin;
 extern shared_ptr<boost::asio::io_service> io_service;
 extern sgx_enclave_id_t eid;
 
+/// Deposit money to public_key by providing a merkle_proof
 bool EnclaveRPC::deposit(const Json::Value &merkle_proof, const string &public_key) {
   int ret;
   sgx_status_t st;
 
-  LOG4CXX_INFO(logger, "depositing")
+  LOG4CXX_INFO(logger, "depositing");
   LOG4CXX_DEBUG(logger, merkle_proof.toStyledString());
 
   try {
@@ -118,6 +119,10 @@ bool EnclaveRPC::deposit(const Json::Value &merkle_proof, const string &public_k
   }
 }
 
+/*
+ * Fairness protocol (follower part)
+ */
+// This function is called a follower when receiving the initial messages from the leader
 void _onMessageFromFairnessLeader(string settlementPkg) {
   int ret;
   onMessageFromFairnessLeader(eid,
@@ -126,6 +131,17 @@ void _onMessageFromFairnessLeader(string settlementPkg) {
                               settlementPkg.size());
 }
 
+bool EnclaveRPC::distributeSettlementPkg(const std::string &settlementPkg) {
+  LOG4CXX_INFO(logger, "get " << settlementPkg.size() << "bytes from the leader");
+  io_service->post(boost::bind(&_onMessageFromFairnessLeader, settlementPkg));
+
+  return true;
+}
+
+/*
+ * Fairness protocol (leader part)
+ */
+// This function is called on a leader when receiving message from the followers
 void _ackSettlementPkg(string ack) {
   int ret;
   onAckFromFairnessFollower(eid,
@@ -135,18 +151,6 @@ void _ackSettlementPkg(string ack) {
 
 }
 
-#include <boost/bind/bind.hpp>
-
-
-// This function is called on a follower when receiving messages from the leader
-bool EnclaveRPC::distributeSettlementPkg(const std::string &settlementPkg) {
-  LOG4CXX_INFO(logger, "get " << settlementPkg.size() << " from the leader");
-  io_service->post(boost::bind(&_onMessageFromFairnessLeader, settlementPkg));
-
-  return true;
-}
-
-// This function is called on a leader when receiving message from the followers
 bool EnclaveRPC::ackSettlementPkg(const std::string &ack) {
   LOG4CXX_DEBUG(logger, "receiving ack from a backup");
   io_service->post(boost::bind(&_ackSettlementPkg, ack));

@@ -3,7 +3,7 @@
 
 std::atomic<bool> exch::interrupt::quit(false);
 
-void exch::interrupt::flipQuit(int n){
+void exch::interrupt::flipQuit(int n) {
   (void) n;
   quit.store(true);
 }

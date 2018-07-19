@@ -38,7 +38,7 @@ int setSelf(int is_leader, const char *hostname, uint16_t port, const uint8_t *p
 // ecall
 int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
   try {
-    SettlementPkg pkg = SettlementPkg::deserialize(string((char*) msg, size));
+    SettlementPkg pkg = SettlementPkg::deserialize(string((char *) msg, size));
 
     LL_NOTICE("sending ack to leader");
     State &s = State::getInstance();
@@ -79,7 +79,7 @@ int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
 int onAckFromFairnessFollower(const unsigned char *_ack, size_t size) {
   try {
     State &s = State::getInstance();
-    AcknowledgeMessage ack = AcknowledgeMessage::deserailize(string( (char*) _ack, size));
+    AcknowledgeMessage ack = AcknowledgeMessage::deserailize(string((char *) _ack, size));
     s.getCurrentProtocol()->receiveAck(ack);
     return 0;
   }
@@ -87,20 +87,20 @@ int onAckFromFairnessFollower(const unsigned char *_ack, size_t size) {
 }
 
 // ecall
-int onTxOneCommitted(const merkle_proof_t* merkle_proof, uint8_t* tx2, size_t cap) {
+int onTxOneCommitted(const merkle_proof_t *merkle_proof, uint8_t *tx2, size_t cap) {
   LL_NOTICE("tx1 one been committed");
 
   // TODO verify merkle proof
   merkle_proof_verify(merkle_proof);
 
-  State& s = State::getInstance();
+  State &s = State::getInstance();
 
   s.getCurrentProtocol()->sendTransaction2();
   return 0;
 }
 
 // ecall
-int onTxOneNotCommitted(uint8_t* cancel_tx_one, size_t cap) {
+int onTxOneNotCommitted(uint8_t *cancel_tx_one, size_t cap) {
   LL_CRITICAL("tx1 is not committed, to send tx1 cancel");
 
   return 0;

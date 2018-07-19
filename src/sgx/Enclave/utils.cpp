@@ -1,8 +1,7 @@
 #include "utils.h"
 #include <string>
 
-int printf_std(const char *fmt, ...)
-{
+int printf_std(const char *fmt, ...) {
   int ret;
   va_list ap;
   char buf[BUFSIZ] = {'\0'};
@@ -13,8 +12,7 @@ int printf_std(const char *fmt, ...)
   return ret;
 }
 
-int printf_err(const char *fmt, ...)
-{
+int printf_err(const char *fmt, ...) {
   int ret;
   va_list ap;
   char buf[BUFSIZ] = {'\0'};

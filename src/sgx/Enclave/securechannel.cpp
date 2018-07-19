@@ -28,7 +28,7 @@ size_t nacl_keygen_in_seal(unsigned char *o_sealed, size_t cap_sealed_buf, unsig
     memcpy(o_sealed, seal_buffer, sealed_len);
     free(seal_buffer);
 
-    memcpy(o_pubkey, (const unsigned char*) pk.data(), pk.size());
+    memcpy(o_pubkey, (const unsigned char *) pk.data(), pk.size());
 
     return sealed_len;
   }

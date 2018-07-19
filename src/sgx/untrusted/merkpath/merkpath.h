@@ -34,7 +34,7 @@ class MerkleProof {
   vector<string> branch;
   int direction;
 
-  merkle_proof_t* serialized_proof;
+  merkle_proof_t *serialized_proof;
 
   // helper data. not necessary but it helps
   // block_hash
@@ -61,7 +61,7 @@ class MerkleProof {
     block_hash_hex = value;
   }
 
-  void set_tx_raw(const string& value) {
+  void set_tx_raw(const string &value) {
     tx_raw_hex = value;
   }
 
@@ -95,7 +95,7 @@ class MerkleProof {
   }
 
   void serialize(merkle_proof_t *o) const;
-  const merkle_proof_t * serialize();
+  const merkle_proof_t *serialize();
   string verify() const;
 };
 

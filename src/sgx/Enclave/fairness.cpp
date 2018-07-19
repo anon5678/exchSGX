@@ -4,18 +4,18 @@
 using namespace exch::enclave::fairness;
 using namespace std;
 
-constexpr const char* SettlementPkg::TX_ONE_ID;
-constexpr const char* SettlementPkg::TX_ONE_CANCEL_ID;
-constexpr const char* SettlementPkg::TX_ONE;
-constexpr const char* SettlementPkg::TX_TWO;
-constexpr const char* SettlementPkg::TX_ONE_CANCEL;
-constexpr const char* SettlementPkg::TX_TWO_CANCEL;
+constexpr const char *SettlementPkg::TX_ONE_ID;
+constexpr const char *SettlementPkg::TX_ONE_CANCEL_ID;
+constexpr const char *SettlementPkg::TX_ONE;
+constexpr const char *SettlementPkg::TX_TWO;
+constexpr const char *SettlementPkg::TX_ONE_CANCEL;
+constexpr const char *SettlementPkg::TX_TWO_CANCEL;
 
 Leader::Leader(const Peer &me, const vector<Peer> &peers, SettlementPkg &&msg)
     : me(me), msg(move(msg)), peers(peers), peers_ack(peers.size(), false) {
 }
 
-void Leader::disseminate() noexcept (false) {
+void Leader::disseminate() noexcept(false) {
   try {
     for (const auto &peer : peers) {
       Box cipher = me.createBoxToPeer(peer, msg.serialize());
@@ -49,7 +49,7 @@ void Leader::disseminate() noexcept (false) {
   }
 }
 
-void Leader::receiveAck(const AcknowledgeMessage& ack) {
+void Leader::receiveAck(const AcknowledgeMessage &ack) {
   Peer peer(ack.hostname, ack.port, string(32, 0xcc));
   long index = distance(peers.begin(), find(peers.begin(), peers.end(), peer));
   if (index < peers.size()) {

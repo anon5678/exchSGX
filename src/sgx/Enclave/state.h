@@ -58,7 +58,7 @@ class State {
   void removePeer(const string &hostname, uint16_t port);
   void setLeader(const securechannel::Peer &peer);
   void setSelf(bool is_leader, const securechannel::Peer &self);
-  fairness::Leader *initFairnessProtocol(fairness::SettlementPkg&& msg);
+  fairness::Leader *initFairnessProtocol(fairness::SettlementPkg &&msg);
 
   // read-only interface
   const fairness::PeerList &getPeerList() const { return this->fairnessPeers; }
