@@ -53,6 +53,7 @@ using namespace exch::enclave;
 
 extern void test_bitcoin_transaction();
 int enclaveTest() {
+  /// state_balance.cpp:504
   test_bitcoin_transaction();
   return 0;
 }

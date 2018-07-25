@@ -20,7 +20,7 @@ set(BITCOIN_SRC_FILES
         bitcoin/script/script_error.cpp
         bitcoin/script/interpreter.cpp
         bitcoin/script/script.cpp
-        libsecp256k1.a)
+        ${SECP256K1_LIB_PATH})
 
 set(SOURCE_FILES
         # basic stuff
@@ -94,7 +94,7 @@ target_link_libraries(enclave "${SGX_COMMON_CFLAGS} \
     -Wl,-pie,-eenclave_entry -Wl,--export-dynamic \
     -Wl,--defsym,__ImageBase=0")
 
-add_custom_command(OUTPUT libsecp256k1.a
+add_custom_command(OUTPUT {SECP256K1_LIB_PATH}
         COMMAND ./autogen.sh
         COMMAND env CPPFLAGS=-fPIC ./configure
         --enable-shared

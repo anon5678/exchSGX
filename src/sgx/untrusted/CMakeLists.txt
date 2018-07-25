@@ -1,6 +1,7 @@
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SGX_COMMON_CFLAGS} -fPIC -Wall -Wno-sign-compare -Wno-deprecated")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11")
 
+# TODO: move RPC stuff out of the bundle
 set(BRIDGE_SRC
         fariness-ocall.cpp
         bitcoind-rpc.cpp
@@ -9,6 +10,9 @@ set(BRIDGE_SRC
         merkle_data.cpp
         Enclave_u.c
         Enclave_u.h
+        Utils.cpp
+        ../common/utils.cpp
+        interrupt.cpp
         )
 
 set_directory_properties(PROPERTIES
@@ -41,6 +45,10 @@ add_executable(exch-merkleproof
         merkpath/merkpath.cpp
         ../common/utils.cpp
         merkle_data.cpp)
+
+add_executable(exch-txdebug
+        exch-txdebug.cpp
+        ${BRIDGE_SRC})
 
 find_package(Jsoncpp REQUIRED)
 find_package(JsonCppRpc REQUIRED)
@@ -78,6 +86,16 @@ target_link_libraries(exch
         -lpthread)
 
 target_link_libraries(exch-merkleproof
+        ${RPC_LIB_BUNDLE}
+        ${COMMON_LIBS}
+        ${Boost_LIBRARIES}
+        ${LOG4CXX_LIBRARY}
+        ${OPENSSL_CRYPTO_LIBRARY}
+        -L${SGX_LIBRARY_PATH} -l${SGX_URTS_LIB} -l${SGX_USVC_LIB}
+        -lpthread
+        )
+
+target_link_libraries(exch-txdebug
         ${RPC_LIB_BUNDLE}
         ${COMMON_LIBS}
         ${Boost_LIBRARIES}

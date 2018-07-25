@@ -330,10 +330,13 @@ CTransaction spendP2SH(const CTransaction &prevTx,
   const CTxOut &prevOutput = prevTx.vout[nOut];
   const CScript &scriptPubKey = prevOutput.scriptPubKey;
 
-  LL_NOTICE("sigPubKey: %s", HexStr(scriptPubKey).c_str());
+  LL_DEBUG("sigPubKey: %s", HexStr(scriptPubKey).c_str());
 
   if (!IsValidRedeemScript(redeemScript, scriptPubKey)) {
     throw invalid_argument("Invalid redeemScript");
+  }
+  else {
+    LL_DEBUG("redeemScript matches with sigPubkey");
   }
 
   CMutableTransaction unsignedTx;
@@ -345,38 +348,39 @@ CTransaction spendP2SH(const CTransaction &prevTx,
   newOutScriptPubkey << OP_DUP << OP_HASH160 << ToByteVector(address) << OP_EQUALVERIFY << OP_CHECKSIG;
 
   const CAmount amount = prevOutput.nValue - fee;
-  LL_NOTICE("amount: %ld", amount);
 
   CTxOut vout(amount, newOutScriptPubkey);
   unsignedTx.vout.push_back(vout);
 
   unsignedTx.nLockTime = nLockTime;
 
-  // generate scriptSig for input
+  // Generate scriptSig to spend input.
   SignatureData sigdata;
   std::vector<unsigned char> vchSig;
   uint256 hash = SignatureHash(redeemScript, unsignedTx, 0, SIGHASH_ALL, amount, SIGVERSION_BASE);
 
-  LL_NOTICE("signature hash XXXXXXX: %s", hash.GetHex().c_str());
-
-  privKey.Sign(hash, vchSig);
-
   auto globalHandle = unique_ptr<ECCVerifyHandle>(new ECCVerifyHandle());
 
-  bool IsVerified = privKey.GetPubKey().Verify(hash, vchSig);
-  LL_NOTICE("Signature %s", IsVerified ? "looks good" : "doesn't verify");
+  privKey.Sign(hash, vchSig);
+  if (!privKey.GetPubKey().Verify(hash, vchSig)) {
+    // sanity check
+    throw runtime_error("Sign() generated an invalid signature");
+  }
 
+  /// Push the SIGHASH_ALL byte.
   vchSig.push_back((unsigned char) SIGHASH_ALL);
 
-  // create complete signature
+  /// Create complete signature.
   std::vector<valtype> ret;
   ret.push_back(vchSig);
   ret.emplace_back(redeemScript.begin(), redeemScript.end());
   sigdata.scriptSig = flatten(ret);
 
+  /// Embed the signature into the transaction.
   UpdateTransaction(unsignedTx, 0, sigdata);
   CTransaction tmpTx(unsignedTx);
 
+  /// Serialized the transaction.
   CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
   ssTx << tmpTx;
   LL_NOTICE("Final raw tx: %s", HexStr(ssTx).c_str());
@@ -494,14 +498,13 @@ CTransaction build_settlement_tx(const map<CPubKey, CTransaction> &deposits, con
 CScript generate_cltv_script(uint32_t cltv, const CKey &privKey) {
   CScript redeemScript;
   redeemScript << cltv << OP_CHECKLOCKTIMEVERIFY << OP_DROP << ToByteVector(privKey.GetPubKey()) << OP_CHECKSIG;
-  LL_NOTICE("redeemscript: %s", HexStr(redeemScript).c_str());
-
   return redeemScript;
 }
 
 #include "base58.h"
 
 void test_bitcoin_transaction() {
+  /// import a previous input used for testing
 #include "cltvtest"
 
   // goal: construct a tx that spends rawPrevTxP2SH
@@ -519,27 +522,24 @@ void test_bitcoin_transaction() {
     DecodeHexTx(_prevTx, rawPrevTxP2SH, false);
     CTransaction prevTx(_prevTx);
 
-    LL_NOTICE("prevTx amount: %ld", prevTx.vout[nIn].nValue);
+    LL_NOTICE("Succesfully loaded the testing UTXO");
+    LL_NOTICE("%s", prevTx.ToString().c_str());
 
     CBitcoinAddress toAddress;
     toAddress.Set(sgxKey.GetPubKey().GetID());
+    LL_NOTICE("Trying to spend to address %s", toAddress.ToString().c_str());
 
-    LL_NOTICE("spending -> %s", toAddress.ToString().c_str());
+    auto script = generate_cltv_script(cltvTimeout, sgxKey);
+    LL_NOTICE("Redeem script (hex) is %s", HexStr(script).c_str());
 
     CTransaction t = spendP2SH(
         prevTx,
         nIn,
         static_cast<CAmount>(1980),
-        generate_cltv_script(cltvTimeout, sgxKey),
+        script,
         cltvTimeout,
         sgxKey, secret.GetKey().GetPubKey().GetID());
   }
-  catch (const std::exception &e) {
-    LL_CRITICAL("error happened: %s", e.what());
-  }
-  catch (...) {
-    LL_CRITICAL("unknown error happened");
-  }
-
+  CATCH_STD_AND_ALL_NO_RET
   ECC_Stop();
 }

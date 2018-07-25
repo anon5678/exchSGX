@@ -44,8 +44,8 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.cpp"));
 
 using exch::main::logger;
 
-shared_ptr<aio::io_service> io_service;
-unique_ptr<boost::asio::deadline_timer> fairnessTimer;
+extern shared_ptr<aio::io_service> io_service;
+extern unique_ptr<boost::asio::deadline_timer> fairnessTimer;
 sgx_enclave_id_t eid;
 
 void workerThread(shared_ptr<aio::io_service> io_service) {
