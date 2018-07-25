@@ -34,3 +34,6 @@
 .idea
 
 build
+
+# others
+.DS_Store
