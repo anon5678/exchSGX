@@ -1245,21 +1245,18 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
 
     CDataStream stream(SER_GETHASH, 0);
     stream << txTmp << nHashType;
-    LL_NOTICE("serialized tx (gethash): %s", HexStr(stream).c_str());
 
     CSHA256 singleHash;
     singleHash.Write((unsigned char*) stream.data(), stream.size());
     vector<unsigned char> _singleHashBuffer;
     _singleHashBuffer.resize(256 / 8);
     singleHash.Finalize(_singleHashBuffer.data());
-    LL_NOTICE("single hash: %s", HexStr(_singleHashBuffer).c_str());
 
     CHash256 hash256;
     hash256.Write((unsigned char*) stream.data(), stream.size());
     vector<unsigned char> doublehash;
     doublehash.resize(256 / 8);
     hash256.Finalize(doublehash.data());
-    LL_NOTICE("double hash: %s", HexStr(doublehash).c_str());
 
     // Serialize and hash
     CHashWriter ss(SER_GETHASH, 0);

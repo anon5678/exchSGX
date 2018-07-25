@@ -3,16 +3,17 @@
 #include "Enclave_u.h"
 #include "bitcoind-merkleproof.h"
 #include "../common/merkle_data.h"
+#include "../common/utils.h"
 #include "Utils.h"
 
-#include <log4cxx/logger.h>
 #include <future>
-
+#include <memory>
 #include <boost/asio/io_service.hpp>
+#include <boost/asio/deadline_timer.hpp>
 #include <boost/bind/bind.hpp>
+#include <log4cxx/logger.h>
 
 namespace exch {
-
 namespace fairness {
 namespace ocalls {
 log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("fairness-ocall.cpp"));
@@ -20,17 +21,15 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("fairness-ocall.cpp"));
 }
 };
 
-#include <memory>
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/deadline_timer.hpp>
-#include "../common/utils.h"
-
 using namespace std;
 using exch::fairness::ocalls::logger;
 using exch::rpc::Client;
 
-extern shared_ptr<boost::asio::io_service> io_service;
-extern unique_ptr<boost::asio::deadline_timer> fairnessTimer;
+namespace aio = boost::asio;
+
+shared_ptr<aio::io_service> io_service;
+unique_ptr<boost::asio::deadline_timer> fairnessTimer;
+
 extern sgx_enclave_id_t eid;
 
 // ocall
