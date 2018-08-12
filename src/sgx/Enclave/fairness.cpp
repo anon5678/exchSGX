@@ -19,7 +19,7 @@ void Leader::disseminate() noexcept(false) {
   try {
     for (const auto &peer : peers) {
       Box cipher = me.createBoxToPeer(peer, msg.serialize());
-      LL_NOTICE("sending %d bytes to %s:%d", cipher.size(), peer.getHostname(), peer.getPort());
+      LL_NOTICE("sending %d bytes to %s:%d", cipher.size(), peer.getHostname().c_str(), peer.getPort());
 
       int ret;
       auto st = sendMessagesToFairnessFollower(

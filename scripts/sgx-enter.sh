@@ -21,6 +21,7 @@ if [ ! "$(docker ps -q -f name=$docker_name)" ]; then
   else
     docker run -it \
       --name "$docker_name" \
+      --net host \
       -v ${ROOTDIR}/src:/code \
       -e "TESSERTACT_BUILD_CONFIG=Debug" \
       -e "SGX_SDK=/opt/intel/sgxsdk" \
