@@ -1,5 +1,4 @@
-# need 3.0 for multiple line strings
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 project(Tesseract)
 
 set(SGX_SDK /opt/intel/sgxsdk)
