@@ -15,6 +15,7 @@ Leader::Leader(const Peer &me, const vector<Peer> &peers, SettlementPkg &&msg)
     : me(me), msg(move(msg)), peers(peers), peers_ack(peers.size(), false) {
 }
 
+
 void Leader::disseminate() noexcept(false) {
   try {
     for (const auto &peer : peers) {
@@ -53,7 +54,7 @@ void Leader::receiveAck(const AcknowledgeMessage &ack) {
   Peer peer(ack.hostname, ack.port, string(32, 0xcc));
   long index = distance(peers.begin(), find(peers.begin(), peers.end(), peer));
   if (index < peers.size()) {
-    // mark this leader as invalid
+    // mark this leader as valid
     peers_ack[index] = true;
     LL_NOTICE("received ack from %s", peers[index].toString().c_str());
   } else {
@@ -65,27 +66,30 @@ void Leader::receiveAck(const AcknowledgeMessage &ack) {
     LL_NOTICE("received ack from all backup. Now proceed to the next step.");
     // TODO: next step
 
-    this->sendTransaction1();
+    //this->sendTransaction();
 
     LL_NOTICE("sending %s (%d bytes) to bitcoin", msg.tx_1_id_hex.c_str(), msg.tx_1.size());
 
     int ret;
-    auto st = fairnessProtocolForLeader(&ret,
-                                        msg.tx_1_id_hex.c_str(),
-                                        msg.tx_1_cancel_id_hex.c_str(),
-                                        msg.tx_1.data(),
-                                        msg.tx_1.size());
+    auto st = sendTxToBlockchain(&ret);
 
     if (st != SGX_SUCCESS || ret != 0) {
-      throw invalid_argument("cannot send tx1 to blockchain");
+      LL_CRITICAL("cannot send tx1 to blockchain");
     }
+    
+    /*st = fairnessProtocolForFollower(&ret, 
+                                     &msg.tx_1_id_hex.c_str()
+                                     &msg.tx_1_cancel_id_hex.c_str(),
+                                     0);*/
+
+    st = fairnessTimerHandler(&ret,
+                              &msg.tx_1_id_hex.c_str()
+                              &msg.tx_1_cancel_id_hex.c_str());
+    if (st != SGX_SUCCESS || ret != 0) {
+        LL_CRITICAL("fairnessProtocolForFollower fails.");
+    }
+
   }
-}
-
-void Leader::sendTransaction1() {
-}
-
-void Leader::sendTransaction2() {
 }
 
 Follower::Follower(const Peer &me, const Peer &leader)

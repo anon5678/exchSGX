@@ -166,9 +166,22 @@ class FairnessProtocol {
   // if a leader (or a follower) sees TX_1 on chain 1, it broadcast TX_2 to chain 2
   // if a follower sees TX_1_Cancel on chain 1, it broadcast TX_2_Cancel to chain 2
   const static int TIMEOUT_T1_SECOND = 3600 * 12;
-  const static int N_PEER_SERVERS = 5;
-  virtual void sendTransaction2() = 0;
+  //const static int N_PEER_SERVERS = 5;
+  
   virtual ~FairnessProtocol() {};
+
+  // send the i-th tx to blockchain i
+  //void sendTransaction();
+  
+  // broadcast TX2
+  void txOneConfirmed();
+
+  // broadcast TX2 cancellation
+  void txOneCanceled();
+  
+  // broadcast cancellation
+  //void txOneNotAppear();
+
 };
 
 class Leader : public FairnessProtocol {
@@ -187,11 +200,6 @@ class Leader : public FairnessProtocol {
   void disseminate() noexcept(false);
 
   void receiveAck(const AcknowledgeMessage &ack);
-
-  // send the first tx to blockchain 1
-  void sendTransaction1();
-
-  void sendTransaction2() override;
 };
 
 class Follower : FairnessProtocol {
@@ -206,16 +214,8 @@ class Follower : FairnessProtocol {
   ~Follower() {}
 
   // simply send ack
-  void receiveFromLeader();
+  //void receiveFromLeader();
 
-  // broadcast cancellation
-  void txOneNotAppear();
-
-  // broadcast TX2
-  void txOneConfirmed();
-
-  // broadcast TX2 cancellation
-  void txOneCanceled();
 };
 
 }

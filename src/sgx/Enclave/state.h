@@ -29,7 +29,7 @@ using namespace exch::enclave;
 class State {
  private:
   /* fairness */
-  fairness::Follower *fairnessFollower;
+  //fairness::Follower *fairnessFollower;
   set<securechannel::Peer> fairnessPeers;
   securechannel::Peer currentLeader;
   fairness::Leader *currentProtocol;
@@ -44,7 +44,7 @@ class State {
 
   State() = default;
   ~State() {
-    delete fairnessFollower;
+    //delete fairnessFollower;
     delete currentProtocol;
   }
   State(const State &) = delete;

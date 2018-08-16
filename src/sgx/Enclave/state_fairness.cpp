@@ -59,14 +59,21 @@ int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
       return -1;
     }
 
-    st = fairnessProtocolForFollower(
-        &ret,
+    //TODO sleep for a certain TIMEOUT
+    
+    //send tx_1_cancel and it gets accepted if tx_1 is not confirmed yet
+    st = sendTxToBlockchain(&ret);
+    if (st != SGX_SUCCESS || ret != 0) {
+        LL_CRITICAL("fails to send tx_1_cancel to Bitcoin.");
+    }
+
+    st = fairnessTimerHandler(
+        &ret, 
         pkg.tx_1_id_hex.c_str(),
-        pkg.tx_1_cancel_id_hex.c_str(),
-        State::FOLLOWER_TIMEOUT_SECONDS);
+        pkg.tx_1_cancel_id_hex.c_str());
 
     if (st != SGX_SUCCESS || ret != 0) {
-      LL_CRITICAL("fairnessProtocolForFollower fails with %d", ret);
+      LL_CRITICAL("fairnessProtocolForFollower fails.");
       return -1;
     }
 
@@ -87,7 +94,7 @@ int onAckFromFairnessFollower(const unsigned char *_ack, size_t size) {
 }
 
 // ecall
-int onTxOneCommitted(const merkle_proof_t *merkle_proof, uint8_t *tx2, size_t cap) {
+int onTxOneCommitted(const merkle_proof_t *merkle_proof) {
   LL_NOTICE("tx1 one been committed");
 
   // TODO verify merkle proof
@@ -95,13 +102,19 @@ int onTxOneCommitted(const merkle_proof_t *merkle_proof, uint8_t *tx2, size_t ca
 
   State &s = State::getInstance();
 
-  s.getCurrentProtocol()->sendTransaction2();
+  s.getCurrentProtocol()->txOneConfirmed();
   return 0;
 }
 
 // ecall
-int onTxOneNotCommitted(uint8_t *cancel_tx_one, size_t cap) {
+int onTxOneNotCommitted(const merkle_proof_t *merkle_proof) {
   LL_CRITICAL("tx1 is not committed, to send tx1 cancel");
 
+  // TODO verify merkle proof
+  merkle_proof_verify(merkle_proof);
+
+  State &s = State::getInstance();
+
+  s.getCurrentProtocol()->txOneCanceled();
   return 0;
 }

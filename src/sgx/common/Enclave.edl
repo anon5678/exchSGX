@@ -17,11 +17,9 @@ enclave {
         );
         public int onTxOneCommitted(
             [user_check] const merkle_proof_t* merkle_proof,
-            [user_check] uint8_t* tx2, size_t cap_tx2
         );
         public int onTxOneNotCommitted(
-            [user_check] uint8_t* tx1_cancnel,
-            size_t cap
+            [user_check] const merkle_proof_t* merkle_proof,
         );
 
         // fairness protocol: setup membership
@@ -50,6 +48,7 @@ enclave {
         // https://download.01.org/intel-sgx/linux-2.1.2/docs/Intel_SGX_Developer_Reference_Linux_2.1.2_Open_Source.pdf
         int sendMessagesToFairnessFollower([in, string] const char* host, int port, [in, size=size] const unsigned char* msg, size_t size);
         int sendAckToFairnessLeader([in, string] const char* host, int port, [in, size=size] const unsigned char* msg, size_t size);
+        int sendTxToBlockchain();
 
         // called after the leader receives all acks from all followers
         int fairnessProtocolForLeader (
@@ -59,10 +58,18 @@ enclave {
             size_t size);
 
         // called after the follower receives the settlement package from the leader
+        /*
         int fairnessProtocolForFollower (
             [in, string] const char* tx_one_id,
             [in, string] const char* tx_one_cancel_id,
             unsigned int seconds);
+        */
+
+        int fairnessTimerHandler(
+            [in, string] const char* tx_one_id,
+            [in, string] const char* tx_one_cancel_id));
+             
+
 
         int ocall_print_to_std([in, string] const char *str);
         int ocall_print_to_err([in, string] const char *str);
