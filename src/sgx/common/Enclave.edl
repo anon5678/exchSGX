@@ -16,10 +16,10 @@ enclave {
             [user_check] const unsigned char* ack, size_t size
         );
         public int onTxOneCommitted(
-            [user_check] const merkle_proof_t* merkle_proof,
+            [user_check] const merkle_proof_t* merkle_proof
         );
         public int onTxOneNotCommitted(
-            [user_check] const merkle_proof_t* merkle_proof,
+            [user_check] const merkle_proof_t* merkle_proof
         );
 
         // fairness protocol: setup membership
@@ -67,7 +67,7 @@ enclave {
 
         int fairnessTimerHandler(
             [in, string] const char* tx_one_id,
-            [in, string] const char* tx_one_cancel_id));
+            [in, string] const char* tx_one_cancel_id);
              
 
 

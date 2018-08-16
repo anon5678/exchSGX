@@ -71,9 +71,9 @@ void Leader::receiveAck(const AcknowledgeMessage &ack) {
     LL_NOTICE("sending %s (%d bytes) to bitcoin", msg.tx_1_id_hex.c_str(), msg.tx_1.size());
 
     int ret;
-    auto st = sendTxToBlockchain(&ret);
+    auto st = sendTxToBlockchain();
 
-    if (st != SGX_SUCCESS || ret != 0) {
+    if (st != SGX_SUCCESS) {
       LL_CRITICAL("cannot send tx1 to blockchain");
     }
     
@@ -82,9 +82,9 @@ void Leader::receiveAck(const AcknowledgeMessage &ack) {
                                      &msg.tx_1_cancel_id_hex.c_str(),
                                      0);*/
 
-    st = fairnessTimerHandler(&ret,
-                              &msg.tx_1_id_hex.c_str()
-                              &msg.tx_1_cancel_id_hex.c_str());
+    st = fairnessTimerHandler(//&ret,
+                              msg.tx_1_id_hex.c_str(),
+                              msg.tx_1_cancel_id_hex.c_str());
     if (st != SGX_SUCCESS || ret != 0) {
         LL_CRITICAL("fairnessProtocolForFollower fails.");
     }

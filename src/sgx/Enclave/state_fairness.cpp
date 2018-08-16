@@ -62,8 +62,8 @@ int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
     //TODO sleep for a certain TIMEOUT
     
     //send tx_1_cancel and it gets accepted if tx_1 is not confirmed yet
-    st = sendTxToBlockchain(&ret);
-    if (st != SGX_SUCCESS || ret != 0) {
+    st = sendTxToBlockchain();
+    if (st != SGX_SUCCESS) {
         LL_CRITICAL("fails to send tx_1_cancel to Bitcoin.");
     }
 
