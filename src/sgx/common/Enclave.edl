@@ -50,6 +50,7 @@ enclave {
         int sendAckToFairnessLeader([in, string] const char* host, int port, [in, size=size] const unsigned char* msg, size_t size);
         int sendTxToBlockchain();
 
+        /*
         // called after the leader receives all acks from all followers
         int fairnessProtocolForLeader (
             [in, string] const char* tx_one_id,
@@ -58,17 +59,16 @@ enclave {
             size_t size);
 
         // called after the follower receives the settlement package from the leader
-        /*
         int fairnessProtocolForFollower (
             [in, string] const char* tx_one_id,
             [in, string] const char* tx_one_cancel_id,
             unsigned int seconds);
-        */
 
         int fairnessTimerHandler(
             [in, string] const char* tx_one_id,
             [in, string] const char* tx_one_cancel_id);
              
+        */
 
 
         int ocall_print_to_std([in, string] const char *str);

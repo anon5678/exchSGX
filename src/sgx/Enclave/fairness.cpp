@@ -11,6 +11,15 @@ constexpr const char *SettlementPkg::TX_TWO;
 constexpr const char *SettlementPkg::TX_ONE_CANCEL;
 constexpr const char *SettlementPkg::TX_TWO_CANCEL;
 
+void FairnessProtocol::txOneConfirmed() {
+}
+
+void FairnessProtocol::txOneCanceled() {
+}
+
+void FairnessProtocol::waitForConfirmation() {
+}
+
 Leader::Leader(const Peer &me, const vector<Peer> &peers, SettlementPkg &&msg)
     : me(me), msg(move(msg)), peers(peers), peers_ack(peers.size(), false) {
 }
@@ -71,23 +80,25 @@ void Leader::receiveAck(const AcknowledgeMessage &ack) {
     LL_NOTICE("sending %s (%d bytes) to bitcoin", msg.tx_1_id_hex.c_str(), msg.tx_1.size());
 
     int ret;
-    auto st = sendTxToBlockchain();
+    auto st = sendTxToBlockchain(&ret);
 
-    if (st != SGX_SUCCESS) {
+    if (st != SGX_SUCCESS || ret != 0) {
       LL_CRITICAL("cannot send tx1 to blockchain");
     }
     
     /*st = fairnessProtocolForFollower(&ret, 
                                      &msg.tx_1_id_hex.c_str()
                                      &msg.tx_1_cancel_id_hex.c_str(),
-                                     0);*/
+                                     0);
 
     st = fairnessTimerHandler(//&ret,
                               msg.tx_1_id_hex.c_str(),
                               msg.tx_1_cancel_id_hex.c_str());
     if (st != SGX_SUCCESS || ret != 0) {
         LL_CRITICAL("fairnessProtocolForFollower fails.");
-    }
+    }*/
+
+    waitForConfirmation();
 
   }
 }

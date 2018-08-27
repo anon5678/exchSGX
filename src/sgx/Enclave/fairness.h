@@ -165,7 +165,7 @@ class FairnessProtocol {
   // if a follower does not see TX_1 by TIMEOUT_T1, it broadcasts TX_1_Cancel
   // if a leader (or a follower) sees TX_1 on chain 1, it broadcast TX_2 to chain 2
   // if a follower sees TX_1_Cancel on chain 1, it broadcast TX_2_Cancel to chain 2
-  const static int TIMEOUT_T1_SECOND = 3600 * 12;
+  const static int TIMEOUT_T1_SECOND = 60 * 15;
   //const static int N_PEER_SERVERS = 5;
   
   virtual ~FairnessProtocol() {};
@@ -181,6 +181,8 @@ class FairnessProtocol {
   
   // broadcast cancellation
   //void txOneNotAppear();
+
+  void waitForConfirmation();
 
 };
 

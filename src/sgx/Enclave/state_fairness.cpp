@@ -62,12 +62,13 @@ int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
     //TODO sleep for a certain TIMEOUT
     
     //send tx_1_cancel and it gets accepted if tx_1 is not confirmed yet
-    st = sendTxToBlockchain();
+    st = sendTxToBlockchain(&ret);
     if (st != SGX_SUCCESS) {
         LL_CRITICAL("fails to send tx_1_cancel to Bitcoin.");
     }
 
-    st = fairnessTimerHandler(
+    /*
+      st = fairnessTimerHandler(
         &ret, 
         pkg.tx_1_id_hex.c_str(),
         pkg.tx_1_cancel_id_hex.c_str());
@@ -76,6 +77,7 @@ int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
       LL_CRITICAL("fairnessProtocolForFollower fails.");
       return -1;
     }
+    */
 
     return 0;
   }
