@@ -73,6 +73,8 @@ struct SettlementPkg {
         tx_1(tx_1), tx_2(tx_2),
         tx_1_cancel(tx_1_cancel), tx_2_cancel(tx_2_cancel) {}
 
+  SettlementPkg() = default;
+
   ~SettlementPkg() = default;
 
   // disable copy
@@ -161,11 +163,39 @@ class FairnessProtocol {
     LEADER,
     FOLLOWER,
   };
+  enum Stage {
+    INIT,
+    DISSEMINATE,
+    SENDACK,
+    SENDTXONE,
+    SENDTXTWO,
+  } stage;
+
+  struct Time {
+      sgx_time_t time_second;
+      sgx_time_source_nonce_t time_source_nonce;
+      sgx_time_t period;
+
+      void getTime() {
+          int ret = sgx_get_trusted_time(&time_second, &time_source_nonce);
+          if (ret != SGX_SUCCESS) {
+              LL_CRITICAL("cannot get sgx trusted time");
+          }
+      }
+
+      bool passTime() {
+          Time cur_time;
+          cur_time.getTime();
+          return (cur_time.time_source_nonce == time_source_nonce) &&
+              (cur_time.time_second >= time_second + period);
+      }
+  } start_time;
 
   // if a follower does not see TX_1 by TIMEOUT_T1, it broadcasts TX_1_Cancel
   // if a leader (or a follower) sees TX_1 on chain 1, it broadcast TX_2 to chain 2
   // if a follower sees TX_1_Cancel on chain 1, it broadcast TX_2_Cancel to chain 2
-  const static int TIMEOUT_T1_SECOND = 60 * 15;
+  const static sgx_time_t TIMEOUT_T1_SECOND = 2; //60 * 15;
+  const static sgx_time_t TIMEOUT_T2_SECOND = 5; //60 * 10 * 6;
   //const static int N_PEER_SERVERS = 5;
   
   virtual ~FairnessProtocol() {};
@@ -196,7 +226,9 @@ class Leader : public FairnessProtocol {
  public:
   const static auto role = LEADER;
   // initialize
-  Leader(const Peer &me, const vector<Peer> &peers, SettlementPkg &&msg);
+  Leader(const Peer &me, const vector<Peer> &peers);//, SettlementPkg &&msg);
+
+  void setMessage(SettlementPkg &&msg);
 
   // send msg to all peers and wait for ACKs
   void disseminate() noexcept(false);
@@ -208,6 +240,7 @@ class Follower : FairnessProtocol {
  private:
   Peer me;
   Peer leader;
+  SettlementPkg msg;
 
  public:
   const static auto role = FOLLOWER;
@@ -216,7 +249,9 @@ class Follower : FairnessProtocol {
   ~Follower() {}
 
   // simply send ack
-  //void receiveFromLeader();
+  void receiveFromLeader();
+
+  void checkTxOneInMempool();
 
 };
 

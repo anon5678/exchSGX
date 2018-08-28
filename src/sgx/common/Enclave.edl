@@ -3,6 +3,8 @@ enclave {
 
     include "../common/common.h"
     include "sgx_tseal.h"
+    include "sgx_trts.h"
+    include "sgx_tae_service.h"
 
     trusted {
         // deposit

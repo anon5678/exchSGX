@@ -38,6 +38,7 @@ int setSelf(int is_leader, const char *hostname, uint16_t port, const uint8_t *p
 // ecall
 int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
   try {
+    //TODO: decrypt message from leader
     SettlementPkg pkg = SettlementPkg::deserialize(string((char *) msg, size));
 
     LL_NOTICE("sending ack to leader");
