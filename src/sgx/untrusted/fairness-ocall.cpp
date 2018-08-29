@@ -34,7 +34,7 @@ extern sgx_enclave_id_t eid;
 
 
 //ocall
-int checkTxOneStatus() { //TODO: use tx hash to look up the blockchain
+int checkTxOneStatus(string tx_one_id, string tx_one_cancel_id) { //TODO: use tx hash to look up the blockchain
   int attempts = 0;
   try {
       while (attempts++ < 10) {

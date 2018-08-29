@@ -177,17 +177,26 @@ class FairnessProtocol {
       sgx_time_t period;
 
       void getTime() {
-          int ret = sgx_get_trusted_time(&time_second, &time_source_nonce);
+          int ret;
+          int retry = 10;
+          do {
+              ret = sgx_create_pse_session();
+          } while(ret == SGX_ERROR_BUSY && retry--);
+
+          ret = sgx_get_trusted_time(&time_second, &time_source_nonce);
           if (ret != SGX_SUCCESS) {
               LL_CRITICAL("cannot get sgx trusted time");
           }
+          sgx_close_pse_session();
+
       }
 
       bool passTime() {
           Time cur_time;
           cur_time.getTime();
-          return (cur_time.time_source_nonce == time_source_nonce) &&
-              (cur_time.time_second >= time_second + period);
+          return (!memcmp(&cur_time.time_source_nonce, time_source_nonce, 
+                      sizeof(sgx_time_source_nonce_t))) 
+              && (cur_time.time_second >= time_second + period);
       }
   } start_time;
 

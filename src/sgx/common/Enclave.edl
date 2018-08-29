@@ -1,5 +1,6 @@
 enclave {
     from "sgx_tstdc.edl" import *;
+    from "sgx_tae_service.edl" import *;
 
     include "../common/common.h"
     include "sgx_tseal.h"

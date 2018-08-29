@@ -124,8 +124,9 @@ void Leader::receiveAck(const AcknowledgeMessage &ack) {
 
     start_time.getTime();
     start_time.period = TIMEOUT_T2_SECOND;
- 
+
     stage = SENDTXONE;
+    LL_NOTICE("currently on stage SENDTXONE");
     
     /*st = fairnessProtocolForFollower(&ret, 
                                      &msg.tx_1_id_hex.c_str()
