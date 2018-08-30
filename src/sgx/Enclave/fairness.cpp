@@ -19,7 +19,7 @@ void FairnessProtocol::txOneCanceled() {
     //TODO: sendTxTwoCancel;
 }
 
-void FairnessProtocol::waitForConfirmation() {
+void FairnessProtocol::checkTxOneConfirmation() {
   if (stage != SENDTXONE) {
       LL_NOTICE("not on the stage to check tx1 status");
       return;
@@ -40,8 +40,8 @@ void FairnessProtocol::waitForConfirmation() {
   stage = SENDTXTWO;
 }
 
-Leader::Leader(const Peer &me, const vector<Peer> &peers) //, SettlementPkg &&msg)
-    : me(me), peers(peers), peers_ack(peers.size(), false) { //, msg(move(msg)) {
+Leader::Leader(const Peer &me, const vector<Peer> &peers)
+    : FairnessProtocol(me), peers(peers), peers_ack(peers.size(), false) {
     stage = INIT;
 }
 
@@ -90,11 +90,14 @@ void Leader::disseminate() noexcept(false) {
   }
 }
 
-void Leader::receiveAck(const AcknowledgeMessage &ack) {
+void Leader::receiveAck(const unsigned char *_ack, size_t size) {
   if (stage != DISSEMINATE) {
       LL_NOTICE("not on the stage to wait for acks");
       return;
   }
+
+  //TODO: check signature of ack
+  AcknowledgeMessage ack = AcknowledgeMessage::deserailize(string((char *) _ack, size));
 
   Peer peer(ack.hostname, ack.port, string(32, 0xcc));
   long index = distance(peers.begin(), find(peers.begin(), peers.end(), peer));
@@ -109,9 +112,6 @@ void Leader::receiveAck(const AcknowledgeMessage &ack) {
   // decide if trigger the next step
   if (all_of(peers_ack.begin(), peers_ack.end(), [](bool x) { return x; })) {
     LL_NOTICE("received ack from all backup. Now proceed to the next step.");
-    // TODO: next step
-
-    //this->sendTransaction();
 
     LL_NOTICE("sending %s (%d bytes) to bitcoin", msg.tx_1_id_hex.c_str(), msg.tx_1.size());
 
@@ -127,34 +127,39 @@ void Leader::receiveAck(const AcknowledgeMessage &ack) {
 
     stage = SENDTXONE;
     LL_NOTICE("currently on stage SENDTXONE");
-    
-    /*st = fairnessProtocolForFollower(&ret, 
-                                     &msg.tx_1_id_hex.c_str()
-                                     &msg.tx_1_cancel_id_hex.c_str(),
-                                     0);
-
-    st = fairnessTimerHandler(//&ret,
-                              msg.tx_1_id_hex.c_str(),
-                              msg.tx_1_cancel_id_hex.c_str());
-    if (st != SGX_SUCCESS || ret != 0) {
-        LL_CRITICAL("fairnessProtocolForFollower fails.");
-    }*/
-    
   }
 }
 
 Follower::Follower(const Peer &me, const Peer &leader)
-    : me(me), leader(leader) {
+    : FairnessProtocol(me), leader(leader) {
     stage = INIT;
 }
 
-void Follower::receiveFromLeader() {
+void Follower::receiveFromLeader(const unsigned char *msg, size_t size) {
     if (stage != INIT) {
         LL_NOTICE("not on the stage to receive message from leader");
         return;
     }
-    
-    //TODO: sendack;
+
+    //TODO: decrypt message from leader
+    SettlementPkg pkg = SettlementPkg::deserialize(string((char *) msg, size));
+
+    LL_NOTICE("sending ack to leader");
+    // TODO compute an actual ack message
+    AcknowledgeMessage ack{me.getHostname(), me.getPort()};
+    auto ack_msg = ack.serialize();
+
+    int ret;
+    auto st = sendAckToFairnessLeader(
+        &ret,
+        leader.getHostname().c_str(),
+        leader.getPort(),
+        (const unsigned char *) ack_msg.data(), ack_msg.size());
+
+    if (st != SGX_SUCCESS || ret != 0) {
+      LL_CRITICAL("cannot send ack to the leader");
+      return;
+    }
 
     start_time.getTime();
     start_time.period = TIMEOUT_T1_SECOND;
@@ -173,7 +178,7 @@ void Follower::checkTxOneInMempool() {
         return;
     }
 
-    //TODO: sendtx1cancel;
+    //TODO: check tx1 in mempool and if not then sendtx1cancel;
 
     start_time.getTime();
     start_time.period = TIMEOUT_T2_SECOND;

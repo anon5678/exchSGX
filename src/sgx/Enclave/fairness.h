@@ -159,10 +159,8 @@ using PeerList=std::set<Peer>;
 
 class FairnessProtocol {
  public:
-  enum Role {
-    LEADER,
-    FOLLOWER,
-  };
+  Peer me;
+  SettlementPkg msg;
   enum Stage {
     INIT,
     DISSEMINATE,
@@ -207,10 +205,7 @@ class FairnessProtocol {
   const static sgx_time_t TIMEOUT_T2_SECOND = 5; //60 * 10 * 6;
   //const static int N_PEER_SERVERS = 5;
   
-  virtual ~FairnessProtocol() {};
-
-  // send the i-th tx to blockchain i
-  //void sendTransaction();
+  FairnessProtocol(const Peer &me) : me(me) {}
   
   // broadcast TX2
   void txOneConfirmed();
@@ -218,47 +213,38 @@ class FairnessProtocol {
   // broadcast TX2 cancellation
   void txOneCanceled();
   
-  // broadcast cancellation
-  //void txOneNotAppear();
-
-  void waitForConfirmation();
+  void checkTxOneConfirmation();
 
 };
 
 class Leader : public FairnessProtocol {
  private:
-  Peer me;
-  SettlementPkg msg;
   vector<Peer> peers;
   vector<bool> peers_ack;
 
  public:
-  const static auto role = LEADER;
   // initialize
-  Leader(const Peer &me, const vector<Peer> &peers);//, SettlementPkg &&msg);
+  Leader(const Peer &me, const vector<Peer> &peers);
 
   void setMessage(SettlementPkg &&msg);
 
   // send msg to all peers and wait for ACKs
   void disseminate() noexcept(false);
 
-  void receiveAck(const AcknowledgeMessage &ack);
+  void receiveAck(const unsigned char *_ack, size_t size);
 };
 
 class Follower : FairnessProtocol {
  private:
-  Peer me;
   Peer leader;
-  SettlementPkg msg;
 
  public:
-  const static auto role = FOLLOWER;
   // create a TLS server
   Follower(const Peer &me, const Peer &leader);
   ~Follower() {}
 
   // simply send ack
-  void receiveFromLeader();
+  void receiveFromLeader(const unsigned char *msg, size_t size);
 
   void checkTxOneInMempool();
 

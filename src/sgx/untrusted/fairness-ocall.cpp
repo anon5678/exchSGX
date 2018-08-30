@@ -226,4 +226,5 @@ int sendAckToFairnessLeader(const char *host, int port, const unsigned char *msg
 }
 
 int sendTxToBlockchain() {
+    return 0;
 }

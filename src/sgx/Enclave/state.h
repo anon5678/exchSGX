@@ -64,7 +64,9 @@ class State {
   const fairness::PeerList &getPeerList() const { return this->fairnessPeers; }
   const securechannel::Peer &getCurrentLeader() const { return currentLeader; }
   const securechannel::Peer &getSelf() const { return this->self; }
-  fairness::Leader *getCurrentProtocol() const { return currentProtocol; }
+  fairness::Leader *getProtocolLeader() const { return currentProtocol; }
+  fairness::Follower *getProtocolFollower() const { return currentFollower;}
+  fairness::FairnessProtocol *getCurrentProtocol() const { return isLeader ? (fairness::FairnessProtocol*)currentProtocol : (fairness::FairnessProtocol*)currentFollower; }
 };
 
 #ifdef __cplusplus
