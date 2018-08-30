@@ -32,82 +32,9 @@ unique_ptr<boost::asio::deadline_timer> fairnessTimer;
 
 extern sgx_enclave_id_t eid;
 
-
+/*
 //ocall
 int checkTxOneStatus(string tx_one_id, string tx_one_cancel_id) { //TODO: use tx hash to look up the blockchain
-  int attempts = 0;
-  try {
-      while (attempts++ < 10) {
-          TxInclusion tx_one_confirmed = isTxIncluded(tx_one_id);
-          TxInclusion tx_one_cancelled = isTxIncluded(tx_one_cancel_id);
-
-          if (tx_one_confirmed == TxInclusion::Yes) {
-              MerkleProof proof = buildTxInclusionProof(tx_one_id);
-              LOG4CXX_INFO(logger, "tx confirmed on Bitcoin");
-              const auto *serialized = proof.serialize();
-
-              int ret;
-              auto st = onTxOneCommitted(eid, &ret, serialized);
-              if (st != SGX_SUCCESS || ret != 0) {
-                  LOG4CXX_WARN(logger, "failed to call enclave");
-                  print_error_message(st);
-              }
-
-              return 0;
-          }
-
-          if (tx_one_cancelled == TxInclusion::Yes) {
-              MerkleProof proof = buildTxInclusionProof(tx_one_cancel_id);
-              LOG4CXX_INFO(logger, "tx canceled on Bitcoin");
-              const auto *serialized = proof.serialize();
-
-              int ret;
-              auto st = onTxOneNotCommitted(eid, &ret, serialized);
-              if (st != SGX_SUCCESS || ret != 0) {
-                  LOG4CXX_WARN(logger, "failed to call enclave");
-                  print_error_message(st);
-              }
-
-              return 0;
-          }
-
-          this_thread::sleep_for(chrono::seconds(10));
-      }
-      LOG4CXX_ERROR(logger, "don't know what to do");
-
-      return 1;
-  }
-  catch (const exception &e) {
-    LOG4CXX_ERROR(logger, e.what());
-    return 1;
-  }
-}
-
-// ocall
-/*
-int fairnessProtocolForLeader(
-    const char *tx_one_id,
-    const char *tx_one_cancel_id,
-    const unsigned char *tx,
-    size_t size) {
-
-  // wait for a confirmation
-  // TODO: add actual code to send tx
-  LOG4CXX_INFO(logger, "sending " << size << " bytes to bitcoin");
-
-  return sendTxToBlockchain();
-}
-
-// ocall
-int fairnessTimerHandler(
-    //const boost::system::error_code &error,
-    string tx_one_id,
-    string tx_one_cancel_id) {
-    if (error) {
-    LOG4CXX_INFO(logger, "fairness timer: " << error);
-    return;
-  }
-  //uint8_t tx_buffer[1024];
   int attempts = 0;
   try {
       while (attempts++ < 10) {
@@ -225,6 +152,8 @@ int sendAckToFairnessLeader(const char *host, int port, const unsigned char *msg
   }
 }
 
+//TODO: send real tx to bitcoin
 int sendTxToBlockchain() {
     return 0;
 }
+

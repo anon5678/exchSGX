@@ -11,33 +11,34 @@ constexpr const char *SettlementPkg::TX_TWO;
 constexpr const char *SettlementPkg::TX_ONE_CANCEL;
 constexpr const char *SettlementPkg::TX_TWO_CANCEL;
 
-void FairnessProtocol::txOneConfirmed() {
-    //TODO: sendTxTwo;
-}
-
-void FairnessProtocol::txOneCanceled() {
-    //TODO: sendTxTwoCancel;
-}
-
-void FairnessProtocol::checkTxOneConfirmation() {
+void FairnessProtocol::txOneConfirmed(const merkle_proof_t *proof) {
   if (stage != SENDTXONE) {
       LL_NOTICE("not on the stage to check tx1 status");
       return;
   }
-  
-  if (!start_time.passTime()) {
-      LL_NOTICE("not time to check tx1 status");
-      return;
+
+  int ret;
+  int st;
+  if (true) {//TODO: merkle_proof_verify(proof)) {
+      if (true) { //TODO: tx1 confirmed
+          LL_NOTICE("sending tx2 to blockchain");
+          st = sendTxToBlockchain(&ret);
+      } else { //tx1_cancel confirmed
+          LL_NOTICE("sending tx2_cancel to blockchain");
+          st = sendTxToBlockchain(&ret);
+      }
+      
+      if (st != SGX_SUCCESS || ret != 0) {
+          LL_CRITICAL("cannot send tx2/tx2_cancel to blockchain");
+          return;
+      }
+
+      stage = SENDTXTWO;
+      LL_NOTICE("fairness protocol finishes");
+  } else {
+      LL_NOTICE("merkle proof verification fails");
   }
 
-  try {
-      //TODO: checkTxOneStatus();
-  }
-  catch (exception e) {
-      throw;
-  }
-
-  stage = SENDTXTWO;
 }
 
 Leader::Leader(const Peer &me, const vector<Peer> &peers)
@@ -123,10 +124,10 @@ void Leader::receiveAck(const unsigned char *_ack, size_t size) {
     }
 
     start_time.getTime();
-    start_time.period = TIMEOUT_T2_SECOND;
+    start_time.period = TIMEOUT_T1_SECOND;
 
-    stage = SENDTXONE;
-    LL_NOTICE("currently on stage SENDTXONE");
+    stage = RECEIVEACK;
+    LL_NOTICE("currently on stage RECEIVEACK");
   }
 }
 
@@ -165,11 +166,24 @@ void Follower::receiveFromLeader(const unsigned char *msg, size_t size) {
     start_time.period = TIMEOUT_T1_SECOND;
 
     stage = SENDACK;
+    LL_NOTICE("currently on stage SENDACK");
 }
 
-void Follower::checkTxOneInMempool() {
-    if (stage != SENDACK) {
-        LL_NOTICE("not on the stage to receive message from leader");
+void FairnessProtocol::foundTxOneInMempool(const bytes &txOneInMempool) {
+    if (stage != SENDACK && stage != RECEIVEACK) {
+        LL_NOTICE("not on the stage to accept tx1 found in mempool");
+        return;
+    }
+
+    if (true) {//txOneInMempool == msg.tx_1) {
+        LL_NOTICE("found tx1 in mempool");
+        stage = SENDTXONE;
+    }
+}
+
+void FairnessProtocol::notFoundTxOneInMempool() {
+    if (stage != SENDACK && stage != RECEIVEACK) {
+        LL_NOTICE("not on the stage to check tx1 in mempool");
         return;
     }
 
@@ -178,10 +192,15 @@ void Follower::checkTxOneInMempool() {
         return;
     }
 
-    //TODO: check tx1 in mempool and if not then sendtx1cancel;
+    LL_NOTICE("not found tx1 in mempool after timeout, start to send tx1_cancel");
 
-    start_time.getTime();
-    start_time.period = TIMEOUT_T2_SECOND;
+    int ret = 0;
+    auto st = sendTxToBlockchain(
+            &ret);
+    if (st != SGX_SUCCESS || ret != 0) {
+        LL_CRITICAL("cannot send tx1_cancel to the blockchain");
+        return;
+    }
 
     stage = SENDTXONE;
 }

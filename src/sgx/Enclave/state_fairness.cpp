@@ -55,47 +55,36 @@ int onAckFromFairnessFollower(const unsigned char *_ack, size_t size) {
   CATCH_STD_AND_ALL
 }
 
-// ecall
-int afterTimeoutT1() {
+int onTxOneInMempool(const unsigned char *tx1, size_t size) {
+    //TODO: transform tx1 to bytes
+    bytes tx_1;
+
     try {
         State &s = State::getInstance();
-        s.getProtocolFollower()->checkTxOneInMempool();
+        s.getCurrentProtocol()->foundTxOneInMempool(tx_1);
         return 0;
     }
     CATCH_STD_AND_ALL
 }
 
-int afterTimeoutT2() {
+
+// ecall
+int afterTimeout() {
     try {
         State &s = State::getInstance();
-        s.getCurrentProtocol()->checkTxOneConfirmation();
+        s.getCurrentProtocol()->notFoundTxOneInMempool();
         return 0;
     }
     CATCH_STD_AND_ALL
 }
 
 // ecall
-int onTxOneCommitted(const merkle_proof_t *merkle_proof) {
-  LL_NOTICE("tx1 one been committed");
-
-  // TODO verify merkle proof
-  merkle_proof_verify(merkle_proof);
-
-  State &s = State::getInstance();
-
-  s.getCurrentProtocol()->txOneConfirmed();
-  return 0;
+int onTxOneConfirmation(const merkle_proof_t *merkle_proof) {
+  try {
+      State &s = State::getInstance();
+      s.getCurrentProtocol()->txOneConfirmed(merkle_proof);
+      return 0;
+  }
+  CATCH_STD_AND_ALL
 }
 
-// ecall
-int onTxOneNotCommitted(const merkle_proof_t *merkle_proof) {
-  LL_CRITICAL("tx1 is not committed, to send tx1 cancel");
-
-  // TODO verify merkle proof
-  merkle_proof_verify(merkle_proof);
-
-  State &s = State::getInstance();
-
-  s.getCurrentProtocol()->txOneCanceled();
-  return 0;
-}

@@ -205,6 +205,16 @@ int main(int argc, const char *argv[]) {
     simulate_leader(eid, &ret);
   }
 
+  // pretend to find tx1 in mempool
+  this_thread::sleep_for(chrono::seconds(10));
+  unsigned char *tmp;
+  afterTimeout(eid, &ret); 
+
+  //pretend to find tx1 confirmation
+  this_thread::sleep_for(chrono::seconds(5));
+  merkle_proof_t *tmp_proof;
+  onTxOneConfirmation(eid, &ret, tmp_proof);
+
   while (!exch::interrupt::quit.load()) {
     this_thread::sleep_for(chrono::seconds(2));
   }

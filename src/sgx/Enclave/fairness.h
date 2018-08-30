@@ -165,6 +165,7 @@ class FairnessProtocol {
     INIT,
     DISSEMINATE,
     SENDACK,
+    RECEIVEACK,
     SENDTXONE,
     SENDTXTWO,
   } stage;
@@ -186,8 +187,9 @@ class FairnessProtocol {
               LL_CRITICAL("cannot get sgx trusted time");
           }
           sgx_close_pse_session();
-
       }
+
+      
 
       bool passTime() {
           Time cur_time;
@@ -201,20 +203,16 @@ class FairnessProtocol {
   // if a follower does not see TX_1 by TIMEOUT_T1, it broadcasts TX_1_Cancel
   // if a leader (or a follower) sees TX_1 on chain 1, it broadcast TX_2 to chain 2
   // if a follower sees TX_1_Cancel on chain 1, it broadcast TX_2_Cancel to chain 2
+  // TODO modify the timeouts
   const static sgx_time_t TIMEOUT_T1_SECOND = 2; //60 * 15;
-  const static sgx_time_t TIMEOUT_T2_SECOND = 5; //60 * 10 * 6;
+  //const static sgx_time_t TIMEOUT_T2_SECOND = 5; //60 * 10 * 6;
   //const static int N_PEER_SERVERS = 5;
   
   FairnessProtocol(const Peer &me) : me(me) {}
   
-  // broadcast TX2
-  void txOneConfirmed();
-
-  // broadcast TX2 cancellation
-  void txOneCanceled();
-  
-  void checkTxOneConfirmation();
-
+  void txOneConfirmed(const merkle_proof_t *proof);
+  void foundTxOneInMempool(const bytes &txOneinMempool);
+  void notFoundTxOneInMempool();
 };
 
 class Leader : public FairnessProtocol {
@@ -245,9 +243,6 @@ class Follower : FairnessProtocol {
 
   // simply send ack
   void receiveFromLeader(const unsigned char *msg, size_t size);
-
-  void checkTxOneInMempool();
-
 };
 
 }
