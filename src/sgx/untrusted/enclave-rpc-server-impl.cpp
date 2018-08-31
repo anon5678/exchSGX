@@ -125,10 +125,14 @@ bool EnclaveRPC::deposit(const Json::Value &merkle_proof, const string &public_k
 // This function is called a follower when receiving the initial messages from the leader
 void _onMessageFromFairnessLeader(string settlementPkg) {
   int ret;
+  unsigned char *tx1_id = (unsigned char*)malloc(65);
   onMessageFromFairnessLeader(eid,
                               &ret,
                               reinterpret_cast<const unsigned char *>(settlementPkg.data()),
-                              settlementPkg.size());
+                              settlementPkg.size(),
+                              tx1_id);
+  LOG4CXX_INFO(logger, "look up tx1_id: " << tx1_id << " in mempool");
+  //TODO: look up tx1_id in mempool
 }
 
 bool EnclaveRPC::distributeSettlementPkg(const std::string &settlementPkg) {

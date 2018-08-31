@@ -136,14 +136,16 @@ Follower::Follower(const Peer &me, const Peer &leader)
     stage = INIT;
 }
 
-void Follower::receiveFromLeader(const unsigned char *msg, size_t size) {
+void Follower::receiveFromLeader(const unsigned char *msg, size_t size, unsigned char *tx1_id) {
     if (stage != INIT) {
         LL_NOTICE("not on the stage to receive message from leader");
         return;
     }
 
     //TODO: decrypt message from leader
-    SettlementPkg pkg = SettlementPkg::deserialize(string((char *) msg, size));
+    this->msg = SettlementPkg::deserialize(string((char *) msg, size));
+    //tx1_id = (unsigned char*)malloc(64);
+    this->msg.tx_1_id_hex.copy((char*)tx1_id, 64);
 
     LL_NOTICE("sending ack to leader");
     // TODO compute an actual ack message

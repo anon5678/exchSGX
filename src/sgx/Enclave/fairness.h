@@ -242,7 +242,7 @@ class Follower : FairnessProtocol {
   ~Follower() {}
 
   // simply send ack
-  void receiveFromLeader(const unsigned char *msg, size_t size);
+  void receiveFromLeader(const unsigned char *msg, size_t size, unsigned char *tx1_id);
 };
 
 }

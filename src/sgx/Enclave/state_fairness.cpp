@@ -36,10 +36,10 @@ int setSelf(int is_leader, const char *hostname, uint16_t port, const uint8_t *p
 }
 
 // ecall
-int onMessageFromFairnessLeader(const unsigned char *msg, size_t size) {
+int onMessageFromFairnessLeader(const unsigned char *msg, size_t size, unsigned char *tx1_id) {
   try {
     State &s = State::getInstance();
-    s.getProtocolFollower()->receiveFromLeader(msg, size);
+    s.getProtocolFollower()->receiveFromLeader(msg, size, tx1_id);
     return 0;
   }
   CATCH_STD_AND_ALL
