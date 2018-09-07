@@ -18,6 +18,11 @@ namespace exch {
                     this->bindAndAddMethod(jsonrpc::Procedure("deposit", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_BOOLEAN, "param1",jsonrpc::JSON_OBJECT,"param2",jsonrpc::JSON_STRING, NULL), &exch::rpc::AbsServer::depositI);
                     this->bindAndAddMethod(jsonrpc::Procedure("distributeSettlementPkg", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_BOOLEAN, "param1",jsonrpc::JSON_STRING, NULL), &exch::rpc::AbsServer::distributeSettlementPkgI);
                     this->bindAndAddMethod(jsonrpc::Procedure("ackSettlementPkg", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_BOOLEAN, "param1",jsonrpc::JSON_STRING, NULL), &exch::rpc::AbsServer::ackSettlementPkgI);
+
+                    this->bindAndAddMethod(jsonrpc::Procedure("ethSendOrder", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_BOOLEAN, "param1",jsonrpc::JSON_STRING, NULL), &exch::rpc::AbsServer::ethSendOrder);
+                    this->bindAndAddMethod(jsonrpc::Procedure("ethWithdraw", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_BOOLEAN, "param1",jsonrpc::JSON_STRING, NULL), &exch::rpc::AbsServer::ethWithdraw);
+                    this->bindAndAddMethod(jsonrpc::Procedure("ethSendProof", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_BOOLEAN, "param1",jsonrpc::JSON_STRING, NULL), &exch::rpc::AbsServer::ethSendProof);
+                    this->bindAndAddMethod(jsonrpc::Procedure("ethSendHeader", jsonrpc::PARAMS_BY_POSITION, jsonrpc::JSON_BOOLEAN, "param1",jsonrpc::JSON_STRING, NULL), &exch::rpc::AbsServer::ethSendHeader);
                 }
 
                 inline virtual void appendBlock2FIFOI(const Json::Value &request, Json::Value &response)
@@ -36,10 +41,34 @@ namespace exch {
                 {
                     response = this->ackSettlementPkg(request[0u].asString());
                 }
+
+                inline virtual void ethSendOrder(const Json::Value &request, Json::Value &response)
+                {
+                    response = this->ethSendOrder(request[0u].asString());
+                }
+                inline virtual void ethWithdraw(const Json::Value &request, Json::Value &response)
+                {
+                    response = this->ethWithdraw(request[0u].asString());
+                }
+                inline virtual void ethSendProof(const Json::Value &request, Json::Value &response)
+                {
+                    response = this->ethSendProof(request[0u].asString());
+                }
+                inline virtual void ethSendHeader(const Json::Value &request, Json::Value &response)
+                {
+                    response = this->ethSendHeader(request[0u].asString());
+                }
+
                 virtual bool appendBlock2FIFO(const std::string& param1) = 0;
                 virtual bool deposit(const Json::Value& param1, const std::string& param2) = 0;
                 virtual bool distributeSettlementPkg(const std::string& param1) = 0;
                 virtual bool ackSettlementPkg(const std::string& param1) = 0;
+
+                virtual bool ethSendOrder(const std::string& param1) = 0;
+                virtual bool ethWithdraw(const std::string& param1) = 0;
+                virtual bool ethSendProof(const std::string& param1) = 0;
+                virtual bool ethSendHeader(const std::string& param1) = 0;
+
         };
 
     }

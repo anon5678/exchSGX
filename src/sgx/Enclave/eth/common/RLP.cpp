@@ -38,6 +38,49 @@ Bytes RLP::encodeLength(int L, int offset) {
     return Bytes(BL.data.size() + offset + 55) + BL;
 }
 
+std::vector<Bytes> RLP::decodeList(Bytes input) {
+    int pos = 0, len = decodeLength(input, pos);
+    int end = len + pos;
+    std::vector<Bytes> ret;
+    int pre = pos;
+    while (pos < end) {
+        int now = decodeLength(input, pos);
+        ret.push_back(input.substr(pre, pos + now));
+        pos += now;
+        pre = pos;
+    }
+    return ret;
+}
+
+Bytes RLP::remove_length(Bytes input) {
+    int pos = 0, len = decodeLength(input, pos);
+    return input.substr(pos, pos + len);
+}
+
+int RLP::decodeLength(Bytes input, int& pos) {
+    int len, offset;
+    if (input.data[pos] < offset_list) {
+        if (input.data[pos] < 128) {
+            return 1;
+        }
+        offset = offset_string;
+    }
+    else {
+        offset = offset_list;
+    }
+    if (input.data[pos] <= offset + 55) {
+        len = input.data[pos++] - offset;
+    }
+    else {
+        int now = input.data[pos++] - offset - 55;
+        len = 0;
+        for (int i = 0; i < now; i++) {
+            len = len * 256 + input.data[pos++];
+        }
+    }
+    return len;
+}
+
 ValueProof RLP::decodeValueProof(Bytes input) {
     Keccak keccak;
     RLP rlp;
@@ -86,34 +129,6 @@ Account RLP::decodeAccount(Bytes input) {
     ethash_h256_t rootHash = Transform::bytesToHash(remove_length(elements[2]));
     ethash_h256_t codeHash = Transform::bytesToHash(remove_length(elements[3]));
     return Account(nonce, balance, rootHash, codeHash);
-}
-
-Header RLP::decodeHeader(Bytes input) {
-    std::vector<Bytes> elements = decodeList(input);
-    ethash_h256_t parentHash = Transform::bytesToHash(remove_length(elements[0]));
-    ethash_h256_t uncleHash = Transform::bytesToHash(remove_length(elements[1]));
-    Address coinBase = Transform::bytesToAddr(remove_length(elements[2]));
-    ethash_h256_t stateRoot = Transform::bytesToHash(remove_length(elements[3]));
-    ethash_h256_t txRoot = Transform::bytesToHash(remove_length(elements[4]));
-    ethash_h256_t receiptRoot = Transform::bytesToHash(remove_length(elements[5]));
-    Bytes logsBloom = remove_length(elements[6]);
-    uint256_t difficulty = Transform::bytesToUint256(remove_length(elements[7]));
-    uint256_t number = Transform::bytesToUint256(remove_length(elements[8]));
-    uint256_t gasLimit = Transform::bytesToUint256(remove_length(elements[9]));
-    uint256_t gasUsed = Transform::bytesToUint256(remove_length(elements[10]));
-    uint256_t timestamp = Transform::bytesToUint256(remove_length(elements[11]));
-    Bytes extraData = remove_length(elements[12]);
-    ethash_h256_t mixHash = Transform::bytesToHash(remove_length(elements[13]));
-    uint64_t nonce = Transform::bytesToUint64(remove_length(elements[14]));
-
-    return Header(parentHash, uncleHash,
-                  coinBase,
-                  stateRoot, txRoot, receiptRoot,
-                  logsBloom,
-                  difficulty, number, gasLimit, gasUsed, timestamp,
-                  extraData,
-                  mixHash,
-                  nonce);
 }
 
 std::pair<uint256_t, ReceiptProof> RLP::decodeReceiptProof(Bytes input) {
@@ -227,45 +242,59 @@ OrderType RLP::decodeOrderType(Bytes input) {
     }
 }
 
-std::vector<Bytes> RLP::decodeList(Bytes input) {
-    int pos = 0, len = decodeLength(input, pos);
-    int end = len + pos;
-    std::vector<Bytes> ret;
-    int pre = pos;
-    while (pos < end) {
-        int now = decodeLength(input, pos);
-        ret.push_back(input.substr(pre, pos + now));
-        pos += now;
-        pre = pos;
-    }
-    return ret;
+Withdraw RLP::decodeWithdraw(Bytes input) {
+    std::vector<Bytes> elements = decodeList(input);
+
+    UserAccount userAccount = decodeUserAccount(elements[0]);
+    VolumeType volume = Transform::bytesToUint256(remove_length(elements[1]));
+
+    return Withdraw(userAccount, volume);
 }
 
-Bytes RLP::remove_length(Bytes input) {
-    int pos = 0, len = decodeLength(input, pos);
-    return input.substr(pos, pos + len);
+UserAccount RLP::decodeUserAccount(Bytes input) {
+    std::vector<Bytes> elements = decodeList(input);
+
+    CoinType coinType = decodeCoinType(elements[0]);
+    Address address = Transform::bytesToAddr(remove_length(elements[1]));
+
+    return UserAccount(coinType, address);
 }
 
-int RLP::decodeLength(Bytes input, int& pos) {
-    int len, offset;
-    if (input.data[pos] < offset_list) {
-        if (input.data[pos] < 128) {
-            return 1;
-        }
-        offset = offset_string;
+std::vector<Header> RLP::decodeHeaders(Bytes input) {
+    std::vector<Header> headers;
+
+    std::vector<Bytes> elements = decodeList(input);
+    for (int i = 0; i < elements.size(); i++) {
+        headers.push_back(decodeHeader(elements[i]));
     }
-    else {
-        offset = offset_list;
-    }
-    if (input.data[pos] <= offset + 55) {
-        len = input.data[pos++] - offset;
-    }
-    else {
-        int now = input.data[pos++] - offset - 55;
-        len = 0;
-        for (int i = 0; i < now; i++) {
-            len = len * 256 + input.data[pos++];
-        }
-    }
-    return len;
+
+    return headers;
+}
+
+Header RLP::decodeHeader(Bytes input) {
+    std::vector<Bytes> elements = decodeList(input);
+    ethash_h256_t parentHash = Transform::bytesToHash(remove_length(elements[0]));
+    ethash_h256_t uncleHash = Transform::bytesToHash(remove_length(elements[1]));
+    Address coinBase = Transform::bytesToAddr(remove_length(elements[2]));
+    ethash_h256_t stateRoot = Transform::bytesToHash(remove_length(elements[3]));
+    ethash_h256_t txRoot = Transform::bytesToHash(remove_length(elements[4]));
+    ethash_h256_t receiptRoot = Transform::bytesToHash(remove_length(elements[5]));
+    Bytes logsBloom = remove_length(elements[6]);
+    uint256_t difficulty = Transform::bytesToUint256(remove_length(elements[7]));
+    uint256_t number = Transform::bytesToUint256(remove_length(elements[8]));
+    uint256_t gasLimit = Transform::bytesToUint256(remove_length(elements[9]));
+    uint256_t gasUsed = Transform::bytesToUint256(remove_length(elements[10]));
+    uint256_t timestamp = Transform::bytesToUint256(remove_length(elements[11]));
+    Bytes extraData = remove_length(elements[12]);
+    ethash_h256_t mixHash = Transform::bytesToHash(remove_length(elements[13]));
+    uint64_t nonce = Transform::bytesToUint64(remove_length(elements[14]));
+
+    return Header(parentHash, uncleHash,
+                  coinBase,
+                  stateRoot, txRoot, receiptRoot,
+                  logsBloom,
+                  difficulty, number, gasLimit, gasUsed, timestamp,
+                  extraData,
+                  mixHash,
+                  nonce);
 }

@@ -153,3 +153,43 @@ bool EnclaveRPC::ackSettlementPkg(const std::string &ack) {
 
   return true;
 }
+
+bool EnclaveRPC::ethSendOrder(const std::string &order) {
+  int ret;
+  sgx_status_t st = eth_receiveOrder(eid, &ret, order.c_str());
+  if (st != SGX_SUCCESS || ret != 0) {
+    LOG4CXX_INFO(logger, "cannot append");
+    return false;
+  }
+  return true;
+}
+
+bool EnclaveRPC::ethWithdraw(const std::string &withdraw) {
+  int ret;
+  sgx_status_t st = eth_receiveWithdraw(eid, &ret, withdraw.c_str());
+  if (st != SGX_SUCCESS || ret != 0) {
+    LOG4CXX_INFO(logger, "cannot append");
+    return false;
+  }
+  return true;
+}
+
+bool EnclaveRPC::ethSendProof(const std::string &proof) {
+  int ret;
+  sgx_status_t st = eth_proofsVerify(eid, &ret, proof.c_str());
+  if (st != SGX_SUCCESS || ret != 0) {
+    LOG4CXX_INFO(logger, "cannot append");
+    return false;
+  }
+  return true;
+}
+
+bool EnclaveRPC::ethSendHeader(const std::string &header) {
+  int ret;
+  sgx_status_t st = eth_receiveHeaders(eid, &ret, header.c_str());
+  if (st != SGX_SUCCESS || ret != 0) {
+    LOG4CXX_INFO(logger, "cannot append");
+    return false;
+  }
+  return true;
+}

@@ -22,9 +22,12 @@ public:
     static Bytes encodeList(std::vector<Bytes>);
     static Bytes encodeLength(int, int);
 
+    static std::vector<Bytes> decodeList(Bytes);
+    static Bytes remove_length(Bytes);
+    static int decodeLength(Bytes, int&);
+
     static ValueProof decodeValueProof(Bytes);
     static Account decodeAccount(Bytes);
-    static Header decodeHeader(Bytes);
     static std::pair<uint256_t, ReceiptProof> decodeReceiptProof(Bytes);
     static bool decodeReceipt(Bytes);
     static std::pair<uint256_t, std::pair<ValueProof, ValueProof> > decodeDepositProof(Bytes);
@@ -35,9 +38,11 @@ public:
     static CoinType decodeCoinType(Bytes);
     static OrderType decodeOrderType(Bytes);
 
-    static std::vector<Bytes> decodeList(Bytes);
-    static Bytes remove_length(Bytes);
-    static int decodeLength(Bytes, int&);
+    static Withdraw decodeWithdraw(Bytes);
+    static UserAccount decodeUserAccount(Bytes);
+
+    static std::vector<Header> decodeHeaders(Bytes);
+    static Header decodeHeader(Bytes);
 };
 
 #endif //MERKLE_PARTRICIA_TREE_RLP_H

@@ -8,7 +8,6 @@
 #include <deque>
 
 #include "Header.h"
-#include "uint256_t.h"
 
 class Queue {
 public:
@@ -21,7 +20,7 @@ public:
     Header getHeader(uint256_t);
     ethash_h256_t getReceiptRoot(uint256_t);
     ethash_h256_t getStateRoot(uint256_t);
-    uint256_t getNewestBlockNumber();
+    uint256_t getNewestBlockNumber();//newest confirmed blockNumber
 };
 
 

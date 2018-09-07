@@ -55,6 +55,47 @@ namespace exch {
                     else
                         throw jsonrpc::JsonRpcException(jsonrpc::Errors::ERROR_CLIENT_INVALID_RESPONSE, result.toStyledString());
                 }
+
+                bool ethSendOrder(const std::string& param1) throw (jsonrpc::JsonRpcException)
+                {
+                    Json::Value p;
+                    p.append(param1);
+                    Json::Value result = this->CallMethod("ethSendOrder",p);
+                    if (result.isBool())
+                        return result.asBool();
+                    else
+                        throw jsonrpc::JsonRpcException(jsonrpc::Errors::ERROR_CLIENT_INVALID_RESPONSE, result.toStyledString());
+                }
+                bool ethWithdraw(const std::string& param1) throw (jsonrpc::JsonRpcException)
+                {
+                    Json::Value p;
+                    p.append(param1);
+                    Json::Value result = this->CallMethod("ethWithdraw",p);
+                    if (result.isBool())
+                        return result.asBool();
+                    else
+                        throw jsonrpc::JsonRpcException(jsonrpc::Errors::ERROR_CLIENT_INVALID_RESPONSE, result.toStyledString());
+                }
+                bool ethSendProof(const std::string& param1) throw (jsonrpc::JsonRpcException)
+                {
+                    Json::Value p;
+                    p.append(param1);
+                    Json::Value result = this->CallMethod("ethSendProof",p);
+                    if (result.isBool())
+                        return result.asBool();
+                    else
+                        throw jsonrpc::JsonRpcException(jsonrpc::Errors::ERROR_CLIENT_INVALID_RESPONSE, result.toStyledString());
+                }
+                bool ethSendHeader(const std::string& param1) throw (jsonrpc::JsonRpcException)
+                {
+                    Json::Value p;
+                    p.append(param1);
+                    Json::Value result = this->CallMethod("ethSendHeader",p);
+                    if (result.isBool())
+                        return result.asBool();
+                    else
+                        throw jsonrpc::JsonRpcException(jsonrpc::Errors::ERROR_CLIENT_INVALID_RESPONSE, result.toStyledString());
+                }
         };
 
     }

@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "../libethash/ethash.h"
 #include "uint256_t.h"
 #include "Bytes.h"
 

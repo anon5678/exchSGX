@@ -1,30 +1,23 @@
 
 #include "Server.h"
 
-bool Server::checkBalance(Address userAddr, Address tokenAddr, uint256_t volume) {
-    std::pair<Address, Address> pair = std::make_pair(userAddr, tokenAddr);
-    return accountSys.deposit[pair] + accountSys.sign[pair] * accountSys.delta[pair] >= 0 && queue.getNewestBlockNumber() <= accountSys.expire[pair] - SAFE_TIME;
-}
-
 bool Server::checkBalance(Order order) {
-    if (order.orderType == SELL) {
-        if (order.coinPair.first.primeCoinType == ETH) {
-            if (!checkBalance(order.user.addr[ETH], order.coinPair.first.address, order.volume)) {
-                return false;
-            }
-        }
-    }
-    else {
-        if (order.coinPair.second.primeCoinType == ETH) {
-            if (!checkBalance(order.user.addr[ETH], order.coinPair.second.address, order.volume)) {
-                return false;
-            }
-        }
-    }
-    //TBD : BTC and LTC
+    CoinType coinType = order.orderType == SELL ? order.coinPair.first : order.coinPair.second;
+    Address userAddress = order.orderType == SELL ?
+                          order.user.addr[order.coinPair.first.primeCoinType] :
+                          order.user.addr[order.coinPair.second.primeCoinType];
+    UserAccount userAccount = UserAccount(coinType, userAddress);
+    return accountSys.expire[userAccount] - SAFE_TIME >= queue.getNewestBlockNumber() &&
+           accountSys.checkBalance(userAccount, order.volume);
 }
 
-void Server::receiveOrder(Order order) {
+void Server::receiveOrder(const char* _st) {
+
+    std::string st(_st);
+    Bytes bytes = Transform::hexStringToBytes(st);
+
+    Order order = RLP::decodeOrder(bytes);
+
     CoinPair coinPair = order.coinPair;
     OrderBook &orderBook = orderBooks[coinPair];
     //check lock and lock corresponding orderbook
@@ -34,7 +27,10 @@ void Server::receiveOrder(Order order) {
 
     //SELL coinA -> coinB
     if (order.orderType == SELL) {
-        if (!checkBalance(order)) return;
+        if (!checkBalance(order)) {
+            LL_NOTICE("Invalid Sell Order!");
+            return;
+        }
         while (!orderBook.buyBook.empty()) {
             if (volume <= 0) {
                 break;
@@ -52,6 +48,8 @@ void Server::receiveOrder(Order order) {
                 CoinType first = coinPair.first, second = coinPair.second;
                 pools[first].add(Tx(seller.addr[first.primeCoinType], buyer.addr[first.primeCoinType], txVolume));
                 pools[second].add(Tx(buyer.addr[second.primeCoinType], seller.addr[second.primeCoinType], (buyPrice * txVolume).round()));
+                accountSys.trade(UserAccount(first, seller.addr[first.primeCoinType]), UserAccount(first, buyer.addr[first.primeCoinType]), txVolume);
+                accountSys.trade(UserAccount(second, buyer.addr[second.primeCoinType]), UserAccount(second, seller.addr[second.primeCoinType]), (buyPrice * txVolume).round());
 
                 if (volume < buyVolume) {
                     buyOrder.volume -= txVolume;
@@ -69,9 +67,12 @@ void Server::receiveOrder(Order order) {
     }
     //BUY coinB -> coinA
     else {
-        if (!checkBalance(order)) return;
+        if (!checkBalance(order)) {
+            return;
+        }
         while (!orderBook.sellBook.empty()) {
             if (volume <= 0) {
+                LL_NOTICE("Invalid Buy Order!");
                 break;
             }
             if (orderBook.sellBookGetMinPrice() <= price) {
@@ -87,6 +88,9 @@ void Server::receiveOrder(Order order) {
                 CoinType first = coinPair.first, second = coinPair.second;
                 pools[first].add(Tx(seller.addr[first.primeCoinType], buyer.addr[first.primeCoinType], txVolume));
                 pools[second].add(Tx(buyer.addr[second.primeCoinType], seller.addr[second.primeCoinType], (sellPrice * txVolume).round()));
+                accountSys.trade(UserAccount(first, seller.addr[first.primeCoinType]), UserAccount(first, buyer.addr[first.primeCoinType]), txVolume);
+                accountSys.trade(UserAccount(second, buyer.addr[second.primeCoinType]), UserAccount(second, seller.addr[second.primeCoinType]), (sellPrice * txVolume).round());
+
                 if (volume < sellVolume) {
                     sellOrder.volume -= txVolume;
                     orderBook.sellBook.insert(sellOrder);
@@ -103,6 +107,29 @@ void Server::receiveOrder(Order order) {
         }
     }
     //unlock corresponding orderbook
+}
+
+void Server::receiveWithdraw(const char * _st) {
+    std::string st(_st);
+    Bytes bytes = Transform::hexStringToBytes(st);
+
+    Withdraw withdraw = RLP::decodeWithdraw(bytes);
+
+    UserAccount userAccount = withdraw.userAccount;
+    VolumeType volume = withdraw.volume;
+
+    if (queue.getNewestBlockNumber() <= accountSys.expire[userAccount]) {
+        LL_CRITICAL("Too Early to Withdraw!");
+        return;
+    }
+
+    if (accountSys.checkBalance(userAccount, volume)) {
+        accountSys.minus(userAccount, volume);
+    }
+    else {
+        LL_CRITICAL("Not Enough Balance!");
+        return;
+    }
 }
 
 uint256_t Server::ValueProofVerify(ValueProof valueProof, ethash_h256_t accountRootHash) {
@@ -175,19 +202,29 @@ void Server::proofsVerify(const char* _st) {
         return;
     }
 
-    std::pair<Address, Address> pair = std::make_pair(userAddr, tokenAddr);
+    UserAccount useraccount = UserAccount(CoinType(ETH, tokenAddr), userAddr);
 
-    if (expiration <= accountSys.expire[pair]) {
+    if (expiration <= accountSys.expire[useraccount]) {
         LL_CRITICAL("Non-increasing Expiration!");
         return;
     }
 
-    if (!accountSys.sign.count(pair)) {
-        accountSys.sign[pair] = 1;
-        accountSys.delta[pair] = 0;
+    if (!accountSys.sign.count(useraccount)) {
+        accountSys.sign[useraccount] = 1;
+        accountSys.delta[useraccount] = 0;
     }
-    accountSys.deposit[pair] = balance;
-    accountSys.expire[pair] = expiration;
+    accountSys.deposit[useraccount] = balance;
+    accountSys.expire[useraccount] = expiration;
 
     LL_NOTICE("Deposit Update Successfully!");
+}
+
+void Server::receiveHeaders(const char * _st) {
+    std::string st(_st);
+    Bytes bytes = Transform::hexStringToBytes(st);
+
+    std::vector<Header> headers = RLP::decodeHeaders(bytes);
+    for (int i = 0; i < headers.size(); i++) {
+        queue.addNewHeader(headers[i]);
+    }
 }

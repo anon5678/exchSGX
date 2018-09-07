@@ -44,5 +44,5 @@ ethash_h256_t Queue::getStateRoot(uint256_t blockNumber) {
 }
 
 uint256_t Queue::getNewestBlockNumber() {
-    return headers.back().number;
+    return headers.back().number - COMFIRM_TIME;
 }

@@ -16,4 +16,6 @@ public:
     std::vector<Tx> pool;
 
     void add(Tx);
+
+    //clear stale orders regularly
 };

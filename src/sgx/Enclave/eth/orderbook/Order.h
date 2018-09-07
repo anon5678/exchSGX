@@ -29,7 +29,18 @@ public:
     CoinType(PrimeCoinType primeCoinType, Address address): primeCoinType(primeCoinType), address(address) {}
 
     bool operator< (const CoinType & rhs) const {
-        return address < rhs.address;
+        if (primeCoinType == rhs.primeCoinType) {
+            return address < rhs.address;
+        }
+        return primeCoinType < rhs.primeCoinType;
+    }
+
+    bool operator== (const CoinType & rhs) const{
+        return primeCoinType == rhs.primeCoinType && address == rhs.address;
+    }
+
+    bool operator!= (const CoinType & rhs) const{
+        return primeCoinType != rhs.primeCoinType || address != rhs.address;
     }
 };
 /*
@@ -51,6 +62,9 @@ public:
 
 class Order {
 public:
+    uint256_t orderCounter = 0;
+
+    uint256_t orderNumber;//0-based &
     User user;
     CoinPair coinPair;
     OrderType orderType;
@@ -58,9 +72,37 @@ public:
     PriceType price;
 
     Order(User user, CoinPair coinPair, OrderType orderType, VolumeType volume, PriceType price):
-        user(user), coinPair(coinPair), orderType(orderType), volume(volume), price(price) {}
+        user(user), coinPair(coinPair), orderType(orderType), volume(volume), price(price) {
+        orderNumber = orderCounter++;
+        //orderNumber recycle
+    }
 
     bool operator< (const Order & rhs) const {
         return price < rhs.price;
     }
+};
+
+class UserAccount{//in accountSys
+public:
+    CoinType coinType;
+    Address address;
+
+    UserAccount(CoinType coinType, Address address):
+            coinType(coinType), address(address) {}
+
+    bool operator< (const UserAccount & rhs) const {
+        if (coinType != rhs.coinType) {
+            return coinType < rhs.coinType;
+        }
+        return address < rhs.address;
+    }
+};
+
+class Withdraw{
+public:
+    UserAccount userAccount;
+    VolumeType volume;
+
+    Withdraw(UserAccount userAccount, VolumeType volume):
+            userAccount(userAccount), volume(volume) {}
 };

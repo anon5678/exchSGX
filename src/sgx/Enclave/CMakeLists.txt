@@ -26,6 +26,7 @@ set(ETH_SRC_FILES
 	eth/common/Account.h
         eth/common/AccountProof.h
         eth/common/AccountSys.h
+		eth/common/AccountSys.cpp
         eth/common/Address.cpp
         eth/common/Address.h
         eth/common/Bytes.cpp
@@ -98,11 +99,10 @@ set(SOURCE_FILES
         state_blockfifo.cpp
         state_balance.cpp
         state_fairness.cpp
-		state_eth_queue.cpp
-        state_eth_merkle.cpp
-		state_eth_send_tx.cpp
 
-        # bitcoin
+		state_eth.cpp
+
+		# bitcoin
         ${BITCOIN_SRC_FILES}
 
 	# ethereum

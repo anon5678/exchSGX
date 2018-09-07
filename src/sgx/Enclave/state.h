@@ -107,11 +107,15 @@ int provision_rsa_id(const unsigned char *secret_key, size_t secret_key_len, con
 
 int query_rsa_pubkey(unsigned char *o_pubkey, size_t cap_pubkey, char *o_cert_pem, size_t cap_cert_pem);
 
-int ecall_eth_add_new_header(const char *st);
-//int eth_balance_proof_verify(const char *proof);
-//int eth_receipt_proof_verify(const char *proof);
+/*int ecall_eth_add_new_header(const char *st);
+int eth_balance_proof_verify(const char *proof);
+int eth_receipt_proof_verify(const char *proof);
+void eth_send_tx(const char *content);*/
 
-//void eth_send_tx(const char *content);
+int eth_receiveOrder(const char* st);
+int eth_receiveWithdraw(const char* st);
+int eth_proofsVerify(const char* st);
+int eth_receiveHeaders(const char* st);
 
 
 #ifdef __cplusplus

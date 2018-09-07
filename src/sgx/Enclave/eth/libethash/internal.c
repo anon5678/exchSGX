@@ -33,7 +33,7 @@
 #include "data_sizes.h"
 #include "io.h"
 
-//#include "../../log.h"
+#include "../../log.h"
 
 #ifdef WITH_CRYPTOPP
 

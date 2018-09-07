@@ -12,9 +12,7 @@
 #include "../common/AccountSys.h"
 #include "../common/Queue.h"
 
-#include "../common/uint256_t.h"
 #include "../common/Transform.h"
-#include "../libethash/ethash.h"
 #include "../common/Utils.h"
 
 class Server {
@@ -28,8 +26,12 @@ public:
 
     bool checkBalance(Address, Address, uint256_t);
     bool checkBalance(Order);
-    void receiveOrder(Order);//input : string
+    void receiveOrder(const char*);
+
+    void receiveWithdraw(const char*);
 
     uint256_t ValueProofVerify(ValueProof, ethash_h256_t);
     void proofsVerify(const char*);
+
+    void receiveHeaders(const char*);
 };

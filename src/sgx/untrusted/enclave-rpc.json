@@ -35,5 +35,34 @@
       "ack"
     ],
     "returns": true
+  },
+
+  {
+    "name": "ethSendOrder",
+    "params": [
+      "order"
+    ],
+    "returns": true
+  },
+  {
+    "name": "ethWithdraw",
+    "params": [
+      "withdraw"
+    ],
+    "returns": true
+  },
+  {
+    "name": "ethSendProof",
+    "params": [
+      "proof"
+    ],
+    "returns": true
+  },
+  {
+    "name": "ethSendHeader",
+    "params": [
+      "header"
+    ],
+    "returns": true
   }
 ]

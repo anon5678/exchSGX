@@ -6,12 +6,22 @@
 
 #include "uint256_t.h"
 #include "Address.h"
+#include "RLP.h"
+
+typedef uint256_t TimeStamp;
 
 class AccountSys {
 public:
-    //(userAddr, tokenAddr)
-    std::map<std::pair<Address, Address>, uint256_t> deposit;
-    std::map<std::pair<Address, Address>, int> sign;//either 1 or -1, default is 1
-    std::map<std::pair<Address, Address>, uint256_t> delta;
-    std::map<std::pair<Address, Address>, uint256_t> expire;
+    //(userAddr, coinType)
+    std::map<UserAccount, VolumeType> deposit;
+    std::map<UserAccount, int> sign;//either 1 or -1, default is 1
+    std::map<UserAccount, VolumeType> delta;
+    std::map<UserAccount, TimeStamp> expire;
+
+    void trade(UserAccount, UserAccount, VolumeType);
+
+    void minus(UserAccount, VolumeType);
+    void add(UserAccount, VolumeType);
+
+    bool checkBalance(UserAccount, VolumeType);
 };
