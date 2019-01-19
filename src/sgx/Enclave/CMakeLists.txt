@@ -59,6 +59,7 @@ set(ENCLAVE_SOURCE_FILES
         pprint.cpp
         bytestream.cpp
         utils.cpp
+        bitcoin_helpers.cpp
         ../common/utils.cpp
         ../common/json11.cpp
         ../common/base64.cpp
@@ -84,8 +85,7 @@ set(ENCLAVE_SOURCE_FILES
         nacl/randombytes.c
         nacl/crypto_box/wrapper-keypair.cpp
         nacl/crypto_box/wrapper-box.cpp
-        nacl/crypto_box/wrapper-open.cpp
-        )
+        nacl/crypto_box/wrapper-open.cpp)
 
 add_library(enclave SHARED ${ENCLAVE_SOURCE_FILES})
 

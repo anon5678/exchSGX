@@ -4,6 +4,8 @@
 #include "bitcoin/crypto/sha256.h"
 #include "bitcoin/hash.h"
 
+#include "bitcoin_helpers.h"
+
 #include "../common/merkle_data.h"
 #include "../common/base64.hxx"
 #include "../common/utils.h"
@@ -212,38 +214,27 @@ int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit) {
 #include "script/sign.h"
 #include "amount.h"
 
+//! return true if redeemScript is a valid redeem script for scriptPubkey.
+//! It first check if scriptPubkey is of the right format: OP_HASH160 <HASH> OP_EQUAL
+//! It then checks hash(redeemScript) == HASH
+//! \param redeemScript
+//! \param scriptPubKey
+//! \return true or else
 bool IsValidRedeemScript(const CScript &redeemScript, const CScript &scriptPubKey) {
-  std::vector<unsigned char> redeemScript_bytes = ToByteVector(redeemScript);
-  unsigned char hash_redeemScript[20];
-  hash160(redeemScript_bytes.data(), redeemScript_bytes.size(), hash_redeemScript);
-  std::vector<unsigned char> hash_redeemScript_bytes(hash_redeemScript, hash_redeemScript + 20);
+  auto redeemScriptHash = Hash160(redeemScript.begin(), redeemScript.end());
 
-  LL_NOTICE("redeemScriptHash=%s", HexStr(hash_redeemScript_bytes).c_str());
+  LL_DEBUG("redeemScriptHash=%s", redeemScriptHash.ToString().c_str());
 
-  std::vector<unsigned char> scriptHash;
+  vector<unsigned char> scriptHash;
+
   if (!scriptPubKey.IsPayToScriptHash(scriptHash)) {
     LL_CRITICAL("not an P2SH");
     return false;
   } else {
-    for (int i = 0; i < 20; i++) {
-      if (hash_redeemScript[i] != scriptHash[i]) {
-        return false;
-      }
-    }
-    return true;
+    LL_NOTICE("redeemScriptHash=%d", scriptHash.size());
+    return equal(begin(scriptHash), end(scriptHash), begin(redeemScriptHash));
   }
 }
-
-bytes GetScriptHash(const CScript &script) {
-  std::vector<unsigned char> redeemScript_bytes = ToByteVector(script);
-  unsigned char hash_redeemScript[20];
-
-  hash160(redeemScript_bytes.data(), redeemScript_bytes.size(), hash_redeemScript);
-
-  return std::vector < unsigned char > {hash_redeemScript, hash_redeemScript + 20};
-}
-
-const CAmount txFee = 5000; // fee that will be deducted
 
 bool DecodeHexTx(CMutableTransaction &tx, const std::string &strHexTx, bool fTryNoWitness) {
   if (!IsHex(strHexTx))
@@ -280,7 +271,7 @@ CScript generate_redeem_script(const CPubKey user_pubkey, const CPubKey mixer_pu
 
 typedef vector<unsigned char> valtype;
 
-static CScript flatten(const std::vector<valtype> &values) {
+static CScript PushAll(const std::vector<valtype> &values) {
   CScript result;
   for (unsigned i = 0; i < values.size(); i++) {
     const valtype v = values[i];
@@ -341,9 +332,10 @@ CTransaction spendP2SH(const CTransaction &prevTx,
 
   CMutableTransaction unsignedTx;
 
-  CTxIn vin(COutPoint(prevTx.GetHash(), nOut), CScript(), 0);
-  unsignedTx.vin.push_back(vin);
+  // use the input
+  unsignedTx.vin.emplace_back(COutPoint(prevTx.GetHash(), nOut), CScript(), 0);
 
+  // construct the output script
   CScript newOutScriptPubkey;
   newOutScriptPubkey << OP_DUP << OP_HASH160 << ToByteVector(address) << OP_EQUALVERIFY << OP_CHECKSIG;
 
@@ -374,27 +366,30 @@ CTransaction spendP2SH(const CTransaction &prevTx,
   std::vector<valtype> ret;
   ret.push_back(vchSig);
   ret.emplace_back(redeemScript.begin(), redeemScript.end());
-  sigdata.scriptSig = flatten(ret);
+  sigdata.scriptSig = PushAll(ret);
 
   /// Embed the signature into the transaction.
   UpdateTransaction(unsignedTx, 0, sigdata);
-  CTransaction tmpTx(unsignedTx);
 
-  /// Serialized the transaction.
+  // Create an immutable transaction and serialize it
+  CTransaction tmpTx(unsignedTx);
   CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
   ssTx << tmpTx;
-  LL_NOTICE("Final raw tx: %s", HexStr(ssTx).c_str());
-  LL_NOTICE("Interpreted as: %s", tmpTx.ToString().c_str());
 
   ScriptError serror = SCRIPT_ERR_OK;
-  if (!VerifyScript(vin.scriptSig,
+  if (!VerifyScript(tmpTx.vin[0].scriptSig,
                     scriptPubKey,
                     nullptr,
                     STANDARD_SCRIPT_VERIFY_FLAGS,
                     TransactionSignatureChecker(&tmpTx, 0, amount),
                     &serror)) {
     throw runtime_error("Signing failed: " + string(ScriptErrorString(serror)));
+  } else {
+    LL_NOTICE("success.");
   }
+
+  LL_NOTICE("Final raw tx: %s", HexStr(ssTx).c_str());
+  LL_NOTICE("Interpreted as: %s", tmpTx.ToString().c_str());
 
   return tmpTx;
 }
@@ -496,15 +491,13 @@ CTransaction build_settlement_tx(const map<CPubKey, CTransaction> &deposits, con
 #include <utility>
 
 CScript generate_cltv_script(uint32_t cltv, const CKey &privKey) {
-  CScript redeemScript;
-  redeemScript << cltv << OP_CHECKLOCKTIMEVERIFY << OP_DROP << ToByteVector(privKey.GetPubKey()) << OP_CHECKSIG;
-  return redeemScript;
+  return CScript() << cltv << OP_CHECKLOCKTIMEVERIFY << OP_DROP << ToByteVector(privKey.GetPubKey()) << OP_CHECKSIG;
 }
 
 #include "base58.h"
 
 void test_bitcoin_transaction() {
-  /// import a previous input used for testing
+  /// import an UTXO used for testing
 #include "cltvtest"
 
   // goal: construct a tx that spends rawPrevTxP2SH
@@ -522,7 +515,7 @@ void test_bitcoin_transaction() {
     DecodeHexTx(_prevTx, rawPrevTxP2SH, false);
     CTransaction prevTx(_prevTx);
 
-    LL_NOTICE("Succesfully loaded the testing UTXO");
+    LL_NOTICE("Successfully loaded the testing UTXO");
     LL_NOTICE("%s", prevTx.ToString().c_str());
 
     CBitcoinAddress toAddress;

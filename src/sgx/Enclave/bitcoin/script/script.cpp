@@ -212,13 +212,12 @@ bool CScript::IsPayToScriptHash() const
 // needed by https://github.com/BitObscuro/Obscuro/blob/6e327f99a576c555be2ad4a94caeb123e1e00d2b/src/MyEnclave/MyEnclave.cpp
 bool CScript::IsPayToScriptHash(std::vector<unsigned char>& scriptHash) const
 {
-
   // Extra-fast test for pay-to-script-hash CScripts:
   if (this->size() == 23 &&
       (*this)[0] == OP_HASH160 &&
       (*this)[1] == 0x14 &&
       (*this)[22] == OP_EQUAL){
-    scriptHash = std::vector<unsigned char>(this->begin() + 2, this->begin()+22);
+    std::copy(this->begin() + 2, this->begin()+22, std::back_inserter(scriptHash));
     return true;
   }
   return false;

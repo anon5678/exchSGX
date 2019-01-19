@@ -47,7 +47,6 @@ using exch::main::logger;
 sgx_enclave_id_t eid;
 
 int main(int argc, const char *argv[]) {
-  // initialize logging and stuff
   Config conf(argc, argv);
   log4cxx::PropertyConfigurator::configure(LOGGING_CONF);
   exch::interrupt::init_signal_handler();
