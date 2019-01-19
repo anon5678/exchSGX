@@ -25,6 +25,8 @@ using namespace std;
 using exch::fairness::ocalls::logger;
 using exch::rpc::Client;
 
+using boost::placeholders::_1;
+
 namespace aio = boost::asio;
 
 shared_ptr<aio::io_service> io_service;
