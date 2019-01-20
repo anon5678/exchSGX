@@ -12,6 +12,14 @@ CScript generate_simple_cltv_script(const CPubKey& pubkey, uint32_t lockTime);
 CScript generate_deposit_script(const CPubKey& userPubkey, const CPubKey& exchPubkey, uint32_t lockTime);
 CBitcoinAddress create_p2sh_address(const CScript& script);
 bool IsValidRedeemScript(const CScript &redeemScript, const CScript &scriptPubKey);
+bool DecodeHexTx(CMutableTransaction &tx, const std::string &strHexTx, bool fTryNoWitness);
+
+// from "policy/policy.h"
+#include "script/standard.h"
+extern const unsigned int STANDARD_SCRIPT_VERIFY_FLAGS;
+
+// used for testing
+CKey seckey_from_str(const std::string& str);
 
 class OutPoint {
  private:
@@ -24,7 +32,6 @@ class OutPoint {
   uint32_t GetNOut() const { return nOut; }
   const COutPoint ToCOutPoint() const { return COutPoint(GetTxHash(), nOut); }
 };
-
 
 
 #endif //TESSERACT_BITCOIN_HELPERS_H

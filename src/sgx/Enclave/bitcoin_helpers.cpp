@@ -1,9 +1,12 @@
 #include "bitcoin_helpers.h"
 #include "bitcoin/utilstrencodings.h"
+#include "bitcoin/streams.h"
 #include "log.h"
 
 #include "lest/lest.hpp"
 #include <algorithm>
+
+using std::vector;
 
 std::string ScriptToAsmStr(const CScript& script){
   std::string str;
@@ -67,4 +70,55 @@ bool IsValidRedeemScript(const CScript &redeemScript, const CScript &scriptPubKe
   } else {
     return equal(std::begin(scriptHash), std::end(scriptHash), std::begin(redeemScriptHash));
   }
+}
+
+// from "policy/policy.h"
+#include "script/standard.h"
+const unsigned int STANDARD_SCRIPT_VERIFY_FLAGS = MANDATORY_SCRIPT_VERIFY_FLAGS |
+    SCRIPT_VERIFY_DERSIG |
+    SCRIPT_VERIFY_STRICTENC |
+    SCRIPT_VERIFY_MINIMALDATA |
+    SCRIPT_VERIFY_NULLDUMMY |
+    SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS |
+    SCRIPT_VERIFY_CLEANSTACK |
+    SCRIPT_VERIFY_MINIMALIF |
+    SCRIPT_VERIFY_NULLFAIL |
+    SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY |
+    SCRIPT_VERIFY_CHECKSEQUENCEVERIFY |
+    SCRIPT_VERIFY_LOW_S |
+    SCRIPT_VERIFY_WITNESS |
+    SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM |
+    SCRIPT_VERIFY_WITNESS_PUBKEYTYPE;
+
+bool DecodeHexTx(CMutableTransaction &tx, const std::string &strHexTx, bool fTryNoWitness) {
+  if (!IsHex(strHexTx))
+    return false;
+  vector<unsigned char> txData(ParseHex(strHexTx));
+  if (fTryNoWitness) {
+    CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS);
+    try {
+      ssData >> tx;
+      if (ssData.eof()) {
+        return true;
+      }
+    }
+    catch (const std::exception &) {
+      // Fall through.
+    }
+  }
+  CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
+  try {
+    ssData >> tx;
+  }
+  catch (const std::exception &) {
+    return false;
+  }
+  return true;
+}
+
+CKey seckey_from_str(const std::string &str) {
+  auto bytes = Hash(str.begin(), str.end());
+  CKey key;
+  key.Set(bytes.begin(), bytes.end(), true);
+  return key;
 }

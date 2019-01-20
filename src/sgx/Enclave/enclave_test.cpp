@@ -54,6 +54,14 @@ const lest::test specification[] =
           auto redeemScript = params.deposit_redeemScript();
           EXPECT(params.address().ToString() == "2N5hCfJu7Rhm7mcyHoWSj7AqXbcNRvbnayt");
         }},
+
+        {CASE("seckey"){
+          CBitcoinSecret secret(seckey_from_str("exch"));
+          EXPECT(secret.ToString() == "cUCtr5hzrXKXsrpbZBM644kK1G7E3CzXdNPvDWYxt4FF7LxqZ9vz");
+
+          secret.SetKey(seckey_from_str("alice"));
+          EXPECT(secret.ToString() == "cTvTf14w41TZMiKNyxiqCFLitgR7zZW1q8RHxMmMQXAcoQR4A966");
+        }},
     };
 
 int test_securechannel() {
@@ -85,10 +93,13 @@ int test_securechannel() {
 
 using namespace exch::enclave;
 
+#include "settle.h"
+
 extern void test_bitcoin_transaction();
 int enclaveTest() {
   /// state_balance.cpp:504
-  test_bitcoin_transaction();
+//  test_bitcoin_transaction();
+  test_settlement();
   SelectParams(CBaseChainParams::REGTEST);
   ECC_Start();
   lest::run(specification);
