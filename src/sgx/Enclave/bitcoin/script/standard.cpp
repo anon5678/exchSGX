@@ -21,7 +21,7 @@ unsigned nMaxDatacarrierBytes = MAX_OP_RETURN_RELAY;
 
 CScriptID::CScriptID(const CScript& in) : uint160(Hash160(in.begin(), in.end())) {}
 
-#ifndef SGX
+
 const char* GetTxnOutputType(txnouttype t)
 {
     switch (t)
@@ -97,7 +97,7 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, vector<vector<unsi
 
     // Scan templates
     const CScript& script1 = scriptPubKey;
-    BOOST_FOREACH(const PAIRTYPE(txnouttype, CScript)& tplate, mTemplates)
+    for(const PAIRTYPE(txnouttype, CScript)& tplate: mTemplates)
     {
         const CScript& script2 = tplate.second;
         vSolutionsRet.clear();
@@ -249,7 +249,6 @@ bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, vecto
 
     return true;
 }
-#endif // ifndef SGX
 
 namespace
 {

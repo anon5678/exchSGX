@@ -12,7 +12,9 @@
 #include "script/standard.h"
 #include "uint256.h"
 
-#include <boost/foreach.hpp>
+// commented out by Tesseract team
+//#include <boost/foreach.hpp>
+#define BOOST_FOREACH(a, v) for (a: v)
 
 using namespace std;
 
