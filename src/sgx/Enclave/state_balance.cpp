@@ -102,11 +102,11 @@ static void fill_timelock_payment_template(unsigned char *aa, const unsigned cha
   aa[j + 34] = 0x68; // op_endif
 }
 
-static cointype validateDeposit(const unsigned char *tx,
-                                size_t tx_len,
-                                const unsigned char *RTEpubkey,
-                                unsigned long timeout,
-                                const unsigned char *refund) {
+static cointype validate_deposit(const unsigned char *tx,
+                                 size_t tx_len,
+                                 const unsigned char *RTEpubkey,
+                                 unsigned long timeout,
+                                 const unsigned char *refund) {
   if (1 != tx[4])
     return 0;                                      // single input
   int j = 5 + 32 + 4 + 1 + tx[5 + 32 + 4] + 4 + 1; // skip to first output
@@ -178,11 +178,11 @@ int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit) {
       if (calc_root == h->hashMerkleRoot) {
         LL_NOTICE("deposit %s accepted", bin2hex(deposit->merkle_proof->tx, 32).c_str());
 
-        const cointype amount = validateDeposit(tx_raw.data(),
-                                                tx_raw.size(),
-                                                hex2bin(deposit->deposit_recipient_addr).data(),
-                                                deposit->deposit_timeout, // 0x389900,
-                                                hex2bin(deposit->deposit_refund_addr).data());
+        const cointype amount = validate_deposit(tx_raw.data(),
+                                                 tx_raw.size(),
+                                                 hex2bin(deposit->deposit_recipient_addr).data(),
+                                                 deposit->deposit_timeout, // 0x389900,
+                                                 hex2bin(deposit->deposit_refund_addr).data());
         LL_NOTICE("depositing amount: %d", amount);
         state::balanceBook.deposit(deposit->pubkey_pem, amount);
       } else {
@@ -214,12 +214,12 @@ int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit) {
 #include "script/sign.h"
 #include "amount.h"
 
-CTransaction spendP2SH(const OutPoint &outpoint,
-                       CAmount fee,
-                       const CScript &redeemScript,
-                       uint32_t nLockTime,
-                       const CKey &privKey,
-                       const CBitcoinAddress &address) {
+CTransaction redeem_p2sh_utxo(const OutPoint &outpoint,
+                              CAmount fee,
+                              const CScript &redeemScript,
+                              uint32_t nLockTime,
+                              const CKey &privKey,
+                              const CBitcoinAddress &address) {
   const CTxOut &prevOutput = outpoint.GetTxOut();
   const CScript &scriptPubKey = prevOutput.scriptPubKey;
 
@@ -286,10 +286,11 @@ CTransaction spendP2SH(const OutPoint &outpoint,
 #include "bitcoin/base58.h"
 
 void test_bitcoin_transaction() {
-  /// import an UTXO used for testing
-#include "cltvtest"
+  const string sgxPrivKey = "cURgah32X7tNqK9NCkpXVVd4bbocWm3UjgwyAGpdVfxicAZynLs5";
+  const uint32_t cltvTimeout = 1547863557;
+  const int nIn = 1;
+  const string rawPrevTxP2SH = "0200000001ed25830ab4b42a747687308d581401b0c2daa1380acc76f8c0ec03877443acca0000000048473044022030f7f476e0331e98b5b44ccdbb6846a64dc8f07ae1210f6e52be4164fb6490f90220031fcaed63aaf14ee9fe55fb54909aa9767c889ae809df5d5e5ac76fac3a593401feffffff0264196bee0000000017a914118dce868159ca1bb0e93d0140d19403d7d0af5e8700ca9a3b0000000017a914f62f0c57f7a06341c87d7fa3bc7990c25203932e8775000000";
 
-  // goal: construct a tx that spends rawPrevTxP2SH
   SelectParams(CBaseChainParams::REGTEST);
   ECC_Start();
 
@@ -315,7 +316,7 @@ void test_bitcoin_transaction() {
     auto script = generate_simple_cltv_script(sgxPubkey, cltvTimeout);
     LL_NOTICE("Redeem script (hex) is %s", HexStr(script).c_str());
 
-    CTransaction t = spendP2SH(
+    CTransaction t = redeem_p2sh_utxo(
         OutPoint(prevTx, nIn),
         static_cast<CAmount>(1980),
         script,

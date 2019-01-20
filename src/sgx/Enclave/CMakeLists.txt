@@ -50,6 +50,7 @@ set(BITCOIN_SRC_FILES
         bitcoin/script/script_error.cpp
         bitcoin/script/interpreter.cpp
         bitcoin/script/script.cpp
+        bitcoin/script/sign.cpp
         bitcoin/script/standard.cpp)
 
 set(ENCLAVE_SOURCE_FILES

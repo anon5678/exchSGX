@@ -98,7 +98,7 @@ using namespace exch::enclave;
 extern void test_bitcoin_transaction();
 int enclaveTest() {
   /// state_balance.cpp:504
-//  test_bitcoin_transaction();
+  test_bitcoin_transaction();
   test_settlement();
   SelectParams(CBaseChainParams::REGTEST);
   ECC_Start();
