@@ -15,7 +15,7 @@
 #include <string>
 #include <cstddef>
 
-#include "utils.h"
+#include "../utils.h"
 
 #ifdef __clang__
 # pragma clang diagnostic ignored "-Wunused-value"
@@ -202,6 +202,8 @@ int run(test const (&specification)[N]) {
 
   if (failures > 0) {
     printf_std("%d out of %d %s failed\n", failures, N, pluralise("test", N).c_str());
+  } else {
+    printf_std("All (%d) tests passed\n", N);
   }
 
   return failures;

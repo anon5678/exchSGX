@@ -49,7 +49,8 @@ set(BITCOIN_SRC_FILES
         bitcoin/crypto/hmac_sha512.cpp
         bitcoin/script/script_error.cpp
         bitcoin/script/interpreter.cpp
-        bitcoin/script/script.cpp)
+        bitcoin/script/script.cpp
+        bitcoin/script/standard.cpp)
 
 set(ENCLAVE_SOURCE_FILES
         # basic stuff
@@ -72,6 +73,7 @@ set(ENCLAVE_SOURCE_FILES
         # enclave state
         blockfifo.hpp
         balancebook.hpp
+        settle.cpp
         state.cpp
         state_blockfifo.cpp
         state_balance.cpp
