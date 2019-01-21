@@ -46,13 +46,14 @@ const lest::test specification[] =
 
         {CASE("depositparam class") {
           const uint32_t cltvTimeout = 1000000;
-          CBitcoinSecret user_secret, exch_secret;
-          user_secret.SetString("cTvTf14w41TZMiKNyxiqCFLitgR7zZW1q8RHxMmMQXAcoQR4A966");
-          exch_secret.SetString("cUCtr5hzrXKXsrpbZBM644kK1G7E3CzXdNPvDWYxt4FF7LxqZ9vz");
-
+          CBitcoinSecret user_secret(seckey_from_str("alice")), exch_secret(seckey_from_str("exch"));
           DepositParams params(user_secret.GetKey().GetPubKey(), exch_secret.GetKey().GetPubKey(), cltvTimeout);
           auto redeemScript = params.deposit_redeemScript();
-          EXPECT(params.address().ToString() == "2N5hCfJu7Rhm7mcyHoWSj7AqXbcNRvbnayt");
+          EXPECT(params.address().ToString() == "2NAqCFC8FazvtUzGv23reB9kQyR9JBW48PB");
+
+          auto scriptPubkey = params.scriptPubkey();
+          EXPECT(HexStr(scriptPubkey.begin(), scriptPubkey.end()) == "a914c0e6d37a01c9999d88b4dc252a39e571bea1603a87");
+          EXPECT(HexStr(redeemScript.begin(), redeemScript.end()) == "6376a914966f83de4b1901794baec6a42322f8080db166cc88ac670340420fb17576a9146624a4de9b4973cba3b991bc26cd1c8f171a4e3d88ac68");
         }},
 
         {CASE("seckey"){
@@ -95,10 +96,9 @@ using namespace exch::enclave;
 
 #include "settle.h"
 
-extern void test_bitcoin_transaction();
+extern bool test_simple_cltv_redeem();
 int enclaveTest() {
-  /// state_balance.cpp:504
-  test_bitcoin_transaction();
+  test_simple_cltv_redeem();
   test_settlement();
   SelectParams(CBaseChainParams::REGTEST);
   ECC_Start();

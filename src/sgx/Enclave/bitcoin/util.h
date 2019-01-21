@@ -14,6 +14,9 @@
 #include "config/bitcoin-config.h"
 #endif
 
+#ifdef SGX
+#include "log.h"
+#else
 #include "compat.h"
 #include "tinyformat.h"
 #include "utiltime.h"
@@ -235,4 +238,5 @@ template <typename Callable> void TraceThread(const char* name,  Callable func)
 
 std::string CopyrightHolders(const std::string& strPrefix);
 
+#endif // SGX
 #endif // BITCOIN_UTIL_H

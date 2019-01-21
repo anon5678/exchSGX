@@ -1,17 +1,29 @@
-#include "state.h"
-#include "pprint.h"
-#include "log.h"
 #include "bitcoin/crypto/sha256.h"
-#include "bitcoin/hash.h"
-
-#include "bitcoin_helpers.h"
+#include "log.h"
+#include "pprint.h"
+#include "state.h"
 
 #include "../common/merkle_data.h"
+#include "amount.h"
+#include "bitcoin/base58.h"
+#include "bitcoin/hash.h"
+#include "bitcoin/key.h"
+#include "bitcoin/keystore.h"
+#include "bitcoin/policy/policy.h"
+#include "bitcoin/primitives/transaction.h"
+#include "bitcoin/pubkey.h"
+#include "bitcoin/script/script.h"
+#include "bitcoin/script/sign.h"
+#include "bitcoin/streams.h"
+#include "bitcoin/utilstrencodings.h"
+#include "bitcoin_helpers.h"
+
 #include "../common/base64.hxx"
-#include "../common/utils.h"
 #include "../common/common.h"
+#include "../common/utils.h"
 
 #include <string>
+#include <utility>
 
 using namespace std;
 using namespace exch::enclave;
@@ -19,9 +31,7 @@ using namespace exch::enclave;
 // s1+s2 are the 32+32 bytes input, dst is 32 bytes output
 // dst = hash(hash(s1 || s2))
 static void sha256double(
-    const unsigned char *s1,
-    const unsigned char *s2,
-    unsigned char *dst) {
+    const unsigned char *s1, const unsigned char *s2, unsigned char *dst) {
   CSHA256 h1, h2;
   unsigned char tmp[BITCOIN_HASH_LENGTH];
 
@@ -51,7 +61,8 @@ static uint256 __merkle_proof_verify(const merkle_proof_t *proof) {
 
   int direction = proof->dirvec;
 
-  for (unsigned int i = 0; direction > 1 && i < proof->merkle_branch_len; ++i, direction >>= 1) {
+  for (unsigned int i = 0; direction > 1 && i < proof->merkle_branch_len;
+       ++i, direction >>= 1) {
     if (proof->merkle_branch[i] == nullptr) {
       sha256double(curr, curr, curr);
       continue;
@@ -72,55 +83,53 @@ int merkle_proof_verify(const merkle_proof_t *proof) {
 
 typedef unsigned long long cointype;
 
-static void fill_timelock_payment_template(unsigned char *aa, const unsigned char *RTEpk,
-                                           int timeout, const unsigned char *refund) {
+static void fill_timelock_payment_template(
+    unsigned char *aa,
+    const unsigned char *RTEpk,
+    int timeout,
+    const unsigned char *refund) {
   int j = 0;
-  aa[j++] = 0x63; // op_if
-  aa[j++] = 0xa8; // op_sha256 (rm)
-  aa[j++] = 0x20; // 32 bytes digest size (rm)
+  aa[j++] = 0x63;  // op_if
+  aa[j++] = 0xa8;  // op_sha256 (rm)
+  aa[j++] = 0x20;  // 32 bytes digest size (rm)
   // FIXME: Not relevant. will be removed later.
   std::memcpy(
       aa + j,
       (ext::b64_decode("x3Xnt1ft5jDNCqERO9ECZhqziCnKUqZCKreChi8mhkY=")).data(),
-      32);           // sha256 digest (rm)
-  aa[j + 32] = 0x88; // op_equalverify (rm)
+      32);            // sha256 digest (rm)
+  aa[j + 32] = 0x88;  // op_equalverify (rm)
   j += 33;
-  aa[j++] = 0x21; // 33 bytes pubkey size
+  aa[j++] = 0x21;  // 33 bytes pubkey size
   std::memcpy(aa + j, RTEpk, 33);
-  aa[j + 33] = 0xAC; // op_checksig
+  aa[j + 33] = 0xAC;  // op_checksig
   j += 34;
-  aa[j++] = 0x67; // op_else
-  aa[j++] = 0x3;  // timeout size
+  aa[j++] = 0x67;  // op_else
+  aa[j++] = 0x3;   // timeout size
   aa[j++] = timeout >> 16;
   aa[j++] = timeout >> 8;
   aa[j++] = timeout;
-  aa[j++] = 0xb1; // op_CLTV
-  aa[j++] = 0x75; // op_drop
-  aa[j++] = 0x21; // 33 bytes pubkey size
+  aa[j++] = 0xb1;  // op_CLTV
+  aa[j++] = 0x75;  // op_drop
+  aa[j++] = 0x21;  // 33 bytes pubkey size
   std::memcpy(aa + j, refund, 33);
-  aa[j + 33] = 0xAC; // op_checksig
-  aa[j + 34] = 0x68; // op_endif
+  aa[j + 33] = 0xAC;  // op_checksig
+  aa[j + 34] = 0x68;  // op_endif
 }
 
-static cointype validate_deposit(const unsigned char *tx,
-                                 size_t tx_len,
-                                 const unsigned char *RTEpubkey,
-                                 unsigned long timeout,
-                                 const unsigned char *refund) {
-  if (1 != tx[4])
-    return 0;                                      // single input
-  int j = 5 + 32 + 4 + 1 + tx[5 + 32 + 4] + 4 + 1; // skip to first output
+static cointype validate_deposit(
+    const unsigned char *tx,
+    size_t tx_len,
+    const unsigned char *RTEpubkey,
+    unsigned long timeout,
+    const unsigned char *refund) {
+  if (1 != tx[4]) return 0;                         // single input
+  int j = 5 + 32 + 4 + 1 + tx[5 + 32 + 4] + 4 + 1;  // skip to first output
   cointype r = tx[j++];
-  for (int i = 8; i <= 56; i += 8)
-    r += cointype(tx[j++]) << i;
-  if (23 != tx[j++])
-    return 0; // p2sh size
-  if (0xA9 != tx[j++])
-    return 0; // op_hash160
-  if (0x14 != tx[j++])
-    return 0; // 20 bytes
-  if (0x87 != tx[j + 20])
-    return 0; // op_equal
+  for (int i = 8; i <= 56; i += 8) r += cointype(tx[j++]) << i;
+  if (23 != tx[j++]) return 0;       // p2sh size
+  if (0xA9 != tx[j++]) return 0;     // op_hash160
+  if (0x14 != tx[j++]) return 0;     // 20 bytes
+  if (0x87 != tx[j + 20]) return 0;  // op_equal
 
   const unsigned char *p2sh_hash = tx + j;
 
@@ -140,8 +149,7 @@ static cointype validate_deposit(const unsigned char *tx,
 }
 
 int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit) {
-  if (!deposit)
-    return -1;
+  if (!deposit) return -1;
 
   try {
     // 0. find the block
@@ -167,22 +175,28 @@ int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit) {
 
       if (0 != memcmp(tmp, deposit->merkle_proof->tx, sizeof tmp)) {
         LL_CRITICAL("tx binary corrupted");
-        LL_CRITICAL("calculated hash (little-endian): %s", bin2hex(tmp, BITCOIN_HASH_LENGTH).c_str());
-        LL_CRITICAL("expected hash (little-endian): %s",
-                    bin2hex(deposit->merkle_proof->tx, BITCOIN_HASH_LENGTH).c_str());
+        LL_CRITICAL(
+            "calculated hash (little-endian): %s",
+            bin2hex(tmp, BITCOIN_HASH_LENGTH).c_str());
+        LL_CRITICAL(
+            "expected hash (little-endian): %s",
+            bin2hex(deposit->merkle_proof->tx, BITCOIN_HASH_LENGTH).c_str());
         return -1;
       }
 
       LL_LOG("find block %s", h->GetHash().GetHex().c_str());
       uint256 calc_root = __merkle_proof_verify(deposit->merkle_proof);
       if (calc_root == h->hashMerkleRoot) {
-        LL_NOTICE("deposit %s accepted", bin2hex(deposit->merkle_proof->tx, 32).c_str());
+        LL_NOTICE(
+            "deposit %s accepted",
+            bin2hex(deposit->merkle_proof->tx, 32).c_str());
 
-        const cointype amount = validate_deposit(tx_raw.data(),
-                                                 tx_raw.size(),
-                                                 hex2bin(deposit->deposit_recipient_addr).data(),
-                                                 deposit->deposit_timeout, // 0x389900,
-                                                 hex2bin(deposit->deposit_refund_addr).data());
+        const cointype amount = validate_deposit(
+            tx_raw.data(),
+            tx_raw.size(),
+            hex2bin(deposit->deposit_recipient_addr).data(),
+            deposit->deposit_timeout,  // 0x389900,
+            hex2bin(deposit->deposit_refund_addr).data());
         LL_NOTICE("depositing amount: %d", amount);
         state::balanceBook.deposit(deposit->pubkey_pem, amount);
       } else {
@@ -194,8 +208,7 @@ int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit) {
       LL_CRITICAL("doesn't find the block");
       return -1;
     }
-  }
-  catch (const std::exception &e) {
+  } catch (const std::exception &e) {
     LL_CRITICAL("Exception: %s", e.what());
     return -1;
   }
@@ -205,91 +218,100 @@ int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit) {
   return 0;
 }
 
-#include "script/script.h"
-#include "primitives/transaction.h"
-#include "pubkey.h"
-#include "key.h"
-#include "utilstrencodings.h"
-#include "streams.h"
-#include "script/sign.h"
-#include "amount.h"
-
-CTransaction redeem_p2sh_utxo(const OutPoint &outpoint,
-                              CAmount fee,
-                              const CScript &redeemScript,
-                              uint32_t nLockTime,
-                              const CKey &privKey,
-                              const CBitcoinAddress &address) {
+CTransaction redeem_p2sh_utxo(
+    const OutPoint &outpoint,
+    CAmount fee,
+    uint32_t nLockTime,
+    const CKeyStore &keyStore,
+    const CKeyID privateKeyId,
+    const CBitcoinAddress &address) noexcept(false) {
   const CTxOut &prevOutput = outpoint.GetTxOut();
   const CScript &scriptPubKey = prevOutput.scriptPubKey;
 
-  if (!IsValidRedeemScript(redeemScript, scriptPubKey)) {
-    LL_DEBUG("sigPubKey: %s", HexStr(scriptPubKey).c_str());
-    throw invalid_argument("Invalid redeemScript");
-  } else {
-    LL_DEBUG("redeemScript matches with sigPubkey");
+  // extract script id from the scriptPubKey
+  CScriptID script;
+  CTxDestination dest;
+  if (!ExtractDestination(prevOutput.scriptPubKey, dest)) {
+    throw runtime_error("non-standard");
+  }
+
+  try {
+    script = dest.get<CScriptID>();
+  } catch (const mapbox::util::bad_variant_access &e) {
+    LL_CRITICAL("no redeemscript found in keystore");
+    throw invalid_argument("not p2sh");
+  }
+
+  CScript redeemScript;
+  if (!keyStore.GetCScript(script, redeemScript)) {
+    throw invalid_argument("no usable redeemScript in keystore");
   }
 
   CMutableTransaction unsignedTx;
 
-  // use the input
+  // add the utxo as input
   unsignedTx.vin.emplace_back(outpoint.ToCOutPoint(), CScript(), 0);
 
-  // construct the output script
-  auto newOutScriptPubkey = GetScriptForDestination(address.Get());
-
+  // add the output
   const CAmount amount = prevOutput.nValue - fee;
-
+  auto newOutScriptPubkey = GetScriptForDestination(address.Get());
   unsignedTx.vout.emplace_back(amount, newOutScriptPubkey);
+
   unsignedTx.nLockTime = nLockTime;
 
-  // Generate scriptSig to spend input.
-  std::vector<unsigned char> vchSig;
-  uint256 hash = SignatureHash(redeemScript, unsignedTx, 0, SIGHASH_ALL, 0, SIGVERSION_BASE);
-
+  // initialize secp256k1 context
   auto globalHandle = unique_ptr<ECCVerifyHandle>(new ECCVerifyHandle());
 
-  privKey.Sign(hash, vchSig);
-  if (!privKey.GetPubKey().Verify(hash, vchSig)) {
-    // sanity check
-    throw runtime_error("Sign() generated an invalid signature");
+  unsigned int nIn = 0;
+  MutableTransactionSignatureCreator signer(
+      &keyStore, &unsignedTx, nIn, prevOutput.nValue, SIGHASH_ALL);
+
+  // generate scriptSig to spend input.
+  std::vector<unsigned char> vchSig;
+  // the scriptCode is the actually executed script - either the scriptPubKey
+  // for non-segwit, non-P2SH scripts, or the redeemscript in non-segwit P2SH
+  // scripts see https://en.bitcoin.it/wiki/OP_CHECKSIG
+  if (!signer.CreateSig(vchSig, privateKeyId, redeemScript, SIGVERSION_BASE)) {
+    throw invalid_argument("can't sign");
   }
 
-  /// push the SIGHASH_ALL byte.
-  vchSig.push_back((unsigned char) SIGHASH_ALL);
-
-  // create complete signature.
-  auto sigScript = CScript() << ToByteVector(vchSig) << ToByteVector(redeemScript);
+  auto sigScript = CScript()
+                   << ToByteVector(vchSig) << ToByteVector(redeemScript);
   // embed the signature into the transaction.
   unsignedTx.vin[0].scriptSig = sigScript;
 
   // create an immutable transaction and serialize it
-  CTransaction tmpTx(unsignedTx);
+  CTransaction t(unsignedTx);
 
   // verify the script
   ScriptError serror = SCRIPT_ERR_OK;
-  if (!VerifyScript(tmpTx.vin[0].scriptSig,
-                    scriptPubKey,
-                    nullptr,
-                    STANDARD_SCRIPT_VERIFY_FLAGS,
-                    TransactionSignatureChecker(&tmpTx, 0, amount),
-                    &serror)) {
+  if (!VerifyScript(
+          t.vin[0].scriptSig,
+          scriptPubKey,
+          nullptr,
+          STANDARD_SCRIPT_VERIFY_FLAGS,
+          TransactionSignatureChecker(&t, 0, amount),
+          &serror)) {
     throw runtime_error("Signing failed: " + string(ScriptErrorString(serror)));
   } else {
     LL_NOTICE("success.");
   }
 
-  return tmpTx;
+  return t;
 }
 
-#include <utility>
-#include "bitcoin/base58.h"
-
-void test_bitcoin_transaction() {
-  const string sgxPrivKey = "cURgah32X7tNqK9NCkpXVVd4bbocWm3UjgwyAGpdVfxicAZynLs5";
+bool test_simple_cltv_redeem() {
+  const string sgxPrivKey =
+      "cURgah32X7tNqK9NCkpXVVd4bbocWm3UjgwyAGpdVfxicAZynLs5";
   const uint32_t cltvTimeout = 1547863557;
   const int nIn = 1;
-  const string rawPrevTxP2SH = "0200000001ed25830ab4b42a747687308d581401b0c2daa1380acc76f8c0ec03877443acca0000000048473044022030f7f476e0331e98b5b44ccdbb6846a64dc8f07ae1210f6e52be4164fb6490f90220031fcaed63aaf14ee9fe55fb54909aa9767c889ae809df5d5e5ac76fac3a593401feffffff0264196bee0000000017a914118dce868159ca1bb0e93d0140d19403d7d0af5e8700ca9a3b0000000017a914f62f0c57f7a06341c87d7fa3bc7990c25203932e8775000000";
+  const string rawPrevTxP2SH =
+      "0200000001ed25830ab4b42a747687308d581401b0c2daa1380acc76f8c0ec03877443ac"
+      "ca0000000048473044022030f7f476e0331e98b5b44ccdbb6846a64dc8f07ae1210f6e52"
+      "be4164fb6490f90220031fcaed63aaf14ee9fe55fb54909aa9767c889ae809df5d5e5ac7"
+      "6fac3a593401feffffff0264196bee0000000017a914118dce868159ca1bb0e93d0140d1"
+      "9403d7d0af5e8700ca9a3b0000000017a914f62f0c57f7a06341c87d7fa3bc7990c25203"
+      "932e8775000000";
 
   SelectParams(CBaseChainParams::REGTEST);
   ECC_Start();
@@ -306,22 +328,22 @@ void test_bitcoin_transaction() {
     DecodeHexTx(_prevTx, rawPrevTxP2SH, false);
     CTransaction prevTx(_prevTx);
 
-    LL_NOTICE("Successfully loaded the testing UTXO");
-    LL_NOTICE("%s", prevTx.ToString().c_str());
-
     CBitcoinAddress toAddress;
     toAddress.Set(sgxKey.GetPubKey().GetID());
-    LL_NOTICE("Trying to spend to address %s", toAddress.ToString().c_str());
 
-    auto script = generate_simple_cltv_script(sgxPubkey, cltvTimeout);
-    LL_NOTICE("Redeem script (hex) is %s", HexStr(script).c_str());
+    auto redeemScript = generate_simple_cltv_script(sgxPubkey, cltvTimeout);
+
+    CBasicKeyStore keyStore;
+    keyStore.AddCScript(redeemScript);
+    keyStore.AddKey(sgxKey);
 
     CTransaction t = redeem_p2sh_utxo(
         OutPoint(prevTx, nIn),
         static_cast<CAmount>(1980),
-        script,
         cltvTimeout,
-        sgxKey, CBitcoinAddress(sgxPubkey.GetID()));
+        keyStore,
+        sgxKey.GetPubKey().GetID(),
+        CBitcoinAddress(sgxPubkey.GetID()));
 
     // dump the hex
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
@@ -330,6 +352,8 @@ void test_bitcoin_transaction() {
     LL_NOTICE("Final raw tx: %s", HexStr(ssTx).c_str());
     LL_NOTICE("Interpreted as: %s", t.ToString().c_str());
   }
-  CATCH_STD_AND_ALL_NO_RET
+  CATCH_STD_AND_ALL
   ECC_Stop();
+
+  return true;
 }

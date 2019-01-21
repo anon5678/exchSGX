@@ -60,7 +60,7 @@ CBitcoinAddress create_p2sh_address(const CScript& script) {
 //! \param redeemScript
 //! \param scriptPubKey
 //! \return true or else
-bool IsValidRedeemScript(const CScript &redeemScript, const CScript &scriptPubKey) {
+bool validate_redeemScript(const CScript &redeemScript, const CScript &scriptPubKey) {
   auto redeemScriptHash = Hash160(redeemScript.begin(), redeemScript.end());
   std::vector<unsigned char> scriptHash;
 
@@ -71,24 +71,6 @@ bool IsValidRedeemScript(const CScript &redeemScript, const CScript &scriptPubKe
     return equal(std::begin(scriptHash), std::end(scriptHash), std::begin(redeemScriptHash));
   }
 }
-
-// from "policy/policy.h"
-#include "script/standard.h"
-const unsigned int STANDARD_SCRIPT_VERIFY_FLAGS = MANDATORY_SCRIPT_VERIFY_FLAGS |
-    SCRIPT_VERIFY_DERSIG |
-    SCRIPT_VERIFY_STRICTENC |
-    SCRIPT_VERIFY_MINIMALDATA |
-    SCRIPT_VERIFY_NULLDUMMY |
-    SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS |
-    SCRIPT_VERIFY_CLEANSTACK |
-    SCRIPT_VERIFY_MINIMALIF |
-    SCRIPT_VERIFY_NULLFAIL |
-    SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY |
-    SCRIPT_VERIFY_CHECKSEQUENCEVERIFY |
-    SCRIPT_VERIFY_LOW_S |
-    SCRIPT_VERIFY_WITNESS |
-    SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM |
-    SCRIPT_VERIFY_WITNESS_PUBKEYTYPE;
 
 bool DecodeHexTx(CMutableTransaction &tx, const std::string &strHexTx, bool fTryNoWitness) {
   if (!IsHex(strHexTx))

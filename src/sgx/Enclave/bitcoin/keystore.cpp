@@ -9,7 +9,7 @@
 #include "pubkey.h"
 #include "util.h"
 
-#include <boost/foreach.hpp>
+//#include <boost/foreach.hpp>
 
 bool CKeyStore::AddKey(const CKey &key) {
     return AddKeyPubKey(key, key.GetPubKey());
@@ -40,9 +40,14 @@ bool CBasicKeyStore::AddKeyPubKey(const CKey& key, const CPubKey &pubkey)
 
 bool CBasicKeyStore::AddCScript(const CScript& redeemScript)
 {
-    if (redeemScript.size() > MAX_SCRIPT_ELEMENT_SIZE)
+    if (redeemScript.size() > MAX_SCRIPT_ELEMENT_SIZE) {
+#ifndef SGX
         return error("CBasicKeyStore::AddCScript(): redeemScripts > %i bytes are invalid", MAX_SCRIPT_ELEMENT_SIZE);
-
+#else
+        LL_CRITICAL("CBasicKeyStore::AddCScript(): redeemScripts > %i bytes are invalid", MAX_SCRIPT_ELEMENT_SIZE);
+        return false;
+#endif
+    }
     LOCK(cs_KeyStore);
     mapScripts[CScriptID(redeemScript)] = redeemScript;
     return true;

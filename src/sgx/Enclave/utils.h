@@ -17,6 +17,10 @@
   catch (const std::exception & e) { LL_CRITICAL("error happened: %s", e.what()); return -1; }\
   catch (...) { LL_CRITICAL("unknown error happened"); return -1; }
 
+#define CATCHALL_AND(x) \
+  catch (const std::exception & e) { LL_CRITICAL("error happened: %s", e.what()); (x); }\
+  catch (...) { LL_CRITICAL("unknown error happened"); (x); }
+
 #define CATCH_STD_AND_ALL_NO_RET \
   catch (const std::exception & e) { LL_CRITICAL("error happened: %s", e.what()); }\
   catch (...) { LL_CRITICAL("unknown error happened"); }

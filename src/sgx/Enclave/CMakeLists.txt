@@ -47,9 +47,9 @@ set(BITCOIN_SRC_FILES
         bitcoin/crypto/sha512.cpp
         bitcoin/crypto/ripemd160.cpp
         bitcoin/crypto/hmac_sha512.cpp
-        bitcoin/script/script_error.cpp
         bitcoin/script/interpreter.cpp
         bitcoin/script/script.cpp
+        bitcoin/script/script_error.cpp
         bitcoin/script/sign.cpp
         bitcoin/script/standard.cpp)
 

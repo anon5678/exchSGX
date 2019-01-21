@@ -11,12 +11,8 @@ std::string ScriptToAsmStr(const CScript &script);
 CScript generate_simple_cltv_script(const CPubKey& pubkey, uint32_t lockTime);
 CScript generate_deposit_script(const CPubKey& userPubkey, const CPubKey& exchPubkey, uint32_t lockTime);
 CBitcoinAddress create_p2sh_address(const CScript& script);
-bool IsValidRedeemScript(const CScript &redeemScript, const CScript &scriptPubKey);
+bool validate_redeemScript(const CScript &redeemScript, const CScript &scriptPubKey);
 bool DecodeHexTx(CMutableTransaction &tx, const std::string &strHexTx, bool fTryNoWitness);
-
-// from "policy/policy.h"
-#include "script/standard.h"
-extern const unsigned int STANDARD_SCRIPT_VERIFY_FLAGS;
 
 // used for testing
 CKey seckey_from_str(const std::string& str);
@@ -32,6 +28,12 @@ class OutPoint {
   uint32_t GetNOut() const { return nOut; }
   const COutPoint ToCOutPoint() const { return COutPoint(GetTxHash(), nOut); }
 };
+
+#define MUST_TRUE(c) do {    \
+    if (!(c)) { \
+        printf_std("assert failed at %s:%d", strrchr(__FILE__, '/')+1,__LINE__); \
+    } \
+} while(false)
 
 
 #endif //TESSERACT_BITCOIN_HELPERS_H
