@@ -3,3 +3,8 @@ Rule of Thumb for Byte Order
 
 For hex strings, assume they are in RPC order (i.e. reverse order to the intuitive one).
 For binary arrays, assume they are in little endian order.
+
+Big transaction generation
+==========================
+
+See https://live.blockcypher.com/btc-testnet/tx/637fc5cf6351c19296d7ac92fce21f16a59388622389e01c7dac556481c8cb50/ for an example.
