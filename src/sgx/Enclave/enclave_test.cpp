@@ -98,8 +98,9 @@ using namespace exch::enclave;
 
 extern bool test_simple_cltv_redeem();
 int enclaveTest() {
-  test_simple_cltv_redeem();
-  test_settlement();
+//  test_simple_cltv_redeem();
+//  test_settlement();
+  test_settle_all();
   SelectParams(CBaseChainParams::REGTEST);
   ECC_Start();
   lest::run(specification);

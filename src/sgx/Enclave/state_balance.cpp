@@ -31,7 +31,8 @@ using namespace exch::enclave;
 // s1+s2 are the 32+32 bytes input, dst is 32 bytes output
 // dst = hash(hash(s1 || s2))
 static void sha256double(
-    const unsigned char *s1, const unsigned char *s2, unsigned char *dst) {
+    const unsigned char *s1, const unsigned char *s2, unsigned char *dst)
+{
   CSHA256 h1, h2;
   unsigned char tmp[BITCOIN_HASH_LENGTH];
 
@@ -43,7 +44,8 @@ static void sha256double(
   h2.Finalize(dst);
 }
 
-static void hash160(const unsigned char *src, size_t len, unsigned char *dst) {
+static void hash160(const unsigned char *src, size_t len, unsigned char *dst)
+{
   CSHA256 h1;
   unsigned char tmp[CSHA256::OUTPUT_SIZE];
   h1.Write(src, len);
@@ -54,7 +56,8 @@ static void hash160(const unsigned char *src, size_t len, unsigned char *dst) {
   h2.Finalize(dst);
 }
 
-static uint256 __merkle_proof_verify(const merkle_proof_t *proof) {
+static uint256 __merkle_proof_verify(const merkle_proof_t *proof)
+{
   bitcoin_hash_t curr;
 
   memcpy(curr, proof->tx, sizeof curr);
@@ -76,7 +79,8 @@ static uint256 __merkle_proof_verify(const merkle_proof_t *proof) {
   return uint256B(curr, sizeof curr);
 }
 
-int merkle_proof_verify(const merkle_proof_t *proof) {
+int merkle_proof_verify(const merkle_proof_t *proof)
+{
   LL_NOTICE("root: %s", __merkle_proof_verify(proof).GetHex().c_str());
   return 0;
 }
@@ -87,7 +91,8 @@ static void fill_timelock_payment_template(
     unsigned char *aa,
     const unsigned char *RTEpk,
     int timeout,
-    const unsigned char *refund) {
+    const unsigned char *refund)
+{
   int j = 0;
   aa[j++] = 0x63;  // op_if
   aa[j++] = 0xa8;  // op_sha256 (rm)
@@ -121,7 +126,8 @@ static cointype validate_deposit(
     size_t tx_len,
     const unsigned char *RTEpubkey,
     unsigned long timeout,
-    const unsigned char *refund) {
+    const unsigned char *refund)
+{
   if (1 != tx[4]) return 0;                         // single input
   int j = 5 + 32 + 4 + 1 + tx[5 + 32 + 4] + 4 + 1;  // skip to first output
   cointype r = tx[j++];
@@ -148,7 +154,8 @@ static cointype validate_deposit(
   return r;
 }
 
-int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit) {
+int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit)
+{
   if (!deposit) return -1;
 
   try {
@@ -224,7 +231,8 @@ CTransaction redeem_p2sh_utxo(
     uint32_t nLockTime,
     const CKeyStore &keyStore,
     const CKeyID privateKeyId,
-    const CBitcoinAddress &address) noexcept(false) {
+    const CBitcoinAddress &address) noexcept(false)
+{
   const CTxOut &prevOutput = outpoint.GetTxOut();
   const CScript &scriptPubKey = prevOutput.scriptPubKey;
 
@@ -300,7 +308,8 @@ CTransaction redeem_p2sh_utxo(
   return t;
 }
 
-bool test_simple_cltv_redeem() {
+bool test_simple_cltv_redeem()
+{
   const string sgxPrivKey =
       "cURgah32X7tNqK9NCkpXVVd4bbocWm3UjgwyAGpdVfxicAZynLs5";
   const uint32_t cltvTimeout = 1547863557;

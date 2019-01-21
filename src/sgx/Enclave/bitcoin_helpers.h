@@ -29,9 +29,13 @@ class OutPoint {
   const COutPoint ToCOutPoint() const { return COutPoint(GetTxHash(), nOut); }
 };
 
+#include <stdio.h>
+
 #define MUST_TRUE(c) do {    \
     if (!(c)) { \
-        printf_std("assert failed at %s:%d", strrchr(__FILE__, '/')+1,__LINE__); \
+        char buf[BUFSIZ] = {'\0'}; \
+        snprintf(buf, sizeof buf, "assert failed at %s:%d", strrchr(__FILE__, '/')+1,__LINE__); \
+        throw std::runtime_error(buf); \
     } \
 } while(false)
 

@@ -28,6 +28,7 @@ class DepositParams
   void _gen_deposit_redeemScript();
 
  public:
+  DepositParams() = delete;
   DepositParams(CPubKey userPubkey, CPubKey exchPubkey, uint32_t locktime)
       : userPubkey(userPubkey.begin(), userPubkey.end()),
         exchPubkey(exchPubkey.begin(), exchPubkey.end()),
@@ -81,21 +82,44 @@ class Deposit
 #include "bitcoin/keystore.h"
 #include "bitcoin/script/sign.h"
 
+class Exchange
+{
+ private:
+  CKey _privKey;
+  CPubKey _pubKey;
+  CBitcoinAddress address;
+  CScript _scriptPubkey;
+
+ public:
+  explicit Exchange(const CKey &privKey) : _privKey(privKey)
+  {
+    address.Set(privKey.GetPubKey().GetID());
+
+    auto pub = _privKey.GetPubKey();
+    _scriptPubkey = GetScriptForDestination(pub.GetID());
+    _pubKey.Set(pub.begin(), pub.end());
+  }
+  const CKey &privKey() const { return _privKey; }
+  const CPubKey &pubKey() const { return _pubKey; }
+  const CBitcoinAddress &P2PKHAddress() const { return address; }
+  const CScript scriptPubkey() const { return _scriptPubkey; }
+};
+
 class FeePayment
 {
  private:
-  CTransactionRef txin;
+  CTransaction txin;
   uint32_t _nOut;
 
  public:
-  FeePayment(const CTransaction &txin, uint32_t nOut)
-      : txin(MakeTransactionRef(txin)), _nOut(nOut)
+  FeePayment(CTransaction txin, uint32_t nOut)
+      : txin(std::move(txin)), _nOut(nOut)
   {
   }
 
-  const CTxOut &prevOut() const { return txin.get()->vout[_nOut]; }
+  const CTxOut &prevOut() const { return txin.vout[_nOut]; }
 
-  const uint256 &txid() const { return txin.get()->GetHash(); }
+  const uint256 &txid() const { return txin.GetHash(); }
 
   uint32_t nOut() const { return _nOut; }
 
@@ -108,7 +132,7 @@ class FeePayment
   {
     CBasicKeyStore tmp;
     tmp.AddKey(exch_key);
-    return SignSignature(tmp, *txin.get(), unsigned_tx, nIn, SIGHASH_ALL);
+    return SignSignature(tmp, txin, unsigned_tx, nIn, SIGHASH_ALL);
   }
 };
 

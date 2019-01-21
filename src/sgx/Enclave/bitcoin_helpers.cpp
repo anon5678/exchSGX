@@ -1,14 +1,15 @@
 #include "bitcoin_helpers.h"
-#include "bitcoin/utilstrencodings.h"
 #include "bitcoin/streams.h"
+#include "bitcoin/utilstrencodings.h"
 #include "log.h"
 
-#include "lest/lest.hpp"
 #include <algorithm>
+#include "lest/lest.hpp"
 
 using std::vector;
 
-std::string ScriptToAsmStr(const CScript& script){
+std::string ScriptToAsmStr(const CScript &script)
+{
   std::string str;
   opcodetype opcode;
   std::vector<unsigned char> vch;
@@ -34,8 +35,11 @@ std::string ScriptToAsmStr(const CScript& script){
 //! \param userPubkey
 //! \param lockTime
 //! \return script
-CScript generate_simple_cltv_script(const CPubKey &userPubkey, uint32_t lockTime) {
-  return CScript() << lockTime << OP_CHECKLOCKTIMEVERIFY << OP_DROP << ToByteVector(userPubkey) << OP_CHECKSIG;
+CScript generate_simple_cltv_script(
+    const CPubKey &userPubkey, uint32_t lockTime)
+{
+  return CScript() << lockTime << OP_CHECKLOCKTIMEVERIFY << OP_DROP
+                   << ToByteVector(userPubkey) << OP_CHECKSIG;
 }
 
 //! generate script for deposit. Coins can be spent either by userPubkey after a timeout, or by exchPubkey at any time
@@ -43,14 +47,19 @@ CScript generate_simple_cltv_script(const CPubKey &userPubkey, uint32_t lockTime
 //! \param exchPubkey
 //! \param lockTime
 //! \return script
-CScript generate_deposit_script(const CPubKey& userPubkey, const CPubKey& exchPubkey, uint32_t lockTime){
-  return CScript() << OP_IF << ToByteVector(exchPubkey) << OP_CHECKSIGVERIFY << OP_ELSE << lockTime << OP_CHECKLOCKTIMEVERIFY << OP_DROP << ToByteVector(userPubkey) << OP_CHECKSIGVERIFY << OP_ENDIF;
+CScript generate_deposit_script(
+    const CPubKey &userPubkey, const CPubKey &exchPubkey, uint32_t lockTime)
+{
+  return CScript() << OP_IF << ToByteVector(exchPubkey) << OP_CHECKSIGVERIFY
+                   << OP_ELSE << lockTime << OP_CHECKLOCKTIMEVERIFY << OP_DROP
+                   << ToByteVector(userPubkey) << OP_CHECKSIGVERIFY << OP_ENDIF;
 }
 
 //! create a p2sh address from script
 //! \param script
 //! \return
-CBitcoinAddress create_p2sh_address(const CScript& script) {
+CBitcoinAddress create_p2sh_address(const CScript &script)
+{
   return CBitcoinAddress(CScriptID(script));
 }
 
@@ -60,7 +69,9 @@ CBitcoinAddress create_p2sh_address(const CScript& script) {
 //! \param redeemScript
 //! \param scriptPubKey
 //! \return true or else
-bool validate_redeemScript(const CScript &redeemScript, const CScript &scriptPubKey) {
+bool validate_redeemScript(
+    const CScript &redeemScript, const CScript &scriptPubKey)
+{
   auto redeemScriptHash = Hash160(redeemScript.begin(), redeemScript.end());
   std::vector<unsigned char> scriptHash;
 
@@ -68,37 +79,43 @@ bool validate_redeemScript(const CScript &redeemScript, const CScript &scriptPub
     LL_CRITICAL("not an P2SH");
     return false;
   } else {
-    return equal(std::begin(scriptHash), std::end(scriptHash), std::begin(redeemScriptHash));
+    return equal(
+        std::begin(scriptHash),
+        std::end(scriptHash),
+        std::begin(redeemScriptHash));
   }
 }
 
-bool DecodeHexTx(CMutableTransaction &tx, const std::string &strHexTx, bool fTryNoWitness) {
-  if (!IsHex(strHexTx))
-    return false;
+bool DecodeHexTx(
+    CMutableTransaction &tx, const std::string &strHexTx, bool fTryNoWitness)
+{
+  if (!IsHex(strHexTx)) return false;
   vector<unsigned char> txData(ParseHex(strHexTx));
   if (fTryNoWitness) {
-    CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS);
+    CDataStream ssData(
+        txData,
+        SER_NETWORK,
+        PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS);
     try {
       ssData >> tx;
       if (ssData.eof()) {
         return true;
       }
-    }
-    catch (const std::exception &) {
+    } catch (const std::exception &) {
       // Fall through.
     }
   }
   CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
   try {
     ssData >> tx;
-  }
-  catch (const std::exception &) {
+  } catch (const std::exception &) {
     return false;
   }
   return true;
 }
 
-CKey seckey_from_str(const std::string &str) {
+CKey seckey_from_str(const std::string &str)
+{
   auto bytes = Hash(str.begin(), str.end());
   CKey key;
   key.Set(bytes.begin(), bytes.end(), true);
