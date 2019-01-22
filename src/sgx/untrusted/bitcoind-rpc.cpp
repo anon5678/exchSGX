@@ -7,9 +7,6 @@
 
 #include <jsonrpccpp/common/errors.h>
 
-const string bitcoinRPC::BITCOIND_RPC_ADDR =
-    "http://exch:goodpass@localhost:8332";
-
 int bitcoinRPC::getblockcount() {
   try {
     return this->bitcoindClient.getblockcount();

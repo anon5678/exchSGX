@@ -7,10 +7,10 @@
 
 #include "pubkey.h"
 #include "script/script.h"
-#include "util.h"
+//#include "util.h"
 #include "utilstrencodings.h"
 
-#include <boost/foreach.hpp>
+//#include <boost/foreach.hpp>
 
 using namespace std;
 
@@ -20,6 +20,7 @@ bool fAcceptDatacarrier = DEFAULT_ACCEPT_DATACARRIER;
 unsigned nMaxDatacarrierBytes = MAX_OP_RETURN_RELAY;
 
 CScriptID::CScriptID(const CScript& in) : uint160(Hash160(in.begin(), in.end())) {}
+
 
 const char* GetTxnOutputType(txnouttype t)
 {
@@ -96,7 +97,7 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, vector<vector<unsi
 
     // Scan templates
     const CScript& script1 = scriptPubKey;
-    BOOST_FOREACH(const PAIRTYPE(txnouttype, CScript)& tplate, mTemplates)
+    for(const PAIRTYPE(txnouttype, CScript)& tplate: mTemplates)
     {
         const CScript& script2 = tplate.second;
         vSolutionsRet.clear();
@@ -251,7 +252,7 @@ bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, vecto
 
 namespace
 {
-class CScriptVisitor : public boost::static_visitor<bool>
+class CScriptVisitor
 {
 private:
     CScript *script;
@@ -281,7 +282,7 @@ CScript GetScriptForDestination(const CTxDestination& dest)
 {
     CScript script;
 
-    boost::apply_visitor(CScriptVisitor(&script), dest);
+    mapbox::util::apply_visitor(CScriptVisitor(&script), dest);
     return script;
 }
 
@@ -290,6 +291,7 @@ CScript GetScriptForRawPubKey(const CPubKey& pubKey)
     return CScript() << std::vector<unsigned char>(pubKey.begin(), pubKey.end()) << OP_CHECKSIG;
 }
 
+#ifndef SGX
 CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys)
 {
     CScript script;
@@ -323,3 +325,4 @@ CScript GetScriptForWitness(const CScript& redeemscript)
     ret << OP_0 << ToByteVector(hash);
     return ret;
 }
+#endif

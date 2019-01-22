@@ -47,9 +47,11 @@ set(BITCOIN_SRC_FILES
         bitcoin/crypto/sha512.cpp
         bitcoin/crypto/ripemd160.cpp
         bitcoin/crypto/hmac_sha512.cpp
-        bitcoin/script/script_error.cpp
         bitcoin/script/interpreter.cpp
-        bitcoin/script/script.cpp)
+        bitcoin/script/script.cpp
+        bitcoin/script/script_error.cpp
+        bitcoin/script/sign.cpp
+        bitcoin/script/standard.cpp)
 
 set(ENCLAVE_SOURCE_FILES
         # basic stuff
@@ -59,6 +61,7 @@ set(ENCLAVE_SOURCE_FILES
         pprint.cpp
         bytestream.cpp
         utils.cpp
+        bitcoin_helpers.cpp
         ../common/utils.cpp
         ../common/json11.cpp
         ../common/base64.cpp
@@ -71,6 +74,7 @@ set(ENCLAVE_SOURCE_FILES
         # enclave state
         blockfifo.hpp
         balancebook.hpp
+        settle.cpp
         state.cpp
         state_blockfifo.cpp
         state_balance.cpp
@@ -84,8 +88,7 @@ set(ENCLAVE_SOURCE_FILES
         nacl/randombytes.c
         nacl/crypto_box/wrapper-keypair.cpp
         nacl/crypto_box/wrapper-box.cpp
-        nacl/crypto_box/wrapper-open.cpp
-        )
+        nacl/crypto_box/wrapper-open.cpp)
 
 add_library(enclave SHARED ${ENCLAVE_SOURCE_FILES})
 

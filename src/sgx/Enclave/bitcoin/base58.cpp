@@ -12,6 +12,9 @@
 #include <string.h>
 #include <vector>
 #include <string>
+
+#include "mapbox/variant.hpp"
+// use mapbox in SGX to replace boost::variant
 //#include <boost/variant/apply_visitor.hpp>
 //#include <boost/variant/static_visitor.hpp>
 
@@ -210,10 +213,9 @@ int CBase58Data::CompareTo(const CBase58Data& b58) const
     return 0;
 }
 
-#ifndef SGX
 namespace
 {
-class CBitcoinAddressVisitor : public boost::static_visitor<bool>
+class CBitcoinAddressVisitor
 {
 private:
     CBitcoinAddress* addr;
@@ -227,7 +229,6 @@ public:
 };
 
 } // anon namespace
-#endif
 
 bool CBitcoinAddress::Set(const CKeyID& id)
 {
@@ -241,12 +242,10 @@ bool CBitcoinAddress::Set(const CScriptID& id)
     return true;
 }
 
-#ifndef SGX
 bool CBitcoinAddress::Set(const CTxDestination& dest)
 {
-    return boost::apply_visitor(CBitcoinAddressVisitor(this), dest);
+    return mapbox::util::apply_visitor(CBitcoinAddressVisitor(this), dest);
 }
-#endif
 
 bool CBitcoinAddress::IsValid() const
 {
@@ -298,7 +297,7 @@ void CBitcoinSecret::SetKey(const CKey& vchSecret)
         vchData.push_back(1);
 }
 
-CKey CBitcoinSecret::GetKey()
+CKey CBitcoinSecret::GetKey() const
 {
     CKey ret;
     assert(vchData.size() >= 32);

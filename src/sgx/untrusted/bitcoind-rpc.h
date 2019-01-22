@@ -1,7 +1,5 @@
 #include "bitcoindrpcclient.h"
-#include "jsonrpccpp/client/connectors/httpclient.h"
 
-#include <jsonrpccpp/client.h>
 #include <sstream>
 #include <string>
 #include <string>
@@ -9,7 +7,12 @@
 #include <json/json.h>
 #include <json/reader.h>
 #include <json/value.h>
+
 #include <jsonrpccpp/client.h>
+#include <jsonrpccpp/client.h>
+#include <jsonrpccpp/client/connectors/httpclient.h>
+
+#include <boost/format.hpp>
 
 using namespace std;
 using Json::Value;
@@ -17,13 +20,12 @@ using Json::Reader;
 using jsonrpc::Errors;
 
 class bitcoinRPC {
-  static const string BITCOIND_RPC_ADDR;
   jsonrpc::HttpClient connector;
   bitcoindRPCClient bitcoindClient;
 
  public:
-  bitcoinRPC()
-      : connector(BITCOIND_RPC_ADDR),
+  explicit bitcoinRPC(const string& rpc_addr="http://exch:goodpass@localhost:18443")
+      : connector(rpc_addr),
         bitcoindClient(connector, jsonrpc::JSONRPC_CLIENT_V1) {}
 
   int getblockcount();
