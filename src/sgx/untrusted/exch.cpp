@@ -205,11 +205,12 @@ int main(int argc, const char *argv[]) {
     simulate_leader(eid, &ret);
   }
 
-  // pretend to find tx1 in mempool
+  // try to call notFoundTxOneInMempool after timeout
   this_thread::sleep_for(chrono::seconds(10));
   unsigned char *tmp;
   afterTimeout(eid, &ret); 
 
+  //TODO: add threads to look for tx1/tx1_cancel confirmation
   //pretend to find tx1 confirmation
   this_thread::sleep_for(chrono::seconds(5));
   merkle_proof_t *tmp_proof;

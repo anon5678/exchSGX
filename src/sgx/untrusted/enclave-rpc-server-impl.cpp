@@ -132,7 +132,7 @@ void _onMessageFromFairnessLeader(string settlementPkg) {
                               settlementPkg.size(),
                               tx1_id);
   LOG4CXX_INFO(logger, "look up tx1_id: " << tx1_id << " in mempool");
-  //TODO: look up tx1_id in mempool
+  //TODO: look up tx1_id in mempool and call onTxOneInMempool once found
 }
 
 bool EnclaveRPC::distributeSettlementPkg(const std::string &settlementPkg) {

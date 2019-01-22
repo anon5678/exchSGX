@@ -20,11 +20,12 @@ void FairnessProtocol::txOneConfirmed(const merkle_proof_t *proof) {
   int ret;
   int st;
   if (true) {//TODO: merkle_proof_verify(proof)) {
-      if (true) { //TODO: tx1 confirmed
-          LL_NOTICE("sending tx2 to blockchain");
+      LL_NOTICE("merkle proof verified");
+      if (false) { //TODO: tx1 confirmed
+          LL_NOTICE("tx1 confirmed on the blockchain, sending tx2 to blockchain");
           st = sendTxToBlockchain(&ret);
       } else { //tx1_cancel confirmed
-          LL_NOTICE("sending tx2_cancel to blockchain");
+          LL_NOTICE("tx1_cancel confirmed on the blockchain, sending tx2_cancel to blockchain");
           st = sendTxToBlockchain(&ret);
       }
       
@@ -67,7 +68,7 @@ void Leader::disseminate() noexcept(false) {
           &ret,
           peer.getHostname().c_str(),
           peer.getPort(),
-          // TODO: send the actual box
+          // TODO: send the actually encrypted box
           (const unsigned char *) msg.serialize().data(),
           msg.serialize().size());
 
@@ -177,7 +178,7 @@ void FairnessProtocol::foundTxOneInMempool(const bytes &txOneInMempool) {
         return;
     }
 
-    if (true) {//txOneInMempool == msg.tx_1) {
+    if (true) {//TODO: txOneInMempool == msg.tx_1) {
         LL_NOTICE("found tx1 in mempool");
         stage = SENDTXONE;
     }
