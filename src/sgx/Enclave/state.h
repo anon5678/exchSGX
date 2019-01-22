@@ -29,7 +29,7 @@ using namespace exch::enclave;
 class State {
  private:
   /* fairness */
-  fairness::Follower *fairnessFollower;
+  fairness::Follower *currentFollower;
   set<securechannel::Peer> fairnessPeers;
   securechannel::Peer currentLeader;
   fairness::Leader *currentProtocol;
@@ -44,7 +44,7 @@ class State {
 
   State() = default;
   ~State() {
-    delete fairnessFollower;
+    delete currentFollower;
     delete currentProtocol;
   }
   State(const State &) = delete;
@@ -64,7 +64,9 @@ class State {
   const fairness::PeerList &getPeerList() const { return this->fairnessPeers; }
   const securechannel::Peer &getCurrentLeader() const { return currentLeader; }
   const securechannel::Peer &getSelf() const { return this->self; }
-  fairness::Leader *getCurrentProtocol() const { return currentProtocol; }
+  fairness::Leader *getProtocolLeader() const { return currentProtocol; }
+  fairness::Follower *getProtocolFollower() const { return currentFollower;}
+  fairness::FairnessProtocol *getCurrentProtocol() const { return isLeader ? (fairness::FairnessProtocol*)currentProtocol : (fairness::FairnessProtocol*)currentFollower; }
 };
 
 #ifdef __cplusplus

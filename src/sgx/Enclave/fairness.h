@@ -73,6 +73,8 @@ struct SettlementPkg {
         tx_1(tx_1), tx_2(tx_2),
         tx_1_cancel(tx_1_cancel), tx_2_cancel(tx_2_cancel) {}
 
+  SettlementPkg() = default;
+
   ~SettlementPkg() = default;
 
   // disable copy
@@ -157,65 +159,90 @@ using PeerList=std::set<Peer>;
 
 class FairnessProtocol {
  public:
-  enum Role {
-    LEADER,
-    FOLLOWER,
-  };
+  Peer me;
+  SettlementPkg msg;
+  enum Stage {
+    INIT,
+    DISSEMINATE,
+    SENDACK,
+    RECEIVEACK,
+    SENDTXONE,
+    SENDTXTWO,
+  } stage;
+
+  struct Time {
+      sgx_time_t time_second;
+      sgx_time_source_nonce_t time_source_nonce;
+      sgx_time_t period;
+
+      void getTime() {
+          int ret;
+          int retry = 10;
+          do {
+              ret = sgx_create_pse_session();
+          } while(ret == SGX_ERROR_BUSY && retry--);
+
+          ret = sgx_get_trusted_time(&time_second, &time_source_nonce);
+          if (ret != SGX_SUCCESS) {
+              LL_CRITICAL("cannot get sgx trusted time");
+          }
+          sgx_close_pse_session();
+      }
+
+      
+
+      bool passTime() {
+          Time cur_time;
+          cur_time.getTime();
+          return (!memcmp(&cur_time.time_source_nonce, time_source_nonce, 
+                      sizeof(sgx_time_source_nonce_t))) 
+              && (cur_time.time_second >= time_second + period);
+      }
+  } start_time;
 
   // if a follower does not see TX_1 by TIMEOUT_T1, it broadcasts TX_1_Cancel
   // if a leader (or a follower) sees TX_1 on chain 1, it broadcast TX_2 to chain 2
   // if a follower sees TX_1_Cancel on chain 1, it broadcast TX_2_Cancel to chain 2
-  const static int TIMEOUT_T1_SECOND = 3600 * 12;
-  const static int N_PEER_SERVERS = 5;
-  virtual void sendTransaction2() = 0;
-  virtual ~FairnessProtocol() {};
+  // TODO modify the timeouts
+  const static sgx_time_t TIMEOUT_T1_SECOND = 2; //60 * 15;
+  //const static sgx_time_t TIMEOUT_T2_SECOND = 5; //60 * 10 * 6;
+  //const static int N_PEER_SERVERS = 5;
+  
+  FairnessProtocol(const Peer &me) : me(me) {}
+  
+  void txOneConfirmed(const merkle_proof_t *proof);
+  void foundTxOneInMempool(const bytes &txOneinMempool);
+  void notFoundTxOneInMempool();
 };
 
 class Leader : public FairnessProtocol {
  private:
-  Peer me;
-  SettlementPkg msg;
   vector<Peer> peers;
   vector<bool> peers_ack;
 
  public:
-  const static auto role = LEADER;
   // initialize
-  Leader(const Peer &me, const vector<Peer> &peers, SettlementPkg &&msg);
+  Leader(const Peer &me, const vector<Peer> &peers);
+
+  void setMessage(SettlementPkg &&msg);
 
   // send msg to all peers and wait for ACKs
   void disseminate() noexcept(false);
 
-  void receiveAck(const AcknowledgeMessage &ack);
-
-  // send the first tx to blockchain 1
-  void sendTransaction1();
-
-  void sendTransaction2() override;
+  void receiveAck(const unsigned char *_ack, size_t size);
 };
 
 class Follower : FairnessProtocol {
  private:
-  Peer me;
   Peer leader;
 
  public:
-  const static auto role = FOLLOWER;
   // create a TLS server
   Follower(const Peer &me, const Peer &leader);
   ~Follower() {}
 
   // simply send ack
-  void receiveFromLeader();
-
-  // broadcast cancellation
-  void txOneNotAppear();
-
-  // broadcast TX2
-  void txOneConfirmed();
-
-  // broadcast TX2 cancellation
-  void txOneCanceled();
+  void receiveFromLeader(const unsigned char *msg, size_t size, unsigned char *tx1_id);
 };
 
 }

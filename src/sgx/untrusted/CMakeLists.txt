@@ -3,7 +3,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11")
 
 # TODO: move RPC stuff out of the bundle
 set(BRIDGE_SRC
-        fariness-ocall.cpp
+        fairness-ocall.cpp
         bitcoind-rpc.cpp
         bitcoind-merkleproof.cpp
         merkpath/merkpath.cpp
