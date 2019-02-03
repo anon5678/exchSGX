@@ -115,7 +115,7 @@ int simulate_leader() {
     State &s = State::getInstance();
 
     // TODO: put real data in here
-    string tx_1_id = "288bcaaa05389922d5da1ee0e6d2d08e72770754e0c830adba50e0daa95efd48";
+    string tx_1_id = "637fc5cf6351c19296d7ac92fce21f16a59388622389e01c7dac556481c8cb50";
     string tx_1_cancel_id = "288bcaaa05389922d5da1ee0e6d2d08e72770754e0c830adba50e0daa95efd40";
     bytes tx1{1, 2, 3, 4};
     bytes tx2{1, 2, 3, 4};

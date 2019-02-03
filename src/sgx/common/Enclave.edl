@@ -14,10 +14,13 @@ enclave {
         // fairness protocol
         public int onMessageFromFairnessLeader(
             [user_check] const unsigned char* tx, size_t size,
-            [out, size = 64] unsigned char* tx1_id
+            [out, size = 64] unsigned char* tx1_id,
+            [out, size = 64] unsigned char* tx1_cancel_id
         );
         public int onAckFromFairnessFollower(
-            [user_check] const unsigned char* ack, size_t size
+            [user_check] const unsigned char* ack, size_t size,
+            [out, size = 64] unsigned char* tx1_id,
+            [out, size = 64] unsigned char* tx1_cancel_id
         );
         public int onTxOneInMempool(
             [user_check] const unsigned char *tx1, size_t size 

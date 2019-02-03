@@ -44,6 +44,7 @@ TxInclusion isTxIncluded(const string &txid) {
       /// Sleep for one second then retry
       this_thread::sleep_for(chrono::seconds(1));
     }
+    break;
   }
 }
 

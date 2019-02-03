@@ -205,7 +205,7 @@ int main(int argc, const char *argv[]) {
     simulate_leader(eid, &ret);
   }
 
-  // try to call notFoundTxOneInMempool after timeout
+  // TODO: try to call notFoundTxOne after timeout
   this_thread::sleep_for(chrono::seconds(10));
   unsigned char *tmp;
   afterTimeout(eid, &ret); 

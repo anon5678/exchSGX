@@ -36,20 +36,20 @@ int setSelf(int is_leader, const char *hostname, uint16_t port, const uint8_t *p
 }
 
 // ecall
-int onMessageFromFairnessLeader(const unsigned char *msg, size_t size, unsigned char *tx1_id) {
+int onMessageFromFairnessLeader(const unsigned char *msg, size_t size, unsigned char *tx1_id, unsigned char *tx1_cancel_id) {
   try {
     State &s = State::getInstance();
-    s.getProtocolFollower()->receiveFromLeader(msg, size, tx1_id);
+    s.getProtocolFollower()->receiveFromLeader(msg, size, tx1_id, tx1_cancel_id);
     return 0;
   }
   CATCH_STD_AND_ALL
 }
 
 // ecall
-int onAckFromFairnessFollower(const unsigned char *_ack, size_t size) {
+int onAckFromFairnessFollower(const unsigned char *_ack, size_t size, unsigned char *tx1_id, unsigned char *tx1_cancel_id) {
   try {
     State &s = State::getInstance();
-    s.getProtocolLeader()->receiveAck(_ack, size);
+    s.getProtocolLeader()->receiveAck(_ack, size, tx1_id, tx1_cancel_id);
     return 0;
   }
   CATCH_STD_AND_ALL
@@ -72,7 +72,7 @@ int onTxOneInMempool(const unsigned char *tx1, size_t size) {
 int afterTimeout() {
     try {
         State &s = State::getInstance();
-        s.getCurrentProtocol()->notFoundTxOneInMempool();
+        s.getCurrentProtocol()->notFoundTxOne();
         return 0;
     }
     CATCH_STD_AND_ALL
