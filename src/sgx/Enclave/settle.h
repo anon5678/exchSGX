@@ -56,26 +56,26 @@ class DepositParams
 class Deposit
 {
  private:
-  DepositParams params;
-  CTransaction txin;
-  uint32_t nOut;
+  DepositParams _params;
+  CTransaction _txin;
+  uint32_t _nOut;
 
  public:
   Deposit(DepositParams params, CTransaction txin, uint32_t nOut)
-      : params(params), txin(std::move(txin)), nOut(nOut){};
+      : _params(std::move(params)), _txin(std::move(txin)), _nOut(nOut){};
 
-  const CTxOut &PrevOut() const { return txin.vout[nOut]; }
+  const CTxOut &prevOut() const { return _txin.vout[_nOut]; }
 
-  const DepositParams &Params() const { return params; }
+  const DepositParams &params() const { return _params; }
 
-  const uint256 &Txid() const { return txin.GetHash(); }
+  const uint256 &txid() const { return _txin.GetHash(); }
 
-  uint32_t NOut() const { return nOut; }
+  uint32_t nOut() const { return _nOut; }
 
   bool Validate() const
   {
     return validate_redeemScript(
-        params.deposit_redeemScript(), PrevOut().scriptPubKey);
+        _params.deposit_redeemScript(), prevOut().scriptPubKey);
   }
 };
 

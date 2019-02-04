@@ -5,10 +5,11 @@
 #ifndef PROJECT_EXCEPTION_H
 #define PROJECT_EXCEPTION_H
 
-namespace exch {
-namespace enclave {
-
+namespace exch
+{
+namespace enclave
+{
 }
-}
+}  // namespace exch
 
-#endif //PROJECT_EXCEPTION_H
+#endif  // PROJECT_EXCEPTION_H

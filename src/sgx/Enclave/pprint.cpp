@@ -2,31 +2,32 @@
 #include "utils.h"
 
 using namespace utils;
-void dump_buf(const char *title, unsigned char *buf, size_t len) {
+void dump_buf(const char *title, unsigned char *buf, size_t len)
+{
   hexdump(title, buf, len);
 }
 
-void string_dump(const char *title, void const *data, size_t len) {
+void string_dump(const char *title, void const *data, size_t len)
+{
   unsigned int i;
 
-  if (!data)
-    return;
+  if (!data) return;
 
   printf_std("%s\n", title);
 
   /* ASCII dump */
   for (i = 0; i < len; i++) {
-    printf_std("%c", ((unsigned char const *) data)[i]);
+    printf_std("%c", ((unsigned char const *)data)[i]);
   }
   printf_std("\n");
 }
 
-void hexdump(const char *title, void const *data, size_t len) {
+void hexdump(const char *title, void const *data, size_t len)
+{
   unsigned int i;
   unsigned int r, c;
 
-  if (!data)
-    return;
+  if (!data) return;
 
   printf_std("%s\n", title);
 
@@ -35,7 +36,7 @@ void hexdump(const char *title, void const *data, size_t len) {
 
     for (c = i; c < i + 8; c++) /* left half of hex dump */
       if (c < len)
-        printf_std("%02X ", ((unsigned char const *) data)[c]);
+        printf_std("%02X ", ((unsigned char const *)data)[c]);
       else
         printf_std("   "); /* pad if short line */
 
@@ -43,7 +44,7 @@ void hexdump(const char *title, void const *data, size_t len) {
 
     for (c = i + 8; c < i + 16; c++) /* right half of hex dump */
       if (c < len)
-        printf_std("%02X ", ((unsigned char const *) data)[c]);
+        printf_std("%02X ", ((unsigned char const *)data)[c]);
       else
         printf_std("   "); /* pad if short line */
 
@@ -51,9 +52,9 @@ void hexdump(const char *title, void const *data, size_t len) {
 
     for (c = i; c < i + 16; c++) /* ASCII dump */
       if (c < len)
-        if (((unsigned char const *) data)[c] >= 32 &&
-            ((unsigned char const *) data)[c] < 127)
-          printf_std("%c", ((char const *) data)[c]);
+        if (((unsigned char const *)data)[c] >= 32 &&
+            ((unsigned char const *)data)[c] < 127)
+          printf_std("%c", ((char const *)data)[c]);
         else
           printf_std("."); /* put this for non-printables */
       else
