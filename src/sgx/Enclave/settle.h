@@ -4,6 +4,7 @@
 #include "bitcoin/base58.h"
 #include "bitcoin/script/script.h"
 #include "bitcoin_helpers.h"
+#include "bitcoin/utilstrencodings.h"
 
 bool test_settlement();
 bool test_settle_all();
@@ -51,6 +52,17 @@ class DepositParams
   const CScript &deposit_redeemScript() const { return _redeemScript; }
   CScript spend_redeemScript(
       Action, const CKey &, const CMutableTransaction &, uint32_t nIn) const;
+
+  std::string ToString() const {
+    char buf[BUFSIZ];
+    std::snprintf(buf, BUFSIZ, "address: %s. script=%s", this->address().ToString().c_str(), HexStr(this->deposit_redeemScript().begin(), this->deposit_redeemScript().end()).c_str());
+
+    return std::string(buf);
+  }
+
+  const char* ToCStr() const {
+      return ToString().c_str();
+  }
 };
 
 class Deposit

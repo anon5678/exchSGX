@@ -473,6 +473,7 @@ bool test_settle_all()
     // simulate the exchange
     Exchange exch(exch_secret.GetKey());
     const auto &exch_pubkey = exch.pubKey();
+    LL_DEBUG("sgx public key: %s", HexStr(exch.pubKey().begin(), exch.pubKey().end()).c_str());
     LL_NOTICE("fee address: %s", exch.P2PKHAddress().ToString().c_str());
 
     uint32_t depositTimeLock = 1000000;
@@ -482,7 +483,7 @@ bool test_settle_all()
     }
 
     for (const auto &p : params) {
-      LL_NOTICE("user address: %s", p.address().ToString().c_str());
+      LL_NOTICE("user: %s", p.ToCStr());
     }
 
     // deposit address are:
