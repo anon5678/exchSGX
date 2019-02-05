@@ -24,7 +24,7 @@ class bitcoinRPC {
   bitcoindRPCClient bitcoindClient;
 
  public:
-  explicit bitcoinRPC(const string& rpc_addr="http://exch:goodpass@localhost:18443")
+  explicit bitcoinRPC(const string& rpc_addr="http://exch:goodpass@dockerhost:18443")
       : connector(rpc_addr),
         bitcoindClient(connector, jsonrpc::JSONRPC_CLIENT_V1) {}
 
