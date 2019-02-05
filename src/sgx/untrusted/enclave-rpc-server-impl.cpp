@@ -178,7 +178,7 @@ void checkConfirmation(unsigned char *tx1_id, unsigned char *tx1_cancel_id) {
       if (tx_one_confirmed == TxInclusion::Yes) {
           try{
               MerkleProof proof = buildTxInclusionProof(reinterpret_cast<char*>(tx1_id));
-              LOG4CXX_INFO(logger, "tx1_cancel confirmed on Bitcoin");
+              LOG4CXX_INFO(logger, "tx1 confirmed on Bitcoin");
               const auto *serialized = proof.serialize();
               int ret;
               auto st = onTxOneConfirmation(eid, &ret, serialized);
@@ -221,14 +221,15 @@ void checkConfirmation(unsigned char *tx1_id, unsigned char *tx1_cancel_id) {
 void _onMessageFromFairnessLeader(string settlementPkg) {
   int ret;
   unsigned char *tx1_id = (unsigned char*)malloc(65);
+  tx1_id[64] = 0;
   unsigned char *tx1_cancel_id = (unsigned char*)malloc(65);
+  tx1_cancel_id[64] = 0;
   onMessageFromFairnessLeader(eid,
                               &ret,
                               reinterpret_cast<const unsigned char *>(settlementPkg.data()),
                               settlementPkg.size(),
                               tx1_id, 
                               tx1_cancel_id);
-  LOG4CXX_INFO(logger, "look up tx1_id: " << tx1_id << " in mempool");
   checkConfirmation(tx1_id, tx1_cancel_id);
 }
 
@@ -246,7 +247,9 @@ bool EnclaveRPC::distributeSettlementPkg(const std::string &settlementPkg) {
 void _ackSettlementPkg(string ack) {
   int ret;
   unsigned char *tx1_id = (unsigned char*)malloc(65);
+  tx1_id[64] = 0;
   unsigned char *tx1_cancel_id = (unsigned char*)malloc(65);
+  tx1_cancel_id[64] = 0;
   onAckFromFairnessFollower(eid,
                             &ret,
                             reinterpret_cast<const unsigned char *>(ack.data()),

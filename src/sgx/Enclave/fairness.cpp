@@ -20,12 +20,13 @@ void FairnessProtocol::txOneConfirmed(const merkle_proof_t *proof) {
 
         int ret;
         int st;
-        if (true) {//TODO: merkle_proof_verify(proof)) {
+        if (merkle_proof_verify(proof) == 0) {
             LL_NOTICE("merkle proof verified");
-            if (false) { //TODO: tx1 confirmed
+            string tx_id(reinterpret_cast<const char*>(proof->tx), 32);
+            if (tx_id == msg.tx_1_id_hex) {
                 LL_NOTICE("tx1 confirmed on the blockchain, sending tx2 to blockchain");
                 st = sendTxToBlockchain(&ret);
-            } else { //tx1_cancel confirmed
+            } else if (tx_id == msg.tx_1_cancel_id_hex) {
                 LL_NOTICE("tx1_cancel confirmed on the blockchain, sending tx2_cancel to blockchain");
                 st = sendTxToBlockchain(&ret);
             }

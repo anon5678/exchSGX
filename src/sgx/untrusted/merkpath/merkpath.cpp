@@ -46,9 +46,15 @@ void sha256double(void const *const s1, void const *const s2, void *const dst) {
 }
 
 MerkleProof loopMerkleProof(const vector<string> &leaf_nodes, long index) {
-  LOG4CXX_ASSERT(logger, leaf_nodes.size() > 1, "need at least two transactions");
+  //LOG4CXX_ASSERT(logger, leaf_nodes.size() > 1, "need at least two transactions");
   LOG4CXX_ASSERT(logger, index >= 0 && index < leaf_nodes.size(), "index overflow");
   LOG4CXX_ASSERT(logger, leaf_nodes[0].size() == 64, "please use hex string");
+  
+  vector<string> proof_merkle_branch;
+  if (leaf_nodes.size() == 1) {
+    MerkleProof proof(leaf_nodes[index], proof_merkle_branch, 0);
+    return proof;
+  }
 
   size_t size, next_level_size;
   size = leaf_nodes.size();
@@ -63,7 +69,6 @@ MerkleProof loopMerkleProof(const vector<string> &leaf_nodes, long index) {
     byte_swap(level[i].data(), SHA256_DIGEST_LENGTH);
   }
 
-  vector<string> proof_merkle_branch;
 
   long path = index;
   int dirvec = 0;
@@ -222,6 +227,9 @@ string MerkleProof::verify() const {
   hex2bin(curr.data(), tx_hash_hex.c_str());
   byte_swap(curr.data(), 32);
 
+// Note that tx_hash_calc is the tx hash while tx_hash_hex is tx id. 
+// Not necessary to check outside the enclave.
+/*
   if (!tx_raw_hex.empty()) {
     auto tx_raw_bin = hex2bin(tx_raw_hex.c_str());
 
@@ -245,7 +253,7 @@ string MerkleProof::verify() const {
       LOG4CXX_WARN(logger, "calc: " << tx_hash_calc);
     }
   }
-
+*/
   // make a copy of direction
   int dirvec = direction;
 

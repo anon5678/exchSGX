@@ -33,7 +33,7 @@ TxInclusion isTxIncluded(const string &txid) {
     }
     catch (const exception &e) {
       if (string(e.what()).find("No such mempool or blockchain transaction") != string::npos) {
-        LOG4CXX_INFO(logger, "tx " << txid << "is not confirmed");
+        LOG4CXX_INFO(logger, "tx " << txid << " is not confirmed");
         return TxInclusion::No;
       }
       LOG4CXX_DEBUG(logger, "bitcoinRPCException: " << e.what());
@@ -91,6 +91,7 @@ MerkleProof buildTxInclusionProof(const string &txid) {
       LOG4CXX_INFO(logger, "succeed. merkle root in block header is: " << calc_root);
       return proof;
     } else {
+      LOG4CXX_DEBUG(logger, calc_root << " "<< block["merkleroot"].asString());
       throw runtime_error("failed to generate a valid proof. Try again later.");
     }
   } catch (const bitcoinRPCException &e) {
