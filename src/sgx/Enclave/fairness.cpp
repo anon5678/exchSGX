@@ -219,7 +219,6 @@ void FairnessProtocol::notFoundTxOne() {
             LL_NOTICE("not found tx1 in mempool after timeout, start to send tx1_cancel");
 
             int ret = 0;
-            //TODO: send tx1_cancel
             auto st = sendTxToBlockchain(
                     &ret);
             if (st != SGX_SUCCESS || ret != 0) {

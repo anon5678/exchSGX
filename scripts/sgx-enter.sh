@@ -13,15 +13,23 @@ which docker >/dev/null || {
 
 docker pull $docker_image
 
+# Start dockerhost
+if [ ! "$(docker ps -q -f name=dockerhost)" ]; then
+    docker run --name 'dockerhost' \
+      --cap-add=NET_ADMIN --cap-add=NET_RAW \
+      --restart on-failure \
+      -d qoomon/docker-host
+fi
+
 # Start SGX Rust Docker container.
 if [ ! "$(docker ps -q -f name=$docker_name)" ]; then
   if [ "$(docker ps -aq -f name=$docker_name)" ]; then
     docker start $docker_name
-    docker exec -i -t $docker_name $docker_shell
+    docker exec -it $docker_name $docker_shell
   else
     docker run -it \
       --name "$docker_name" \
-      --net host \
+      --link 'dockerhost' \
       -v ${ROOTDIR}/src:/code \
       -e "TESSERTACT_BUILD_CONFIG=Debug" \
       -e "SGX_SDK=/opt/intel/sgxsdk" \

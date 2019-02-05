@@ -68,7 +68,7 @@ extern sgx_enclave_id_t eid;
 
 const int TIMEOUT_T1_SECOND = 2;
 const int TIMEOUT_T2_SECOND = 5;
-const int INTER_PERIOD_MILLISECOND = 200;
+const int INTER_PERIOD_MILLISECOND = 1000;
 
 /// Deposit money to public_key by providing a merkle_proof
 bool EnclaveRPC::deposit(const Json::Value &merkle_proof, const string &public_key) {
@@ -140,57 +140,78 @@ void checkConfirmation(unsigned char *tx1_id, unsigned char *tx1_cancel_id) {
   bool find = false;
 
   while (attempts++ < TIMEOUT_T1_SECOND * 1000 / INTER_PERIOD_MILLISECOND) {
-      TxInclusion tx_one_confirmed = isTxIncluded(reinterpret_cast<char*>(tx1_id));
-      if (!find && tx_one_confirmed == TxInclusion::Yes) {
-          find = true;
-          unsigned char* tx1;
-          int tx1_size;
-          onTxOneInMempool(eid, 
-                           &ret,
-                           tx1, 
-                           tx1_size);
+      if (!find) {
+          TxInclusion tx_one_confirmed = isTxIncluded(reinterpret_cast<char*>(tx1_id));
+          if (tx_one_confirmed == TxInclusion::Yes) {
+              find = true;
+              unsigned char* tx1;
+              int tx1_size;
+              onTxOneInMempool(eid, 
+                      &ret,
+                      tx1, 
+                      tx1_size);
+          }
       }
       this_thread::sleep_for(chrono::milliseconds(INTER_PERIOD_MILLISECOND));
   }
 
   if (!find) {
     afterTimeout(eid, &ret);
-  }
-
-  this_thread::sleep_for(chrono::seconds(TIMEOUT_T2_SECOND - TIMEOUT_T1_SECOND));
-  TxInclusion tx_one_confirmed = isTxIncluded(reinterpret_cast<char*>(tx1_id));
-  try{
-      MerkleProof proof = buildTxInclusionProof(reinterpret_cast<char*>(tx1_id));
-  } catch (const std::exception &e) {
-      LOG4CXX_ERROR(logger, e.what());
-      afterTimeout(eid, &ret);
-  }
-  /*
-  while (attempts++ < TIMEOUT_T2_SECOND * 1000 / INTER_PERIOD_MILLISECOND) {
-      TxInclusion tx_one_confirmed = isTxIncluded(tx_one_id);
-      try{
-          MerkleProof proof = buildTxInclusionProof(tx_one_id);
-      } catch (const std::exception &e) {
-          LL_CRITICAL("%s", e.what());
-      }
-      TxInclusion tx_one_cancelled = isTxIncluded(tx_one_cancel_id);
-
+    this_thread::sleep_for(chrono::seconds(TIMEOUT_T2_SECOND - TIMEOUT_T1_SECOND));
+  } else {
+      this_thread::sleep_for(chrono::seconds(TIMEOUT_T2_SECOND - TIMEOUT_T1_SECOND));
+      TxInclusion tx_one_confirmed = isTxIncluded(reinterpret_cast<char*>(tx1_id));
       if (tx_one_confirmed == TxInclusion::Yes) {
-          MerkleProof proof = buildTxInclusionProof(tx_one_id);
-          LOG4CXX_INFO(logger, "tx confirmed on Bitcoin");
-          const auto *serialized = proof.serialize();
-
-          int ret;
-          auto st = onTxOneCommitted(eid, &ret, serialized);
-          if (st != SGX_SUCCESS || ret != 0) {
-              LOG4CXX_WARN(logger, "failed to call enclave");
-              print_error_message(st);
+          try{
+              MerkleProof proof = buildTxInclusionProof(reinterpret_cast<char*>(tx1_id));
+          } catch (const std::exception &e) {
+              LOG4CXX_ERROR(logger, e.what());
+              afterTimeout(eid, &ret);
+          } 
+      } else {
+          afterTimeout(eid, &ret);
+      }
+  }
+ 
+  while (attempts++ < TIMEOUT_T2_SECOND * 1000 / INTER_PERIOD_MILLISECOND) {
+      TxInclusion tx_one_confirmed = isTxIncluded(reinterpret_cast<char*>(tx1_id));
+      if (tx_one_confirmed == TxInclusion::Yes) {
+          try{
+              MerkleProof proof = buildTxInclusionProof(reinterpret_cast<char*>(tx1_id));
+              LOG4CXX_INFO(logger, "tx1_cancel confirmed on Bitcoin");
+              const auto *serialized = proof.serialize();
+              int ret;
+              auto st = onTxOneConfirmation(eid, &ret, serialized);
+              if (st != SGX_SUCCESS || ret != 0) {
+                  LOG4CXX_WARN(logger, "failed to call enclave");
+                  print_error_message(st);
+              }
+              return;
+          } catch (const std::exception &e) {
+              LOG4CXX_ERROR(logger, e.what());
           }
+      }
 
-          return 0;
+      TxInclusion tx_one_cancelled = isTxIncluded(reinterpret_cast<char*>(tx1_cancel_id));
+      if (tx_one_cancelled == TxInclusion::Yes) {
+          try{
+            MerkleProof proof = buildTxInclusionProof(reinterpret_cast<char*>(tx1_cancel_id));
+              LOG4CXX_INFO(logger, "tx1_cancel confirmed on Bitcoin");
+              const auto *serialized = proof.serialize();
+              int ret;
+              auto st = onTxOneConfirmation(eid, &ret, serialized);
+              if (st != SGX_SUCCESS || ret != 0) {
+                  LOG4CXX_WARN(logger, "failed to call enclave");
+                  print_error_message(st);
+              }
+              return;
+          } catch (const std::exception &e) {
+              LOG4CXX_ERROR(logger, e.what());
+          }
       }
       this_thread::sleep_for(chrono::milliseconds(INTER_PERIOD_MILLISECOND));
-  }*/
+  }
+  LOG4CXX_DEBUG(logger, "Fairness protocol fails. Don't know what to do...");
 }
 
 /*
@@ -232,7 +253,7 @@ void _ackSettlementPkg(string ack) {
                             ack.size(), 
                             tx1_id,
                             tx1_cancel_id);
-  checkConfirmation(tx1_id, tx1_cancel_id);
+  if (strlen(reinterpret_cast<char*>(tx1_id)) != 0) checkConfirmation(tx1_id, tx1_cancel_id);
 
 }
 
