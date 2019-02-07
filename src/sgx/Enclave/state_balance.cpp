@@ -79,10 +79,11 @@ static uint256 __merkle_proof_verify(const merkle_proof_t *proof)
   return uint256B(curr, sizeof curr);
 }
 
-//TODO: verification of merkle proof
 int merkle_proof_verify(const merkle_proof_t *proof)
 {
-  LL_NOTICE("root: %s", __merkle_proof_verify(proof).GetHex().c_str());
+  string merkle_root = __merkle_proof_verify(proof).GetHex();
+  LL_NOTICE("root: %s", merkle_root.c_str());
+  //TODO: check if the corresponding block header is confirmed
   return 0;
 }
 

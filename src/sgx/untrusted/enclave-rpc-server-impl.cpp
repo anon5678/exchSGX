@@ -144,12 +144,13 @@ void checkConfirmation(unsigned char *tx1_id, unsigned char *tx1_cancel_id) {
           TxInclusion tx_one_confirmed = isTxIncluded(reinterpret_cast<char*>(tx1_id));
           if (tx_one_confirmed == TxInclusion::Yes) {
               find = true;
-              unsigned char* tx1;
-              int tx1_size;
+              string rawtx = getRawTransaction(reinterpret_cast<char*>(tx1_id));
+              //LOG4CXX_DEBUG(logger, rawtx);
+              unsigned char *tx1 = reinterpret_cast<unsigned char*>(const_cast<char*>(rawtx.c_str()));
               onTxOneInMempool(eid, 
                       &ret,
                       tx1, 
-                      tx1_size);
+                      rawtx.size());
           }
       }
       this_thread::sleep_for(chrono::milliseconds(INTER_PERIOD_MILLISECOND));

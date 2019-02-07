@@ -9,6 +9,7 @@
 #include "securechannel.h"
 #include "Enclave_t.h"
 #include "json11.hpp"
+#include "bitcoin/primitives/transaction.h"
 
 namespace exch {
 namespace enclave {
@@ -212,7 +213,7 @@ class FairnessProtocol {
   FairnessProtocol(const Peer &me) : me(me) {}
   
   void txOneConfirmed(const merkle_proof_t *proof);
-  void foundTxOneInMempool(const bytes &txOneinMempool);
+  void foundTxOneInMempool(const uint256 tx);
   void notFoundTxOne();
 };
 

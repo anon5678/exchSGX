@@ -1,4 +1,6 @@
 #include "state.h"
+#include "bitcoin/primitives/transaction.h"
+#include "bitcoin_helpers.h"
 
 using namespace exch::enclave;
 using namespace exch::enclave::fairness;
@@ -56,12 +58,16 @@ int onAckFromFairnessFollower(const unsigned char *_ack, size_t size, unsigned c
 }
 
 int onTxOneInMempool(const unsigned char *tx1, size_t size) {
-    //TODO: transform tx1 to bytes
-    bytes tx_1;
+    CMutableTransaction tx;
+    if (!DecodeHexTx(tx, string(reinterpret_cast<char const*>(tx1), size), true)) {
+        return 0;
+    }
+    CTransaction Tx(tx);
+    //LL_DEBUG("%s", Tx.ToString().c_str());
 
     try {
         State &s = State::getInstance();
-        s.getCurrentProtocol()->foundTxOneInMempool(tx_1);
+        s.getCurrentProtocol()->foundTxOneInMempool(Tx.GetHash());
         return 0;
     }
     CATCH_STD_AND_ALL

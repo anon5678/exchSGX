@@ -21,6 +21,11 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("bitcoind-merkleproof.cpp")
 using namespace std;
 using exch::bitcoin::logger;
 
+string getRawTransaction(const string &txid) {
+    bitcoinRPC rpc;
+    return rpc.getrawtransaction(txid, false).asString();
+} 
+
 TxInclusion isTxIncluded(const string &txid) {
   bitcoinRPC rpc;
   int i = 0;

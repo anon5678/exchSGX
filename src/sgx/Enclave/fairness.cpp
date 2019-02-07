@@ -1,5 +1,7 @@
 #include "fairness.h"
 #include "state.h"
+#include "../common/utils.h"
+#include "bitcoin/utilstrencodings.h"
 
 using namespace exch::enclave::fairness;
 using namespace std;
@@ -22,7 +24,12 @@ void FairnessProtocol::txOneConfirmed(const merkle_proof_t *proof) {
         int st;
         if (merkle_proof_verify(proof) == 0) {
             LL_NOTICE("merkle proof verified");
-            string tx_id(reinterpret_cast<const char*>(proof->tx), 32);
+            
+            unsigned char *tmp = new unsigned char[33] ();
+            memcpy(tmp, proof->tx, 32);
+            byte_swap(tmp, 32);
+            string tx_id = bin2hex(tmp, 32);
+            //LL_NOTICE("%s", tx_id.c_str());
             if (tx_id == msg.tx_1_id_hex) {
                 LL_NOTICE("tx1 confirmed on the blockchain, sending tx2 to blockchain");
                 st = sendTxToBlockchain(&ret);
@@ -192,12 +199,16 @@ void Follower::receiveFromLeader(const unsigned char *msg, size_t size, unsigned
     sgx_thread_mutex_unlock(&state_mutex);
 }
 
-void FairnessProtocol::foundTxOneInMempool(const bytes &txOneInMempool) {
+void FairnessProtocol::foundTxOneInMempool(const uint256 tx) {
     sgx_thread_mutex_lock(&state_mutex);
     if (stage != SENDACK && stage != RECEIVEACK) {
         LL_NOTICE("not on the stage to accept tx1 found in mempool");
     } else {
-        if (true) {//TODO: txOneInMempool == msg.tx_1) {
+        unsigned char *tx_tmp = new unsigned char[33];
+        hex2bin(tx_tmp, HexStr(tx).c_str());
+        byte_swap(tx_tmp, 32);
+        LL_DEBUG("tx hex: %s", bin2hex(tx_tmp, 32).c_str());
+        if (bin2hex(tx_tmp, 32) == msg.tx_1_id_hex) {
             LL_NOTICE("found tx1 in mempool");
             stage = SENDTXONE;
         }
