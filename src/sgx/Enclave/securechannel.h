@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "pprint.h"
 #include "log.h"
+#include "json11.hpp"
 
 namespace exch {
 namespace enclave {
@@ -22,6 +23,29 @@ struct Box {
   Box(const std::string &cipher, const std::string &nonce) : cipher(cipher), nonce(nonce) {}
 
   size_t size() { return cipher.size() + nonce.size(); }
+  
+  string serialize() const {
+    json11::Json json = json11::Json::object{
+        {"cipher", cipher},
+        {"nonce", nonce}
+    };
+    return json.dump();
+  }
+  
+  Box static deserialize(const string &json) noexcept(false) {
+    string err;
+    const auto box_json = json11::Json::parse(json, err);
+
+    if (!err.empty()) {
+      throw (string("cannot parse box message: ") + err.c_str());
+    }
+
+    return Box(
+        box_json["cipher"].string_value(),
+        box_json["nonce"].string_value()
+    );
+  }
+
 };
 
 class Peer {

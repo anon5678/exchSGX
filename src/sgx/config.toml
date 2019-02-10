@@ -1,5 +1,5 @@
 [fairness]
-leader="localhost:1200"
+leader="localhost:1233"
 followers = [
     "localhost:1234",
     "localhost:1235",

@@ -27,8 +27,9 @@ struct CannotDisseminate : public std::exception {
 struct AcknowledgeMessage {
   string hostname;
   int port;
+  string tx1_id;
 
-  static AcknowledgeMessage deserailize(const string &json) noexcept(false) {
+  static AcknowledgeMessage deserialize(const string &json) noexcept(false) {
     string err;
     const auto ack_json = json11::Json::parse(json, err);
 
@@ -38,18 +39,74 @@ struct AcknowledgeMessage {
 
     auto hostname = ack_json["hostname"].string_value();
     auto port = ack_json["port"].int_value();
+    auto tx1_id = ack_json["tx1_id"].string_value();
 
-    return AcknowledgeMessage{hostname, port};
+    return AcknowledgeMessage{hostname, port, tx1_id};
   }
 
   string serialize() {
     json11::Json json = json11::Json::object{
         {"hostname", hostname},
-        {"port", port}
+        {"port", port},
+        {"tx1_id", tx1_id}
     };
     return json.dump();
   }
 
+  int getPort() {
+      return port;
+  }
+
+  const string &getHostname() {
+      return hostname;
+  }
+
+  const string &getTx1_id() {
+      return tx1_id;
+  }
+
+};
+
+
+struct AckPackage {
+  string hostname;
+  int port;
+  string cipher;
+
+  AckPackage (const string &hostname, const int port, const string &cipher)
+      : hostname(hostname), port(port), cipher(cipher) {}
+
+  static AckPackage deserialize(const string &json) noexcept(false) {
+    string err;
+    const auto ack_json = json11::Json::parse(json, err);
+
+    if (!err.empty()) {
+      throw (string("cannot parse ack message: ") + err.c_str());
+    }
+
+    auto hostname = ack_json["hostname"].string_value();
+    auto port = ack_json["port"].int_value();
+    auto cipher = ack_json["cipher"].string_value();
+
+    return AckPackage(hostname, port, cipher);
+  }
+
+  string serialize() {
+    json11::Json json = json11::Json::object{
+        {"hostname", hostname},
+        {"port", port},
+        {"cipher", cipher}
+    };
+    return json.dump();
+  }
+
+  int getPort() {
+      return port;
+  }
+
+  const string &getHostname() {
+      return hostname;
+  }
 };
 
 struct SettlementPkg {

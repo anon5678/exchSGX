@@ -26,6 +26,7 @@ extern BlockFIFO<1000> blockFIFO;
 
 using namespace exch::enclave;
 
+
 class State {
  private:
   /* fairness */

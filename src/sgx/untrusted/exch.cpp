@@ -135,6 +135,7 @@ int main(int argc, const char *argv[]) {
     // TODO: dummy pubkey
     uint8_t pubkey[32] = {2};
     st = setLeader(eid, &ret, hostname.c_str(), port, pubkey);
+    LOG4CXX_INFO(logger, port);
     if (st != SGX_SUCCESS || ret != 0) {
       LOG4CXX_FATAL(logger, "cannot set leader");
       exit(-1);

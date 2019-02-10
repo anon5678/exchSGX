@@ -2,6 +2,7 @@
 #include "state.h"
 #include "../common/utils.h"
 #include "bitcoin/utilstrencodings.h"
+#include "securechannel.h"
 
 using namespace exch::enclave::fairness;
 using namespace std;
@@ -19,6 +20,7 @@ void FairnessProtocol::txOneConfirmed(const merkle_proof_t *proof) {
             && stage != SENDACK && stage != RECEIVEACK) {
         LL_NOTICE("not on the stage to check tx1 status");
     } else {
+      try {
 
         int ret;
         int st;
@@ -48,6 +50,9 @@ void FairnessProtocol::txOneConfirmed(const merkle_proof_t *proof) {
         } else {
             LL_NOTICE("merkle proof verification fails");
         }
+      } catch (const std::exception &e) {
+          LL_CRITICAL("%s", e.what());
+      }
     }
     sgx_thread_mutex_unlock(&state_mutex);
 
@@ -65,6 +70,37 @@ void Leader::setMessage(SettlementPkg &&message) {
 
 void Leader::disseminate() noexcept(false) {
     sgx_thread_mutex_lock(&state_mutex);
+    /* KeyGen
+    for (int i = 0; i < 3; ++i) {
+        string sk;
+        string pk = nacl_crypto_box_keypair(&sk);
+        string skk = "";
+        string pkk = "";
+        for (int j = sk.size() - 1; j >= 0; --j) {
+            int tmp = (unsigned char)sk[j];
+            if (tmp == 0) {
+                skk = '0' + skk;
+            }
+            while (tmp) {
+                skk = (char)((tmp % 10) + '0') + skk;
+                tmp = tmp / 10;
+            }
+            if (j != 0) skk = ',' + skk;
+        }
+        for (int j = pk.size() - 1; j >= 0; --j) {
+            int tmp = (unsigned char)pk[j];
+            if (tmp == 0) {
+                pkk = '0' + pkk;
+            }
+            while (tmp) {
+                pkk = (char)((tmp % 10) + '0') + pkk;
+                tmp = tmp / 10;
+            }
+            if (j != 0) pkk = ',' + pkk;
+        }
+        LL_DEBUG("%d: sk: (%s), pk: (%s)", i, skk.c_str(), pkk.c_str());
+    }
+    */
     if (stage != INIT) {
         LL_NOTICE("not on the stage to disseminate");
     } else {
@@ -72,16 +108,15 @@ void Leader::disseminate() noexcept(false) {
         try {
             for (const auto &peer : peers) {
                 Box cipher = me.createBoxToPeer(peer, msg.serialize());
-                LL_NOTICE("sending %d bytes to %s:%d", cipher.size(), peer.getHostname().c_str(), peer.getPort());
+                LL_NOTICE("sending %d bytes to %s:%d", cipher.serialize().size(), peer.getHostname().c_str(), peer.getPort());
 
                 int ret;
                 auto st = sendMessagesToFairnessFollower(
                         &ret,
                         peer.getHostname().c_str(),
                         peer.getPort(),
-                        // TODO: serialize cipher!!!
-                        (const unsigned char *) msg.serialize().data(),
-                        msg.serialize().size());
+                        (const unsigned char *) cipher.serialize().data(),
+                        cipher.serialize().size());
 
                 // mark follower as invalid if sending fails
                 if (st != SGX_SUCCESS || ret != 0) {
@@ -110,19 +145,32 @@ void Leader::receiveAck(const unsigned char *_ack, size_t size, unsigned char *t
     } else {
         try{
 
-            //TODO: check signature of ack or open encryption
-            AcknowledgeMessage ack = AcknowledgeMessage::deserailize(string((char *) _ack, size));
+            AckPackage ackp = AckPackage::deserialize(string((char *) _ack, size));
+            long index;
+            for (index = 0; index < peers.size(); ++index) {
+                if (peers[index].getHostname() == ackp.getHostname() 
+                        && peers[index].getPort() == ackp.getPort()) {
+                    break;
+                }
+            }
 
-            Peer peer(ack.hostname, ack.port, string(32, 0xcc));
-            long index = distance(peers.begin(), find(peers.begin(), peers.end(), peer));
             if (index < peers.size()) {
-                // mark this leader as valid
-                peers_ack[index] = true;
-                LL_NOTICE("received ack from %s", peers[index].toString().c_str());
+                string tmp = me.openBoxFromPeer(Box::deserialize(ackp.cipher), peers[index]);
+                AcknowledgeMessage ack = AcknowledgeMessage::deserialize(tmp);
+                if (ack.getHostname() != ackp.getHostname() 
+                        || ack.getPort() != ackp.getPort() 
+                        || ack.getTx1_id() != msg.tx_1_id_hex) {
+                throw runtime_error("invalid MAC for ACK message");
+                } else {
+
+                    // mark this leader as valid
+                    peers_ack[index] = true;
+                    LL_NOTICE("received ack from %s", peers[index].toString().c_str());
+                }
             } else {
                 throw runtime_error("cannot find peer in peer list");
             }
-
+                    
             // decide if trigger the next step
             if (all_of(peers_ack.begin(), peers_ack.end(), [](bool x) { return x; })) {
                 LL_NOTICE("received ack from all backup. Now proceed to the next step.");
@@ -164,24 +212,26 @@ void Follower::receiveFromLeader(const unsigned char *msg, size_t size, unsigned
     if (stage != INIT) {
         LL_NOTICE("not on the stage to receive message from leader");
     } else {
+      try{
 
-        //TODO: decrypt message from leader
-        this->msg = SettlementPkg::deserialize(string((char *) msg, size));
-        //tx1_id = (unsigned char*)malloc(64);
+        Box cipher = Box::deserialize(string((char *) msg, size));
+        string tmp = me.openBoxFromPeer(cipher, leader);
+
+        this->msg = SettlementPkg::deserialize(tmp);
         this->msg.tx_1_id_hex.copy((char*)tx1_id, 64);
         this->msg.tx_1_cancel_id_hex.copy((char*)tx1_cancel_id, 64); 
 
         LL_NOTICE("sending ack to leader");
-        // TODO compute an actual ack message
-        AcknowledgeMessage ack{me.getHostname(), me.getPort()};
-        auto ack_msg = ack.serialize();
+        AcknowledgeMessage ack{me.getHostname(), me.getPort(), this->msg.tx_1_id_hex};
+        auto ack_msg = me.createBoxToPeer(leader, ack.serialize()).serialize();
+        AckPackage ackp = AckPackage(me.getHostname(), me.getPort(), ack_msg);
 
         int ret;
         auto st = sendAckToFairnessLeader(
                 &ret,
                 leader.getHostname().c_str(),
                 leader.getPort(),
-                (const unsigned char *) ack_msg.data(), ack_msg.size());
+                (const unsigned char *) ackp.serialize().data(), ackp.serialize().size());
 
         if (st != SGX_SUCCESS || ret != 0) {
             LL_CRITICAL("cannot send ack to the leader");
@@ -195,6 +245,9 @@ void Follower::receiveFromLeader(const unsigned char *msg, size_t size, unsigned
             stage = SENDACK;
             LL_NOTICE("currently on stage SENDACK");
         }
+      } catch (const std::exception &e) {
+          LL_CRITICAL("%s", e.what());
+      }
     }
     sgx_thread_mutex_unlock(&state_mutex);
 }
@@ -204,6 +257,7 @@ void FairnessProtocol::foundTxOneInMempool(const uint256 tx) {
     if (stage != SENDACK && stage != RECEIVEACK) {
         LL_NOTICE("not on the stage to accept tx1 found in mempool");
     } else {
+      try {
         unsigned char *tx_tmp = new unsigned char[33];
         hex2bin(tx_tmp, HexStr(tx).c_str());
         byte_swap(tx_tmp, 32);
@@ -212,6 +266,9 @@ void FairnessProtocol::foundTxOneInMempool(const uint256 tx) {
             LL_NOTICE("found tx1 in mempool");
             stage = SENDTXONE;
         }
+      } catch (const std::exception &e) {
+          LL_CRITICAL("%s", e.what());
+      }
     }
     sgx_thread_mutex_unlock(&state_mutex);
 }
@@ -221,7 +278,7 @@ void FairnessProtocol::notFoundTxOne() {
     if (stage != SENDACK && stage != RECEIVEACK && stage != SENDTXONE) {
         LL_NOTICE("not on the stage to check tx1");
     } else {
-
+      try {
         if (!timer1.passTime()) {
             LL_NOTICE("not time to check tx1 in mempool");
         } else if ((stage == SENDTXONE) && (!timer2.passTime())) {
@@ -240,6 +297,9 @@ void FairnessProtocol::notFoundTxOne() {
                 stage = SENDTXONECANCEL;
             }
         }
+      } catch (const std::exception &e) {
+          LL_CRITICAL("%s", e.what());
+      }
     }
     sgx_thread_mutex_unlock(&state_mutex);
 }

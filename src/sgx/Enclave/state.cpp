@@ -47,13 +47,12 @@ void State::setSelf(bool is_leader, const securechannel::Peer &self) {
       
   if (!is_leader) {
       // TODO: replace this with sealed keys from untrusted world
-      string leaderSk;
-      string leaderPk = nacl_crypto_box_keypair(&leaderSk);
+      //string leaderSk;
+      //string leaderPk = nacl_crypto_box_keypair(&leaderSk);
       Peer leader_info(
           currentLeader.getHostname(),
           currentLeader.getPort(),
-          leaderPk,
-          leaderSk);
+          currentLeader.getPublicKey());
 
       this->currentFollower = new fairness::Follower(self_info, leader_info);
   } else {
