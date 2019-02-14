@@ -34,6 +34,7 @@
 .idea
 
 build
+bin
 
 # others
 .DS_Store
