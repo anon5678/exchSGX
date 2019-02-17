@@ -2,7 +2,7 @@
 
 #include "lest/lest.hpp"
 #include "bitcoin/uint256.h"
-#include "blockfifo.hpp"
+#include "blockfifo.h"
 #include "crypto_box.h"
 #include "securechannel.h"
 #include "state.h"

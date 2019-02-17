@@ -1,10 +1,5 @@
-//
-// Created by fanz on 7/13/17.
-// This file implements the FIFO queue that stores the recent blocks
-//
-
-#ifndef PROJECT_LATEST_BLOCKS_H
-#define PROJECT_LATEST_BLOCKS_H
+#ifndef TESSERACT_BLOCKFIFO_H
+#define TESSERACT_BLOCKFIFO_H
 
 #include <deque>
 
@@ -88,4 +83,4 @@ class BlockFIFO {
   size_t size() const { return _blocks.size(); }
 };
 
-#endif // PROJECT_LATEST_BLOCKS_H
+#endif // TESSERACT_BLOCKFIFO_H

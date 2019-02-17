@@ -1,7 +1,7 @@
 #ifndef PROJECT_STATE_H
 #define PROJECT_STATE_H
 
-#include "blockfifo.hpp"
+#include "blockfifo.h"
 #include "balancebook.hpp"
 #include "fairness.h"
 #include <sgx_thread.h>

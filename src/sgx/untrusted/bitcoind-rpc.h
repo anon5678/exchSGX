@@ -1,4 +1,4 @@
-#include "bitcoindrpcclient.h"
+#include "generated/bitcoind-rpc-client.h"
 
 #include <sstream>
 #include <string>
@@ -37,7 +37,7 @@ class bitcoinRPC {
 
 /**
  * Based on bitcoin-api-cpp
- * original author  Krzysztof Okupski
+ * original author: Krzysztof Okupski
  */
 
 class bitcoinRPCException : public std::exception {
@@ -63,11 +63,11 @@ class bitcoinRPCException : public std::exception {
     }
   }
 
-  ~bitcoinRPCException() throw() {};
+  ~bitcoinRPCException() noexcept {};
 
   int getCode() { return code; }
 
-  const char *what() const throw() { return msg.c_str(); }
+  const char *what() const noexcept { return msg.c_str(); }
 
   std::string removePrefix(const std::string &in, const std::string &pattern) {
     std::string ret = in;

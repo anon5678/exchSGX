@@ -1,5 +1,5 @@
 #!/bin/sh
-jsonrpcstub bitcoind_api.json --cpp-client bitcoindRPCClient
+jsonrpcstub bitcoind_rpc.json --cpp-client bitcoindRPCClient --cpp-client-file=bitcoind-rpc-client.h
 jsonrpcstub enclave-rpc.json \
     --cpp-server=exch::rpc::AbsServer \
     --cpp-server-file=enclave-rpc-server.h \

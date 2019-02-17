@@ -1,7 +1,7 @@
 #ifndef TESSERACT_ENCLAVE_RPC_CLIENT_IMPL_H
 #define TESSERACT_ENCLAVE_RPC_CLIENT_IMPL_H
 
-#include "enclave-rpc-client.h"
+#include "generated/enclave-rpc-client.h"
 #include <jsonrpccpp/client/connectors/httpclient.h>
 
 #include <iostream>

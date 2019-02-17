@@ -1,6 +1,6 @@
 #include "state.h"
 
-#include "blockfifo.hpp"
+#include "blockfifo.h"
 #include "bitcoin/utilstrencodings.h"
 #include "bytestream.h"
 #include "hash.h"
@@ -30,7 +30,7 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex) {
 
     CBlockHeader block_header;
 
-    // parse hex and unserialize
+    // parse hex and deserialize
     std::vector<unsigned char> header_bin = ParseHex(blockHeaderHex);
     bytestream ibs(header_bin);
     block_header.Unserialize(ibs);

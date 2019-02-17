@@ -12,7 +12,6 @@
 
 #include "Enclave_u.h"
 #include "Utils.h"
-#include "bitcoindrpcclient.h"
 
 #include "enclave-rpc-server-impl.h"
 #include "interrupt.h"

@@ -72,7 +72,7 @@ set(ENCLAVE_SOURCE_FILES
         securechannel.cpp
 
         # enclave state
-        blockfifo.hpp
+        blockfifo.h
         balancebook.hpp
         settle.cpp
         state.cpp
