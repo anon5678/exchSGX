@@ -13,7 +13,7 @@
 #include "Enclave_u.h"
 #include "Utils.h"
 
-#include "enclave-rpc-server-impl.h"
+#include "rpc/enclave-server.h"
 #include "interrupt.h"
 #include "external/toml.h"
 

@@ -1,6 +1,6 @@
 #include "merkpath/merkpath.h"
 #include "Utils.h"
-#include "bitcoind-rpc.h"
+#include "rpc/bitcoind-client.h"
 #include "bitcoind-merkleproof.h"
 
 #include <algorithm>

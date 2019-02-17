@@ -22,7 +22,7 @@
 #include <log4cxx/propertyconfigurator.h>
 
 #include "bitcoind-merkleproof.h"
-#include "enclave-rpc-server-impl.h"
+#include "rpc/enclave-server.h"
 #include "interrupt.h"
 #include "config.h"
 #include "Utils.h"

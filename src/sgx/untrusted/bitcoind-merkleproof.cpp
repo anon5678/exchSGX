@@ -9,7 +9,7 @@
 #include <log4cxx/logger.h>
 #include <log4cxx/propertyconfigurator.h>
 
-#include "bitcoind-rpc.h"
+#include "rpc/bitcoind-client.h"
 #include "merkpath/merkpath.h"
 
 namespace exch {

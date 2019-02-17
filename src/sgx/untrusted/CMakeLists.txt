@@ -3,8 +3,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11")
 
 # TODO: move RPC stuff out of the bundle
 set(BRIDGE_SRC
-        fairness-ocall.cpp
-        bitcoind-rpc.cpp
+        rpc/fairness-client.cpp
+        rpc/bitcoind-client.cpp
         bitcoind-merkleproof.cpp
         merkpath/merkpath.cpp
         merkle_data.cpp
@@ -29,8 +29,8 @@ add_custom_command(
 
 add_executable(exch exch.cpp
         interrupt.cpp
-        bitcoind-rpc.cpp
-        enclave-rpc-server-impl.cpp
+        rpc/bitcoind-client.cpp
+        rpc/enclave-server.cpp
         merkpath/merkpath.cpp
         merkle_data.cpp
         ../common/utils.cpp
@@ -41,7 +41,7 @@ add_executable(exch exch.cpp
 add_executable(exch-merkleproof
         exch-merkleproof.cpp
         bitcoind-merkleproof.cpp
-        bitcoind-rpc.cpp
+        rpc/bitcoind-client.cpp
         merkpath/merkpath.cpp
         ../common/utils.cpp
         merkle_data.cpp)

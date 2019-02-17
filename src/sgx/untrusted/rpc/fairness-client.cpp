@@ -1,10 +1,10 @@
-#include "fairness-ocall.h"
+#include "fairness-client.h"
 
-#include "Enclave_u.h"
-#include "bitcoind-merkleproof.h"
-#include "../common/merkle_data.h"
-#include "../common/utils.h"
-#include "Utils.h"
+#include "../Enclave_u.h"
+#include "../bitcoind-merkleproof.h"
+#include "../../common/merkle_data.h"
+#include "../../common/utils.h"
+#include "../Utils.h"
 
 #include <future>
 #include <memory>

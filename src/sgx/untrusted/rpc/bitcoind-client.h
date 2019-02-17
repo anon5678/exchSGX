@@ -72,7 +72,7 @@ class bitcoinRPCException : public std::exception {
   std::string removePrefix(const std::string &in, const std::string &pattern) {
     std::string ret = in;
 
-    unsigned int pos = ret.find(pattern);
+    size_t pos = ret.find(pattern);
 
     if (pos <= ret.size()) {
       ret.erase(0, pos + pattern.size());

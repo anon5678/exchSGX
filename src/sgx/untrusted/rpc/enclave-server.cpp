@@ -1,4 +1,4 @@
-#include "enclave-rpc-server-impl.h"
+#include "enclave-server.h"
 
 #include <iostream>
 #include <assert.h>
@@ -11,13 +11,13 @@
 #include <future>
 #include <memory>
 
-#include "merkpath/merkpath.h"
-#include "Enclave_u.h"
-#include "fairness-ocall.h"
-#include "bitcoind-merkleproof.h"
-#include "../common/merkle_data.h"
-#include "../common/utils.h"
-#include "Utils.h"
+#include "../merkpath/merkpath.h"
+#include "../Enclave_u.h"
+#include "fairness-client.h"
+#include "../bitcoind-merkleproof.h"
+#include "../../common/merkle_data.h"
+#include "../../common/utils.h"
+#include "../Utils.h"
 
 
 namespace exch {
