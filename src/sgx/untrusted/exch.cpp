@@ -28,6 +28,7 @@
 #include "Utils.h"
 #include "Enclave_u.h"
 #include "external/toml.h"
+#include "rpc/bitcoind-client.h"
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -47,8 +48,8 @@ extern shared_ptr<aio::io_service> io_service;
 extern unique_ptr<boost::asio::deadline_timer> fairnessTimer;
 sgx_enclave_id_t eid;
 
-void workerThread(shared_ptr<aio::io_service> io_service) {
-  LOG4CXX_INFO(logger, "worker thread starts.");
+void boost_asio_worker(shared_ptr<aio::io_service> io_service) {
+  LOG4CXX_INFO(logger, "worker thread started");
   while (true) {
     try {
       boost::system::error_code ec;
@@ -56,7 +57,7 @@ void workerThread(shared_ptr<aio::io_service> io_service) {
       if (ec) {
         LOG4CXX_ERROR(logger, "Error: " << ec.message());
       }
-      // the run() function blocks until [...] the io_service has been stopped.
+      // the run() function blocks until io_service is stopped.
       // so break is only hit if io_service is stopped
       break;
     }
@@ -65,6 +66,44 @@ void workerThread(shared_ptr<aio::io_service> io_service) {
     }
   }
   LOG4CXX_INFO(logger, "worker thread finishes.");
+}
+
+void new_block_listener(const string& bitcoind_endpoint) {
+    int num_of_imported_blocks = 0;
+    sgx_status_t st;
+    int ret;
+
+    LOG4CXX_INFO(logger, "starting the block listener thread")
+
+    Bitcoind bitcoind(bitcoind_endpoint);
+
+    LOG4CXX_INFO(logger, "block listener started")
+
+    while (!exch::interrupt::quit.load()) {
+        try {
+            auto blockcount = bitcoind.getblockcount();
+            if (blockcount > num_of_imported_blocks) {
+                    auto hash = bitcoind.getblockhash(num_of_imported_blocks);
+                    auto header = bitcoind.getblockheader(hash);
+
+                    st = ecall_append_block_to_fifo(eid,&ret, header.c_str());
+
+                    if (SGX_SUCCESS != st || ret != 0) {
+                        if (SGX_SUCCESS != st) {
+                          print_error_message(st);
+                        }
+                        throw std::runtime_error("can't append block to FIFO: return code " + std::to_string(ret));
+                    }
+                    num_of_imported_blocks ++;
+            }
+        }
+
+        catch (const std::exception & e) {
+            LOG4CXX_ERROR(logger, "can't get block " << num_of_imported_blocks << ". " << e.what());
+        }
+
+        std::this_thread::sleep_for(chrono::seconds(1));
+    }
 }
 
 int main(int argc, const char *argv[]) {
@@ -77,9 +116,6 @@ int main(int argc, const char *argv[]) {
   io_service = std::make_shared<aio::io_service>();
   aio::io_service::work io_work(*io_service);
 
-  boost::thread_group worker_threads;
-  for (auto i = 0; i < 5; ++i) { worker_threads.create_thread(boost::bind(&workerThread, io_service)); }
-
   // try to create an enclave
   if (0 != initialize_enclave(&eid)) {
     cerr << "failed to init enclave" << endl;
@@ -88,6 +124,12 @@ int main(int argc, const char *argv[]) {
 
   sgx_status_t st;
   int ret = 0;
+
+  boost::thread_group worker_threads;
+  for (auto i = 0; i < 5; ++i) { worker_threads.create_thread(boost::bind(&boost_asio_worker, io_service)); }
+
+  // create a thread for the block listener
+  worker_threads.create_thread(boost::bind(&new_block_listener, "localhost"));
 
   // try to load sealed secret keys
 #if false

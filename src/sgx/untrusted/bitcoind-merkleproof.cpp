@@ -22,12 +22,12 @@ using namespace std;
 using exch::bitcoin::logger;
 
 string getRawTransaction(const string &txid) {
-    bitcoinRPC rpc;
+    Bitcoind rpc;
     return rpc.getrawtransaction(txid, false).asString();
 } 
 
 TxInclusion isTxIncluded(const string &txid) {
-  bitcoinRPC rpc;
+  Bitcoind rpc;
   int i = 0;
   LOG4CXX_INFO(logger, "testing if " << txid << " is confirmed");
   while (true) {
@@ -54,7 +54,7 @@ TxInclusion isTxIncluded(const string &txid) {
 }
 
 MerkleProof buildTxInclusionProof(const string &txid) {
-  bitcoinRPC rpc;
+  Bitcoind rpc;
 
   try {
     Json::Value txn = rpc.getrawtransaction(txid, true);

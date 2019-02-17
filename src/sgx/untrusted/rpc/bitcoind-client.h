@@ -19,18 +19,26 @@ using Json::Value;
 using Json::Reader;
 using jsonrpc::Errors;
 
-class bitcoinRPC {
-  jsonrpc::HttpClient connector;
-  bitcoindRPCClient bitcoindClient;
+#include <log4cxx/logger.h>
+
+using log4cxx::LoggerPtr;
+
+class Bitcoind {
+private:
+    jsonrpc::HttpClient connector;
+    bitcoindRPCClient bitcoind_client;
 
  public:
-  explicit bitcoinRPC(const string& rpc_addr="http://exch:goodpass@dockerhost:18443")
-      : connector(rpc_addr),
-        bitcoindClient(connector, jsonrpc::JSONRPC_CLIENT_V1) {}
 
-  int getblockcount();
-  string getblockhash(int block_height);
-  string getblockheader(const string &block_hash, bool format);
+    // const string& rpc_addr="http://exch:goodpass@dockerhost:18443"
+    explicit Bitcoind(const string& hostname="dockerhost", int port=18443, const string& auth="exch:goodpass")
+      : connector("http://" + auth + "@" + hostname + ":" + std::to_string(port)),
+        bitcoind_client(connector, jsonrpc::JSONRPC_CLIENT_V1)
+        {}
+
+    int getblockcount();
+  string getblockhash(int block_height) noexcept (false) ;
+  string getblockheader(const string &block_hash, bool format=false);
   Value getblock(const string &block_hash);
   Value getrawtransaction(const string &tx_hash, bool JSONformat);
 };
@@ -63,7 +71,7 @@ class bitcoinRPCException : public std::exception {
     }
   }
 
-  ~bitcoinRPCException() noexcept {};
+  ~bitcoinRPCException()=default;
 
   int getCode() { return code; }
 

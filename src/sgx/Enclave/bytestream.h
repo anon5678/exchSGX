@@ -24,7 +24,7 @@ class bytestream
 
   size_t read(char *to, size_t num)
   {
-    LL_DEBUG("(rpos = %d) reading %d to %p", _rpos, num, to);
+    LL_LOG("(rpos = %d) reading %d to %p", _rpos, num, to);
 
     if (num > _data.size() - _rpos) {
       return 0;
@@ -32,7 +32,7 @@ class bytestream
     memcpy(to, _data.data() + _rpos, num);
     _rpos += num;
 
-    LL_DEBUG("copied %d bytes", num);
+    LL_LOG("copied %d bytes", num);
 
     return num;
   }

@@ -20,22 +20,24 @@ unsigned int nLeadingZero(const uint256 &hash) {
   return static_cast<unsigned int>(foundNonZero);
 }
 
+#include "../common/errno.h"
+#include "bitcoin/streams.h"
+
 int ecall_append_block_to_fifo(const char *blockHeaderHex) {
   try {
     // sanity check
     if (2 * HeaderSize::bitcoin != strlen(blockHeaderHex)) {
       LL_CRITICAL("invalid header");
-      return -1;
+      return BLOCKFIFO_INVALID_INPUT;
     }
-
-    CBlockHeader block_header;
 
     // parse hex and deserialize
     std::vector<unsigned char> header_bin = ParseHex(blockHeaderHex);
-    bytestream ibs(header_bin);
-    block_header.Unserialize(ibs);
+    CBlockHeader block_header;
+    CDataStream _in(header_bin, SER_NETWORK, PROTOCOL_VERSION);
+    _in >> block_header;
 
-    LL_DEBUG("done unserilize");
+    LL_LOG("done unserilize");
 
     uint256 block_hash;
     CHash256 _hash_ctx;
@@ -48,13 +50,14 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex) {
     }
 
     // try to push it to the FIFO
-    if (state::blockFIFO.enqueue(block_header)) {
-      LL_NOTICE("%s add.", block_header.GetHash().ToString().c_str());
-      return 0;
+    errno_t ret = state::blockFIFO.enqueue(block_header);
+    if (NO_ERROR == ret) {
+      LL_NOTICE("block %s appended.", block_header.GetHash().ToString().c_str());
     } else {
       LL_CRITICAL("failed to append block %s", block_hash.GetHex().c_str());
-      return -1;
     }
+
+    return ret;
   } catch (const std::exception &e) {
     LL_CRITICAL("exception in ecall: %s", e.what());
     return -1;
