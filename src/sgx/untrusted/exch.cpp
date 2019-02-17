@@ -85,6 +85,8 @@ void new_block_listener(const string &bitcoind_endpoint)
   while (!exch::interrupt::quit.load()) {
     try {
       auto blockcount = bitcoind.getblockcount();
+      // FIXME: this is oversimplified!! it only works until the FIFO is filled.
+      // TODO: add an ecall to get the head of the FIFO (i.e., the latest block)
       if (blockcount > num_of_imported_blocks) {
         auto hash = bitcoind.getblockhash(num_of_imported_blocks);
         auto header = bitcoind.getblockheader(hash);
