@@ -3,8 +3,8 @@
 
 #include <deque>
 
-#include "bitcoin/primitives/block.h"
 #include "../common/errno.h"
+#include "bitcoin/primitives/block.h"
 #include "pprint.h"
 
 using namespace std;
@@ -19,8 +19,9 @@ enum HeaderSize {
  */
 unsigned int nLeadingZero(const uint256 &hash);
 
-template<unsigned int QUEUE_LENGTH>
-class BlockFIFO {
+template <unsigned int QUEUE_LENGTH>
+class BlockFIFO
+{
  private:
   deque<CBlockHeader> _blocks;
   unsigned int diff;
@@ -29,21 +30,24 @@ class BlockFIFO {
     const uint256 hash;
     explicit hashPredicate(const uint256 &hash) : hash(hash) {}
 
-    bool operator()(const CBlockHeader &header) {
+    bool operator()(const CBlockHeader &header)
+    {
       return header.GetHash() == hash;
     }
   };
 
  public:
-    explicit BlockFIFO(unsigned difficulty=0) : diff(difficulty) {
-        if (diff == 0) {
-            LL_WARNING("using difficulty %d", diff);
-        }
+  explicit BlockFIFO(unsigned difficulty = 0) : diff(difficulty)
+  {
+    if (diff == 0) {
+      LL_WARNING("using difficulty %d", diff);
     }
-  errno_t is_valid_successor(const CBlockHeader &new_block) const {
+  }
+  errno_t is_valid_successor(const CBlockHeader &new_block) const
+  {
     if (_blocks.empty()) {
-        LL_DEBUG("empty");
-        return NO_ERROR;
+      LL_DEBUG("empty");
+      return NO_ERROR;
     }
 
     CBlockHeader prev_block = _blocks.back();
@@ -53,22 +57,26 @@ class BlockFIFO {
     }
 
     if (nLeadingZero(new_block.GetHash()) < diff) {
-        LL_CRITICAL("insufficient diff %d (ret=%d)", nLeadingZero(new_block.GetHash()), BLOCKFIFO_INSUFFICIENT_DIFFICULTY);
+      LL_CRITICAL(
+          "insufficient diff %d (ret=%d)",
+          nLeadingZero(new_block.GetHash()),
+          BLOCKFIFO_INSUFFICIENT_DIFFICULTY);
       return BLOCKFIFO_INSUFFICIENT_DIFFICULTY;
     }
 
     return 0;
   }
 
-  const CBlockHeader *find_block(const uint256 &hash) {
+  const CBlockHeader *find_block(const uint256 &hash)
+  {
     auto it = find_if(_blocks.begin(), _blocks.end(), hashPredicate(hash));
-    if (it == _blocks.end())
-      return nullptr;
+    if (it == _blocks.end()) return nullptr;
 
     return &(*it);
   }
 
-  errno_t enqueue(const CBlockHeader &new_header) {
+  errno_t enqueue(const CBlockHeader &new_header)
+  {
     errno_t ret = is_valid_successor(new_header);
 
     if (NO_ERROR != ret) {
@@ -95,4 +103,4 @@ class BlockFIFO {
   size_t size() const { return _blocks.size(); }
 };
 
-#endif // TESSERACT_BLOCKFIFO_H
+#endif  // TESSERACT_BLOCKFIFO_H

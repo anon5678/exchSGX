@@ -83,7 +83,7 @@ int merkle_proof_verify(const merkle_proof_t *proof)
 {
   string merkle_root = __merkle_proof_verify(proof).GetHex();
   LL_NOTICE("root: %s", merkle_root.c_str());
-  //TODO: check if the corresponding block header is confirmed
+  // TODO: check if the corresponding block header is confirmed
   return 0;
 }
 

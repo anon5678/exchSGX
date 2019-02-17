@@ -5,14 +5,15 @@
 
 // this file deals with signals, esp. Ctrl-C
 
-namespace exch {
-namespace interrupt {
-
+namespace exch
+{
+namespace interrupt
+{
 extern std::atomic<bool> quit;
 void flipQuit(int n);
 void init_signal_handler();
 
-}
-}
+}  // namespace interrupt
+}  // namespace exch
 
-#endif //PROJECT_INTERRUPT_H
+#endif  // PROJECT_INTERRUPT_H

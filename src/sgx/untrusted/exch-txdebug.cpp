@@ -1,24 +1,27 @@
 #include <log4cxx/logger.h>
 #include <log4cxx/propertyconfigurator.h>
 
-#include "interrupt.h"
-#include "config.h"
-#include "Utils.h"
 #include "Enclave_u.h"
+#include "Utils.h"
+#include "config.h"
+#include "interrupt.h"
 
 using namespace std;
 
-namespace exch {
-namespace main {
+namespace exch
+{
+namespace main
+{
 log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.cpp"));
 }
-}
+}  // namespace exch
 
 using exch::main::logger;
 
 sgx_enclave_id_t eid;
 
-int main(int argc, const char *argv[]) {
+int main(int argc, const char *argv[])
+{
   Config conf(argc, argv);
   log4cxx::PropertyConfigurator::configure(LOGGING_CONF);
   exch::interrupt::init_signal_handler();
@@ -41,4 +44,3 @@ int main(int argc, const char *argv[]) {
   // destroy the enclave last
   sgx_destroy_enclave(eid);
 }
-

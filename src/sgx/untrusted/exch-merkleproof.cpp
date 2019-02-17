@@ -1,7 +1,7 @@
-#include "merkpath/merkpath.h"
 #include "Utils.h"
-#include "rpc/bitcoind-client.h"
 #include "bitcoind-merkleproof.h"
+#include "merkpath/merkpath.h"
+#include "rpc/bitcoind-client.h"
 
 #include <algorithm>
 #include <fstream>
@@ -9,15 +9,18 @@
 #include <log4cxx/logger.h>
 #include <log4cxx/propertyconfigurator.h>
 
-namespace exch {
-namespace merkleproof {
+namespace exch
+{
+namespace merkleproof
+{
 log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("merkleproof"));
 }
-}
+}  // namespace exch
 
 using exch::merkleproof::logger;
 
-int main(int argc, const char *argv[]) {
+int main(int argc, const char *argv[])
+{
   if (argc < 2) {
     cout << "Usage: " << argv[0] << " txid" << endl;
     exit(-1);

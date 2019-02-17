@@ -4,6 +4,4 @@
 
 #include "../common/common.h"
 
-int init_enclave_state(const init_param &) {
-
-}
+int init_enclave_state(const init_param &) {}
