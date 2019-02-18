@@ -1,7 +1,8 @@
 #include "utils.h"
 #include <string>
 
-int printf_std(const char *fmt, ...) {
+int printf_std(const char *fmt, ...)
+{
   int ret;
   va_list ap;
   char buf[BUFSIZ] = {'\0'};
@@ -12,7 +13,8 @@ int printf_std(const char *fmt, ...) {
   return ret;
 }
 
-int printf_err(const char *fmt, ...) {
+int printf_err(const char *fmt, ...)
+{
   int ret;
   va_list ap;
   char buf[BUFSIZ] = {'\0'};
@@ -23,9 +25,11 @@ int printf_err(const char *fmt, ...) {
   return ret;
 }
 
-std::vector<uint8_t> utils::sgx_unseal_data_cpp(const sgx_sealed_data_t *secret, size_t len) {
+std::vector<uint8_t> utils::sgx_unseal_data_cpp(
+    const sgx_sealed_data_t *secret, size_t len)
+{
   // not used
-  (void) len;
+  (void)len;
 
   uint32_t unsealed_len = sgx_get_encrypt_txt_len(secret);
   uint8_t y[unsealed_len];

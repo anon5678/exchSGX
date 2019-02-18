@@ -1,25 +1,28 @@
 #ifndef PROJECT_FAIRNESS_ENCLAVE_H
 #define PROJECT_FAIRNESS_ENCLAVE_H
 
-#include <vector>
-#include <set>
-#include <map>
 #include <cstdint>
+#include <map>
+#include <set>
+#include <vector>
 
-#include "securechannel.h"
 #include "Enclave_t.h"
-#include "json11.hpp"
 #include "bitcoin/primitives/transaction.h"
+#include "json11.hpp"
+#include "securechannel.h"
 
-namespace exch {
-namespace enclave {
-namespace fairness {
-
+namespace exch
+{
+namespace enclave
+{
+namespace fairness
+{
 using std::vector;
 using namespace exch::enclave::securechannel;
 
 struct CannotDisseminate : public std::exception {
-  const char *what() const throw() override {
+  const char *what() const throw() override
+  {
     return "cannot disseminate fairness messages";
   }
 };
@@ -29,12 +32,13 @@ struct AcknowledgeMessage {
   int port;
   string tx1_id;
 
-  static AcknowledgeMessage deserialize(const string &json) noexcept(false) {
+  static AcknowledgeMessage deserialize(const string &json) noexcept(false)
+  {
     string err;
     const auto ack_json = json11::Json::parse(json, err);
 
     if (!err.empty()) {
-      throw (string("cannot parse ack message: ") + err.c_str());
+      throw(string("cannot parse ack message: ") + err.c_str());
     }
 
     auto hostname = ack_json["hostname"].string_value();
@@ -44,44 +48,37 @@ struct AcknowledgeMessage {
     return AcknowledgeMessage{hostname, port, tx1_id};
   }
 
-  string serialize() {
+  string serialize()
+  {
     json11::Json json = json11::Json::object{
-        {"hostname", hostname},
-        {"port", port},
-        {"tx1_id", tx1_id}
-    };
+        {"hostname", hostname}, {"port", port}, {"tx1_id", tx1_id}};
     return json.dump();
   }
 
-  int getPort() {
-      return port;
-  }
+  int getPort() { return port; }
 
-  const string &getHostname() {
-      return hostname;
-  }
+  const string &getHostname() { return hostname; }
 
-  const string &getTx1_id() {
-      return tx1_id;
-  }
-
+  const string &getTx1_id() { return tx1_id; }
 };
-
 
 struct AckPackage {
   string hostname;
   int port;
   string cipher;
 
-  AckPackage (const string &hostname, const int port, const string &cipher)
-      : hostname(hostname), port(port), cipher(cipher) {}
+  AckPackage(const string &hostname, const int port, const string &cipher)
+      : hostname(hostname), port(port), cipher(cipher)
+  {
+  }
 
-  static AckPackage deserialize(const string &json) noexcept(false) {
+  static AckPackage deserialize(const string &json) noexcept(false)
+  {
     string err;
     const auto ack_json = json11::Json::parse(json, err);
 
     if (!err.empty()) {
-      throw (string("cannot parse ack message: ") + err.c_str());
+      throw(string("cannot parse ack message: ") + err.c_str());
     }
 
     auto hostname = ack_json["hostname"].string_value();
@@ -91,22 +88,16 @@ struct AckPackage {
     return AckPackage(hostname, port, cipher);
   }
 
-  string serialize() {
+  string serialize()
+  {
     json11::Json json = json11::Json::object{
-        {"hostname", hostname},
-        {"port", port},
-        {"cipher", cipher}
-    };
+        {"hostname", hostname}, {"port", port}, {"cipher", cipher}};
     return json.dump();
   }
 
-  int getPort() {
-      return port;
-  }
+  int getPort() { return port; }
 
-  const string &getHostname() {
-      return hostname;
-  }
+  const string &getHostname() { return hostname; }
 };
 
 struct SettlementPkg {
@@ -124,12 +115,21 @@ struct SettlementPkg {
   static constexpr const char *TX_ONE_CANCEL = "tx_1_cancel";
   static constexpr const char *TX_TWO_CANCEL = "tx_2_cancel";
 
-  SettlementPkg(const string &tx_1_id, const string &tx_1_cancel_id,
-                const bytes &tx_1, const bytes &tx_2,
-                const bytes &tx_1_cancel, const bytes &tx_2_cancel)
-      : tx_1_id_hex(tx_1_id), tx_1_cancel_id_hex(tx_1_cancel_id),
-        tx_1(tx_1), tx_2(tx_2),
-        tx_1_cancel(tx_1_cancel), tx_2_cancel(tx_2_cancel) {}
+  SettlementPkg(
+      const string &tx_1_id,
+      const string &tx_1_cancel_id,
+      const bytes &tx_1,
+      const bytes &tx_2,
+      const bytes &tx_1_cancel,
+      const bytes &tx_2_cancel)
+      : tx_1_id_hex(tx_1_id),
+        tx_1_cancel_id_hex(tx_1_cancel_id),
+        tx_1(tx_1),
+        tx_2(tx_2),
+        tx_1_cancel(tx_1_cancel),
+        tx_2_cancel(tx_2_cancel)
+  {
+  }
 
   SettlementPkg() = default;
 
@@ -140,15 +140,18 @@ struct SettlementPkg {
   SettlementPkg &operator=(const SettlementPkg &) = delete;
 
   // define move
-  SettlementPkg(SettlementPkg &&other) noexcept :
-      tx_1_id_hex(std::move(other.tx_1_id_hex)),
-      tx_1_cancel_id_hex(std::move(other.tx_1_cancel_id_hex)),
-      tx_1(std::move(other.tx_1)),
-      tx_2(std::move(other.tx_2)),
-      tx_1_cancel(std::move(other.tx_1_cancel)),
-      tx_2_cancel(std::move(other.tx_2_cancel)) {}
+  SettlementPkg(SettlementPkg &&other) noexcept
+      : tx_1_id_hex(std::move(other.tx_1_id_hex)),
+        tx_1_cancel_id_hex(std::move(other.tx_1_cancel_id_hex)),
+        tx_1(std::move(other.tx_1)),
+        tx_2(std::move(other.tx_2)),
+        tx_1_cancel(std::move(other.tx_1_cancel)),
+        tx_2_cancel(std::move(other.tx_2_cancel))
+  {
+  }
 
-  SettlementPkg &operator=(SettlementPkg &&other) noexcept {
+  SettlementPkg &operator=(SettlementPkg &&other) noexcept
+  {
     if (this == &other) {
       return *this;
     }
@@ -163,37 +166,38 @@ struct SettlementPkg {
     return *this;
   }
 
-  string serialize() const {
-    json11::Json json = json11::Json::object{
-        {TX_ONE_ID, tx_1_id_hex},
-        {TX_ONE_CANCEL_ID, tx_1_cancel_id_hex},
-        {TX_ONE, tx_1},
-        {TX_TWO, tx_2},
-        {TX_ONE_CANCEL, tx_1_cancel},
-        {TX_TWO_CANCEL, tx_2_cancel}
-    };
+  string serialize() const
+  {
+    json11::Json json =
+        json11::Json::object{{TX_ONE_ID, tx_1_id_hex},
+                             {TX_ONE_CANCEL_ID, tx_1_cancel_id_hex},
+                             {TX_ONE, tx_1},
+                             {TX_TWO, tx_2},
+                             {TX_ONE_CANCEL, tx_1_cancel},
+                             {TX_TWO_CANCEL, tx_2_cancel}};
     return json.dump();
   }
 
-  static bytes jsonArrayToBytes(json11::Json::array arr) {
+  static bytes jsonArrayToBytes(json11::Json::array arr)
+  {
     bytes bytearray;
 
     std::transform(
         arr.begin(),
         arr.end(),
         std::back_inserter(bytearray),
-        [](json11::Json b) -> uint8_t { return (uint8_t) b.int_value(); }
-    );
+        [](json11::Json b) -> uint8_t { return (uint8_t)b.int_value(); });
 
     return bytearray;
   }
 
-  SettlementPkg static deserialize(const string &json) noexcept(false) {
+  SettlementPkg static deserialize(const string &json) noexcept(false)
+  {
     string err;
     const auto ack_json = json11::Json::parse(json, err);
 
     if (!err.empty()) {
-      throw (string("cannot parse ack message: ") + err.c_str());
+      throw(string("cannot parse ack message: ") + err.c_str());
     }
 
     bytes tx_one = jsonArrayToBytes(ack_json[TX_ONE].array_items());
@@ -207,15 +211,14 @@ struct SettlementPkg {
         tx_one,
         tx_two,
         tx_one_c,
-        tx_two_c
-    );
+        tx_two_c);
   }
-
 };
 
-using PeerList=std::set<Peer>;
+using PeerList = std::set<Peer>;
 
-class FairnessProtocol {
+class FairnessProtocol
+{
  public:
   Peer me;
   SettlementPkg msg;
@@ -230,51 +233,55 @@ class FairnessProtocol {
   } stage;
 
   struct Time {
-      sgx_time_t time_second;
-      sgx_time_source_nonce_t time_source_nonce;
-      sgx_time_t period;
+    sgx_time_t time_second;
+    sgx_time_source_nonce_t time_source_nonce;
+    sgx_time_t period;
 
-      void getTime() {
-          int ret;
-          int retry = 10;
-          do {
-              ret = sgx_create_pse_session();
-          } while(ret == SGX_ERROR_BUSY && retry--);
+    void getTime()
+    {
+      int ret;
+      int retry = 10;
+      do {
+        ret = sgx_create_pse_session();
+      } while (ret == SGX_ERROR_BUSY && retry--);
 
-          ret = sgx_get_trusted_time(&time_second, &time_source_nonce);
-          if (ret != SGX_SUCCESS) {
-              LL_CRITICAL("cannot get sgx trusted time");
-          }
-          sgx_close_pse_session();
+      ret = sgx_get_trusted_time(&time_second, &time_source_nonce);
+      if (ret != SGX_SUCCESS) {
+        LL_CRITICAL("cannot get sgx trusted time");
       }
+      sgx_close_pse_session();
+    }
 
-      
-
-      bool passTime() {
-          Time cur_time;
-          cur_time.getTime();
-          return (!memcmp(&cur_time.time_source_nonce, time_source_nonce, 
-                      sizeof(sgx_time_source_nonce_t))) 
-              && (cur_time.time_second >= time_second + period);
-      }
+    bool passTime()
+    {
+      Time cur_time;
+      cur_time.getTime();
+      return (!memcmp(
+                 &cur_time.time_source_nonce,
+                 time_source_nonce,
+                 sizeof(sgx_time_source_nonce_t))) &&
+             (cur_time.time_second >= time_second + period);
+    }
   } timer1, timer2;
 
   // if a follower does not see TX_1 by TIMEOUT_T1, it broadcasts TX_1_Cancel
-  // if a leader (or a follower) sees TX_1 on chain 1, it broadcast TX_2 to chain 2
-  // if a follower sees TX_1_Cancel on chain 1, it broadcast TX_2_Cancel to chain 2
+  // if a leader (or a follower) sees TX_1 on chain 1, it broadcast TX_2 to
+  // chain 2 if a follower sees TX_1_Cancel on chain 1, it broadcast TX_2_Cancel
+  // to chain 2
   // TODO modify the timeouts
-  const static sgx_time_t TIMEOUT_T1_SECOND = 2; //60 * 15;
-  const static sgx_time_t TIMEOUT_T2_SECOND = 5; //60 * 10 * 6;
-  //const static int N_PEER_SERVERS = 5;
-  
+  const static sgx_time_t TIMEOUT_T1_SECOND = 2;  // 60 * 15;
+  const static sgx_time_t TIMEOUT_T2_SECOND = 5;  // 60 * 10 * 6;
+  // const static int N_PEER_SERVERS = 5;
+
   FairnessProtocol(const Peer &me) : me(me) {}
-  
+
   void txOneConfirmed(const merkle_proof_t *proof);
   void foundTxOneInMempool(const uint256 tx);
   void notFoundTxOne();
 };
 
-class Leader : public FairnessProtocol {
+class Leader : public FairnessProtocol
+{
  private:
   vector<Peer> peers;
   vector<bool> peers_ack;
@@ -288,10 +295,15 @@ class Leader : public FairnessProtocol {
   // send msg to all peers and wait for ACKs
   void disseminate() noexcept(false);
 
-  void receiveAck(const unsigned char *_ack, size_t size, unsigned char *tx1_id, unsigned char *tx1_cancel_id);
+  void receiveAck(
+      const unsigned char *_ack,
+      size_t size,
+      unsigned char *tx1_id,
+      unsigned char *tx1_cancel_id);
 };
 
-class Follower : FairnessProtocol {
+class Follower : FairnessProtocol
+{
  private:
   Peer leader;
 
@@ -301,11 +313,15 @@ class Follower : FairnessProtocol {
   ~Follower() {}
 
   // simply send ack
-  void receiveFromLeader(const unsigned char *msg, size_t size, unsigned char *tx1_id, unsigned char *tx1_cancel_id);
+  void receiveFromLeader(
+      const unsigned char *msg,
+      size_t size,
+      unsigned char *tx1_id,
+      unsigned char *tx1_cancel_id);
 };
 
-}
-}
-} // namespace exch::fairness
+}  // namespace fairness
+}  // namespace enclave
+}  // namespace exch
 
-#endif //PROJECT_FAIRNESS_H
+#endif  // PROJECT_FAIRNESS_H

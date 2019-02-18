@@ -1,7 +1,7 @@
 #ifndef ENCLAVE_RPC_H
 #define ENCLAVE_RPC_H
 
-#include "enclave-rpc-server.h"
+#include "generated/enclave-rpc-server.h"
 #include <jsonrpccpp/server/connectors/httpserver.h>
 
 #include <string>

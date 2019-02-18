@@ -1,34 +1,34 @@
 #include <sgx_urts.h>
-#include <stdexcept>
 #include <atomic>
+#include <chrono>
 #include <csignal>
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <thread>
-#include <chrono>
 
-#include <boost/program_options.hpp>
 #include <boost/algorithm/hex.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/asio/io_service.hpp>
 #include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
 #include <boost/thread/thread.hpp>
 
-#include <jsonrpccpp/server.h>
 #include <jsonrpccpp/client/connectors/httpclient.h>
+#include <jsonrpccpp/server.h>
 #include <jsonrpccpp/server/connectors/httpserver.h>
 #include <log4cxx/logger.h>
 #include <log4cxx/propertyconfigurator.h>
 
-#include "bitcoind-merkleproof.h"
-#include "bitcoindrpcclient.h"
-#include "enclave-rpc-server-impl.h"
-#include "interrupt.h"
-#include "config.h"
-#include "Utils.h"
 #include "Enclave_u.h"
+#include "bitcoind-merkleproof.h"
+#include "config.h"
+#include "enclave-utils.h"
 #include "external/toml.h"
+#include "interrupt.h"
+#include "rpc/bitcoind-client.h"
+#include "rpc/enclave-server.h"
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -36,11 +36,13 @@ namespace aio = boost::asio;
 
 using namespace std;
 
-namespace exch {
-namespace main {
+namespace exch
+{
+namespace main
+{
 log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("exch.cpp"));
 }
-}
+}  // namespace exch
 
 using exch::main::logger;
 
@@ -48,8 +50,9 @@ extern shared_ptr<aio::io_service> io_service;
 extern unique_ptr<boost::asio::deadline_timer> fairnessTimer;
 sgx_enclave_id_t eid;
 
-void workerThread(shared_ptr<aio::io_service> io_service) {
-  LOG4CXX_INFO(logger, "worker thread starts.");
+void generic_asio_worker(shared_ptr<aio::io_service> io_service)
+{
+  LOG4CXX_INFO(logger, "worker thread started");
   while (true) {
     try {
       boost::system::error_code ec;
@@ -57,18 +60,58 @@ void workerThread(shared_ptr<aio::io_service> io_service) {
       if (ec) {
         LOG4CXX_ERROR(logger, "Error: " << ec.message());
       }
-      // the run() function blocks until [...] the io_service has been stopped.
+      // the run() function blocks until io_service is stopped.
       // so break is only hit if io_service is stopped
       break;
-    }
-    catch (const std::exception &ex) {
+    } catch (const std::exception &ex) {
       LOG4CXX_ERROR(logger, "Exception: " << ex.what());
     }
   }
   LOG4CXX_INFO(logger, "worker thread finishes.");
 }
 
-int main(int argc, const char *argv[]) {
+void new_block_listener(const string &bitcoind_endpoint)
+{
+  int num_of_imported_blocks = 0;
+  sgx_status_t st;
+  int ret;
+
+  Bitcoind bitcoind(bitcoind_endpoint);
+
+  LOG4CXX_INFO(logger, "block listener started")
+
+  while (!exch::interrupt::quit.load()) {
+    try {
+      auto blockcount = bitcoind.getblockcount();
+      if (blockcount > num_of_imported_blocks) {
+        auto hash = bitcoind.getblockhash(num_of_imported_blocks);
+        auto header = bitcoind.getblockheader(hash);
+
+        st = ecall_append_block_to_fifo(eid, &ret, header.c_str());
+
+        if (SGX_SUCCESS != st || ret != 0) {
+          if (SGX_SUCCESS != st) {
+            LOG4CXX_ERROR(logger, get_sgx_error_msg(st));
+          }
+          throw std::runtime_error(
+              "can't append block to FIFO: return code " + std::to_string(ret));
+        }
+        num_of_imported_blocks++;
+      }
+    }
+
+    catch (const std::exception &e) {
+      LOG4CXX_ERROR(
+          logger,
+          "can't get block " << num_of_imported_blocks << ". " << e.what());
+    }
+
+    std::this_thread::sleep_for(chrono::seconds(1));
+  }
+}
+
+int main(int argc, const char *argv[])
+{
   // initialize logging and stuff
   Config conf(argc, argv);
   log4cxx::PropertyConfigurator::configure(LOGGING_CONF);
@@ -78,9 +121,6 @@ int main(int argc, const char *argv[]) {
   io_service = std::make_shared<aio::io_service>();
   aio::io_service::work io_work(*io_service);
 
-  boost::thread_group worker_threads;
-  for (auto i = 0; i < 5; ++i) { worker_threads.create_thread(boost::bind(&workerThread, io_service)); }
-
   // try to create an enclave
   if (0 != initialize_enclave(&eid)) {
     cerr << "failed to init enclave" << endl;
@@ -89,6 +129,15 @@ int main(int argc, const char *argv[]) {
 
   sgx_status_t st;
   int ret = 0;
+
+  // start fairness works
+  boost::thread_group worker_threads;
+  for (auto i = 0; i < 5; ++i) {
+    worker_threads.create_thread(boost::bind(&generic_asio_worker, io_service));
+  }
+
+  // create a thread for the block listener
+  worker_threads.create_thread(boost::bind(&new_block_listener, "localhost"));
 
   // try to load sealed secret keys
 #if false
@@ -141,7 +190,7 @@ int main(int argc, const char *argv[]) {
       exit(-1);
     }
 
-    for (const auto &follower_addr: conf.getFollowerAddrList()) {
+    for (const auto &follower_addr : conf.getFollowerAddrList()) {
       parse_addr(follower_addr, &hostname, &port);
 
       st = addFairnessFollower(eid, &ret, hostname.c_str(), port, pubkey);
@@ -178,13 +227,15 @@ int main(int argc, const char *argv[]) {
     }
   }
 
-  LOG4CXX_INFO(logger, "setting " << rpc_hostname << ":" << rpc_port << " as self id");
-  st = setSelf(eid,
-               &ret,
-               conf.getIsFairnessLeader(),
-               rpc_hostname.c_str(),
-               rpc_port,
-               vector<uint8_t>(32, 0x99).data());  /* temp public key */
+  LOG4CXX_INFO(
+      logger, "setting " << rpc_hostname << ":" << rpc_port << " as self id");
+  st = setSelf(
+      eid,
+      &ret,
+      conf.getIsFairnessLeader(),
+      rpc_hostname.c_str(),
+      rpc_port,
+      vector<uint8_t>(32, 0x99).data()); /* temp public key */
   if (st != SGX_SUCCESS || ret != 0) {
     LOG4CXX_FATAL(logger, "cannot set self id");
     exit(-1);
@@ -195,7 +246,8 @@ int main(int argc, const char *argv[]) {
   EnclaveRPC enclaveRPC(eid, httpserver);
   if (enclaveRPC.StartListening()) {
     RPCSrvRunning = true;
-    LOG4CXX_INFO(logger, "RPC server listening at " << rpc_hostname << ":" << rpc_port);
+    LOG4CXX_INFO(
+        logger, "RPC server listening at " << rpc_hostname << ":" << rpc_port);
   } else {
     LOG4CXX_INFO(logger, "Cannot start RPC server");
     exit(-1);
@@ -225,4 +277,3 @@ int main(int argc, const char *argv[]) {
   // destroy the enclave last
   sgx_destroy_enclave(eid);
 }
-

@@ -1,13 +1,13 @@
 #ifndef PROJECT_STATE_H
 #define PROJECT_STATE_H
 
-#include "blockfifo.hpp"
-#include "balancebook.hpp"
-#include "fairness.h"
 #include <sgx_thread.h>
+#include "balancebook.hpp"
+#include "blockfifo.h"
+#include "fairness.h"
 
-#include "../common/merkle_data.h"
 #include "../common/common.h"
+#include "../common/merkle_data.h"
 
 extern sgx_thread_mutex_t state_mutex;
 
@@ -15,19 +15,22 @@ extern sgx_thread_mutex_t state_mutex;
 // collect the states maintained by a enclave
 // and provide interfaces to read / write them.
 
-namespace exch {
-namespace enclave {
-namespace state {
+namespace exch
+{
+namespace enclave
+{
+namespace state
+{
 extern BalanceBook balanceBook;
 extern BlockFIFO<1000> blockFIFO;
-}
-}
-}
+}  // namespace state
+}  // namespace enclave
+}  // namespace exch
 
 using namespace exch::enclave;
 
-
-class State {
+class State
+{
  private:
   /* fairness */
   fairness::Follower *currentFollower;
@@ -38,13 +41,15 @@ class State {
   bool isLeader;
 
  public:
-  static State &getInstance() {
+  static State &getInstance()
+  {
     static State instance;
     return instance;
   }
 
   State() = default;
-  ~State() {
+  ~State()
+  {
     delete currentFollower;
     delete currentProtocol;
   }
@@ -66,8 +71,12 @@ class State {
   const securechannel::Peer &getCurrentLeader() const { return currentLeader; }
   const securechannel::Peer &getSelf() const { return this->self; }
   fairness::Leader *getProtocolLeader() const { return currentProtocol; }
-  fairness::Follower *getProtocolFollower() const { return currentFollower;}
-  fairness::FairnessProtocol *getCurrentProtocol() const { return isLeader ? (fairness::FairnessProtocol*)currentProtocol : (fairness::FairnessProtocol*)currentFollower; }
+  fairness::Follower *getProtocolFollower() const { return currentFollower; }
+  fairness::FairnessProtocol *getCurrentProtocol() const
+  {
+    return isLeader ? (fairness::FairnessProtocol *)currentProtocol
+                    : (fairness::FairnessProtocol *)currentFollower;
+  }
 };
 
 #ifdef __cplusplus
@@ -81,34 +90,47 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex);
 int ecall_get_latest_block_hash(unsigned char *o_buf, size_t cap_obuf);
 
 // SSL server & client
-//int fairness_tls_server_init(void);
-//void fairness_tls_server_tcp_conn_handler(long int thread_id, ssl_context *thread_info);
-//void fairness_tls_server_free(void);
+// int fairness_tls_server_init(void);
+// void fairness_tls_server_tcp_conn_handler(long int thread_id, ssl_context
+// *thread_info); void fairness_tls_server_free(void);
 
-//int client_facing_tls_server_init(void);
-//void client_facing_tls_server_tcp_conn_handler(long int thread_id, ssl_context *thread_info);
-//void client_facing_tls_server_free(void);
+// int client_facing_tls_server_init(void);
+// void client_facing_tls_server_tcp_conn_handler(long int thread_id,
+// ssl_context *thread_info); void client_facing_tls_server_free(void);
 
-//int ssl_client_init(const char *hostname, unsigned int port);
-//int ssl_client_write_test(void);
-//void ssl_client_teardown(void);
+// int ssl_client_init(const char *hostname, unsigned int port);
+// int ssl_client_write_test(void);
+// void ssl_client_teardown(void);
 
 // key provisioning functions
-int rsa_keygen_in_seal(const char *subject_name,
-                       unsigned char *o_sealed, size_t cap_sealed,
-                       unsigned char *o_pubkey, size_t cap_pubkey,
-                       unsigned char *o_csr, size_t cap_csr);
+int rsa_keygen_in_seal(
+    const char *subject_name,
+    unsigned char *o_sealed,
+    size_t cap_sealed,
+    unsigned char *o_pubkey,
+    size_t cap_pubkey,
+    unsigned char *o_csr,
+    size_t cap_csr);
 
-int unseal_secret_and_leak_public_key(const sgx_sealed_data_t *secret,
-                                      size_t secret_len, unsigned char *pubkey,
-                                      size_t cap_pubkey);
+int unseal_secret_and_leak_public_key(
+    const sgx_sealed_data_t *secret,
+    size_t secret_len,
+    unsigned char *pubkey,
+    size_t cap_pubkey);
 
-int provision_rsa_id(const unsigned char *secret_key, size_t secret_key_len, const char *cert_pem);
+int provision_rsa_id(
+    const unsigned char *secret_key,
+    size_t secret_key_len,
+    const char *cert_pem);
 
-int query_rsa_pubkey(unsigned char *o_pubkey, size_t cap_pubkey, char *o_cert_pem, size_t cap_cert_pem);
+int query_rsa_pubkey(
+    unsigned char *o_pubkey,
+    size_t cap_pubkey,
+    char *o_cert_pem,
+    size_t cap_cert_pem);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //PROJECT_STATE_H
+#endif  // PROJECT_STATE_H

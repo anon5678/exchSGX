@@ -1,4 +1,4 @@
-#include "bitcoindrpcclient.h"
+#include "generated/bitcoind-rpc-client.h"
 
 #include <sstream>
 #include <string>
@@ -19,25 +19,33 @@ using Json::Value;
 using Json::Reader;
 using jsonrpc::Errors;
 
-class bitcoinRPC {
-  jsonrpc::HttpClient connector;
-  bitcoindRPCClient bitcoindClient;
+#include <log4cxx/logger.h>
+
+using log4cxx::LoggerPtr;
+
+class Bitcoind {
+private:
+    jsonrpc::HttpClient connector;
+    bitcoindRPCClient bitcoind_client;
 
  public:
-  explicit bitcoinRPC(const string& rpc_addr="http://exch:goodpass@dockerhost:18443")
-      : connector(rpc_addr),
-        bitcoindClient(connector, jsonrpc::JSONRPC_CLIENT_V1) {}
 
-  int getblockcount();
-  string getblockhash(int block_height);
-  string getblockheader(const string &block_hash, bool format);
+    // const string& rpc_addr="http://exch:goodpass@dockerhost:18443"
+    explicit Bitcoind(const string& hostname="dockerhost", int port=18443, const string& auth="exch:goodpass")
+      : connector("http://" + auth + "@" + hostname + ":" + std::to_string(port)),
+        bitcoind_client(connector, jsonrpc::JSONRPC_CLIENT_V1)
+        {}
+
+    int getblockcount();
+  string getblockhash(int block_height) noexcept (false) ;
+  string getblockheader(const string &block_hash, bool format=false);
   Value getblock(const string &block_hash);
   Value getrawtransaction(const string &tx_hash, bool JSONformat);
 };
 
 /**
  * Based on bitcoin-api-cpp
- * original author  Krzysztof Okupski
+ * original author: Krzysztof Okupski
  */
 
 class bitcoinRPCException : public std::exception {
@@ -63,16 +71,16 @@ class bitcoinRPCException : public std::exception {
     }
   }
 
-  ~bitcoinRPCException() throw() {};
+  ~bitcoinRPCException()=default;
 
   int getCode() { return code; }
 
-  const char *what() const throw() { return msg.c_str(); }
+  const char *what() const noexcept { return msg.c_str(); }
 
   std::string removePrefix(const std::string &in, const std::string &pattern) {
     std::string ret = in;
 
-    unsigned int pos = ret.find(pattern);
+    size_t pos = ret.find(pattern);
 
     if (pos <= ret.size()) {
       ret.erase(0, pos + pattern.size());

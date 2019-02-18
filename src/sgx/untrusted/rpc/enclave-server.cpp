@@ -1,4 +1,4 @@
-#include "enclave-rpc-server-impl.h"
+#include "enclave-server.h"
 
 #include <iostream>
 #include <assert.h>
@@ -11,13 +11,13 @@
 #include <future>
 #include <memory>
 
-#include "merkpath/merkpath.h"
-#include "Enclave_u.h"
-#include "fairness-ocall.h"
-#include "bitcoind-merkleproof.h"
-#include "../common/merkle_data.h"
-#include "../common/utils.h"
-#include "Utils.h"
+#include "../merkpath/merkpath.h"
+#include "../Enclave_u.h"
+#include "fairness-client.h"
+#include "../bitcoind-merkleproof.h"
+#include "../../common/merkle_data.h"
+#include "../../common/utils.h"
+#include "../enclave-utils.h"
 
 
 namespace exch {
@@ -184,8 +184,7 @@ void checkConfirmation(unsigned char *tx1_id, unsigned char *tx1_cancel_id) {
               int ret;
               auto st = onTxOneConfirmation(eid, &ret, serialized);
               if (st != SGX_SUCCESS || ret != 0) {
-                  LOG4CXX_WARN(logger, "failed to call enclave");
-                  print_error_message(st);
+                  LOG4CXX_WARN(logger, "failed to call enclave. " << get_sgx_error_msg(st));
               }
               return;
           } catch (const std::exception &e) {
@@ -202,8 +201,8 @@ void checkConfirmation(unsigned char *tx1_id, unsigned char *tx1_cancel_id) {
               int ret;
               auto st = onTxOneConfirmation(eid, &ret, serialized);
               if (st != SGX_SUCCESS || ret != 0) {
-                  LOG4CXX_WARN(logger, "failed to call enclave");
-                  print_error_message(st);
+                  LOG4CXX_WARN(logger, "failed to call enclave. " << get_sgx_error_msg(st));
+                  get_sgx_error_msg(st);
               }
               return;
           } catch (const std::exception &e) {

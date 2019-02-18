@@ -8,8 +8,8 @@ enum {
   LOG_LVL_CRITICAL,  // 1
   LOG_LVL_WARNING,   // 2
   LOG_LVL_NOTICE,    // 3
-  LOG_LVL_LOG,       // 4
-  LOG_LVL_DEBUG,     // 5
+  LOG_LVL_DEBUG,     // 4
+  LOG_LVL_LOG,       // 5
   LOG_LVL_NEVER      // 6
 };
 

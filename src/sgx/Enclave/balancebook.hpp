@@ -1,13 +1,10 @@
-//
-// Created by fanz on 9/21/17.
-//
-
 #ifndef PROJECT_BALANCE_BOOK_H
 #define PROJECT_BALANCE_BOOK_H
 
 #include <map>
 #include <string>
 #include <stdexcept>
+#include "log.h"
 
 using namespace std;
 

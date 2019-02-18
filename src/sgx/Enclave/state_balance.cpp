@@ -83,7 +83,7 @@ int merkle_proof_verify(const merkle_proof_t *proof)
 {
   string merkle_root = __merkle_proof_verify(proof).GetHex();
   LL_NOTICE("root: %s", merkle_root.c_str());
-  //TODO: check if the corresponding block header is confirmed
+  // TODO: check if the corresponding block header is confirmed
   return 0;
 }
 
@@ -164,58 +164,55 @@ int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit)
     // 0. find the block
     uint256 _block_hash;
     _block_hash.SetHex(deposit->block);
-    const CBlockHeader *h = state::blockFIFO.find_block(_block_hash);
-    if (h) {
-      // 1. verify the integrity of tx_raw
-      vector<unsigned char> tx_raw = hex2bin(deposit->tx_raw);
+    auto ref_block_in_fifo = state::blockFIFO.find_block(_block_hash);
+    const CBlockHeader &block_header = ref_block_in_fifo.first;
+    // 1. verify the integrity of tx_raw
+    vector<unsigned char> tx_raw = hex2bin(deposit->tx_raw);
 
-      unsigned char tmp[CSHA256::OUTPUT_SIZE];
+    unsigned char tmp[CSHA256::OUTPUT_SIZE];
 
-      // hash the tx
-      {
-        CSHA256 tx_hash;
-        tx_hash.Write(tx_raw.data(), tx_raw.size());
-        tx_hash.Finalize(tmp);
+    // hash the tx
+    {
+      CSHA256 tx_hash;
+      tx_hash.Write(tx_raw.data(), tx_raw.size());
+      tx_hash.Finalize(tmp);
 
-        tx_hash.Reset();
-        tx_hash.Write(tmp, sizeof tmp);
-        tx_hash.Finalize(tmp);
-      }
+      tx_hash.Reset();
+      tx_hash.Write(tmp, sizeof tmp);
+      tx_hash.Finalize(tmp);
+    }
 
-      if (0 != memcmp(tmp, deposit->merkle_proof->tx, sizeof tmp)) {
-        LL_CRITICAL("tx binary corrupted");
-        LL_CRITICAL(
-            "calculated hash (little-endian): %s",
-            bin2hex(tmp, BITCOIN_HASH_LENGTH).c_str());
-        LL_CRITICAL(
-            "expected hash (little-endian): %s",
-            bin2hex(deposit->merkle_proof->tx, BITCOIN_HASH_LENGTH).c_str());
-        return -1;
-      }
-
-      LL_LOG("find block %s", h->GetHash().GetHex().c_str());
-      uint256 calc_root = __merkle_proof_verify(deposit->merkle_proof);
-      if (calc_root == h->hashMerkleRoot) {
-        LL_NOTICE(
-            "deposit %s accepted",
-            bin2hex(deposit->merkle_proof->tx, 32).c_str());
-
-        const cointype amount = validate_deposit(
-            tx_raw.data(),
-            tx_raw.size(),
-            hex2bin(deposit->deposit_recipient_addr).data(),
-            deposit->deposit_timeout,  // 0x389900,
-            hex2bin(deposit->deposit_refund_addr).data());
-        LL_NOTICE("depositing amount: %d", amount);
-        state::balanceBook.deposit(deposit->pubkey_pem, amount);
-      } else {
-        LL_CRITICAL("deposit NOT accepted");
-        LL_CRITICAL("expected root: \n%s", h->hashMerkleRoot.GetHex().c_str());
-        LL_CRITICAL("calculated root: \n%s", calc_root.GetHex().c_str());
-      }
-    } else {
-      LL_CRITICAL("doesn't find the block");
+    if (0 != memcmp(tmp, deposit->merkle_proof->tx, sizeof tmp)) {
+      LL_CRITICAL("tx binary corrupted");
+      LL_CRITICAL(
+          "calculated hash (little-endian): %s",
+          bin2hex(tmp, BITCOIN_HASH_LENGTH).c_str());
+      LL_CRITICAL(
+          "expected hash (little-endian): %s",
+          bin2hex(deposit->merkle_proof->tx, BITCOIN_HASH_LENGTH).c_str());
       return -1;
+    }
+
+    LL_LOG("find block %s", block_header.GetHash().GetHex().c_str());
+    uint256 calc_root = __merkle_proof_verify(deposit->merkle_proof);
+    if (calc_root == block_header.hashMerkleRoot) {
+      LL_NOTICE(
+          "deposit %s accepted",
+          bin2hex(deposit->merkle_proof->tx, 32).c_str());
+
+      const cointype amount = validate_deposit(
+          tx_raw.data(),
+          tx_raw.size(),
+          hex2bin(deposit->deposit_recipient_addr).data(),
+          deposit->deposit_timeout,  // 0x389900,
+          hex2bin(deposit->deposit_refund_addr).data());
+      LL_NOTICE("depositing amount: %d", amount);
+      state::balanceBook.deposit(deposit->pubkey_pem, amount);
+    } else {
+      LL_CRITICAL("deposit NOT accepted");
+      LL_CRITICAL(
+          "expected root: \n%s", block_header.hashMerkleRoot.GetHex().c_str());
+      LL_CRITICAL("calculated root: \n%s", calc_root.GetHex().c_str());
     }
   } catch (const std::exception &e) {
     LL_CRITICAL("Exception: %s", e.what());

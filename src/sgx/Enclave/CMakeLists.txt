@@ -59,7 +59,7 @@ set(ENCLAVE_SOURCE_FILES
         Enclave_t.h
         log.cpp
         pprint.cpp
-        bytestream.cpp
+        exception.cpp
         utils.cpp
         bitcoin_helpers.cpp
         ../common/utils.cpp
@@ -72,7 +72,7 @@ set(ENCLAVE_SOURCE_FILES
         securechannel.cpp
 
         # enclave state
-        blockfifo.hpp
+        blockfifo.h
         balancebook.hpp
         settle.cpp
         state.cpp
