@@ -2,7 +2,7 @@
 #include <boost/program_options.hpp>
 #include <stdexcept>
 
-#include "Utils.h"
+#include "enclave-utils.h"
 
 #include <pwd.h>
 #include <fstream>
@@ -12,21 +12,29 @@
 #define MAX_PATH FILENAME_MAX
 
 /* Check error conditions for loading enclave */
-void print_error_message(sgx_status_t ret)
+std::string get_sgx_error_msg(sgx_status_t ret)
 {
   size_t idx = 0;
   size_t ttl = sizeof sgx_errlist / sizeof sgx_errlist[0];
 
+  std::stringstream ss;
+
   for (idx = 0; idx < ttl; idx++) {
     if (ret == sgx_errlist[idx].err) {
-      if (NULL != sgx_errlist[idx].sug)
-        printf("Info: %s\n", sgx_errlist[idx].sug);
-      printf("Error: %s\n", sgx_errlist[idx].msg);
+      if (NULL != sgx_errlist[idx].sug) {
+        ss << "Info: " << sgx_errlist[idx].sug << ". ";
+      }
+
+      ss << "Error: " << sgx_errlist[idx].msg;
       break;
     }
   }
 
-  if (idx == ttl) printf("Error: Unexpected error %#x occurred.\n", ret);
+  if (idx == ttl) {
+    ss << "Error: Unexpected error " << ret;
+  }
+
+  return ss.str();
 }
 
 int initialize_enclave(sgx_enclave_id_t *eid)
@@ -77,8 +85,10 @@ int initialize_enclave(std::string enclave_path, sgx_enclave_id_t *eid)
   ret = sgx_create_enclave(
       enclave_path.c_str(), SGX_DEBUG_FLAG, &token, &updated, eid, NULL);
   if (ret != SGX_SUCCESS) {
-    printf("sgx_create_enclave returned %#x\n", ret);
-    print_error_message(ret);
+    printf(
+        "sgx_create_enclave returned %#x\n (%s)",
+        ret,
+        get_sgx_error_msg(ret).c_str());
     if (fp != NULL) fclose(fp);
     return -1;
   }

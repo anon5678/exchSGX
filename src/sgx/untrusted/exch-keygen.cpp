@@ -7,7 +7,7 @@
 #include <string>
 
 #include "Enclave_u.h"
-#include "Utils.h"
+#include "enclave-utils.h"
 
 #include "../common/base64.hxx"
 #include "../common/errno.h"
@@ -18,7 +18,7 @@ using namespace ext;
 namespace po = boost::program_options;
 
 #include <sgx_urts.h>
-#include "Utils.h"
+#include "enclave-utils.h"
 
 void print_key(sgx_enclave_id_t eid, const string &keyfile);
 void keygen(

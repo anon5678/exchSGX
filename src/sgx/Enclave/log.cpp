@@ -7,6 +7,6 @@ const char *log_level_strings[] = {
     "CRIT",  // 1
     "WARN",  // 2
     "NOTI",  // 3
-    " LOG",  // 4
-    "DEBG"   // 5
+    "DEBG",  // 4
+    " LOG",  // 5
 };

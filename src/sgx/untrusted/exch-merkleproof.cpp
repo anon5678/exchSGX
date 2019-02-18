@@ -1,5 +1,5 @@
-#include "Utils.h"
 #include "bitcoind-merkleproof.h"
+#include "enclave-utils.h"
 #include "merkpath/merkpath.h"
 #include "rpc/bitcoind-client.h"
 

@@ -121,3 +121,12 @@ CKey seckey_from_str(const std::string &str)
   key.Set(bytes.begin(), bytes.end(), true);
   return key;
 }
+
+unsigned int get_num_of_leading_zeroes(const uint256 &hash)
+{
+  std::size_t foundNonZero = hash.GetHex().find_first_not_of("0", 0);
+  if (foundNonZero == std::string::npos) {
+    return hash.size();
+  }
+  return static_cast<unsigned int>(foundNonZero);
+}

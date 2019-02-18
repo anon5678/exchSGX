@@ -17,6 +17,8 @@ bool validate_redeemScript(
 bool DecodeHexTx(
     CMutableTransaction &tx, const std::string &strHexTx, bool fTryNoWitness);
 
+unsigned int get_num_of_leading_zeroes(const uint256 &hash);
+
 // used for testing
 CKey seckey_from_str(const std::string &str);
 

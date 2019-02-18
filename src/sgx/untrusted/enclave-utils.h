@@ -1,10 +1,12 @@
 #ifndef EXCH_UTILS_H
 #define EXCH_UTILS_H
 
-#include "sgx_eid.h" /* sgx_enclave_id_t */
+#include "sgx_eid.h"
 #include "sgx_error.h"
 
+#include <stdexcept>
 #include <string>
+#include <vector>
 
 #define TOKEN_FILENAME "enclave.token"
 #define ENCLAVE_FILENAME "enclave.signed.so"
@@ -22,7 +24,7 @@ int ocall_print_to_err(const char *str);
 }
 #endif
 
-void print_error_message(sgx_status_t ret);
+std::string get_sgx_error_msg(sgx_status_t ret);
 int initialize_enclave(sgx_enclave_id_t *eid);
 int initialize_enclave(std::string enclave_path, sgx_enclave_id_t *eid);
 
@@ -37,6 +39,7 @@ typedef struct _sgx_errlist_t {
 
 /* Error code returned by sgx_create_enclave */
 const sgx_errlist_t sgx_errlist[] = {
+    {SGX_SUCCESS, "no error", NULL},
     {SGX_ERROR_UNEXPECTED, "Unexpected error occurred.", NULL},
     {SGX_ERROR_INVALID_PARAMETER, "Invalid parameter.", NULL},
     {SGX_ERROR_OUT_OF_MEMORY, "Out of memory.", NULL},

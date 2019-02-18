@@ -16,11 +16,11 @@ using namespace std;
 const lest::test specification[] = {
     {CASE("calc the number of leading zeroes in uint256"){uint256 a;
 a.SetHex("0000000011111111111111111111111111111111111111111111111111111111");
-EXPECT(8 == nLeadingZero(a));
+EXPECT(8 == get_num_of_leading_zeroes(a));
 a.SetHex("0111111111111111111111111111111111111111111111111111111111111111");
-EXPECT(1 == nLeadingZero(a));
+EXPECT(1 == get_num_of_leading_zeroes(a));
 a.SetHex("1111111111111111111111111111111111111111111111111111111111111111");
-EXPECT(0 == nLeadingZero(a));
+EXPECT(0 == get_num_of_leading_zeroes(a));
 }
 }
 , {CASE("generate new address"){const uint32_t cltvTimeout = 1547578486;

@@ -2,27 +2,16 @@
 
 #include "bitcoin/utilstrencodings.h"
 #include "blockfifo.h"
-#include "bytestream.h"
 #include "hash.h"
 #include "log.h"
 #include "pprint.h"
 #include "state.h"
 
 #include <vector>
-
-using namespace exch::enclave;
-
-unsigned int nLeadingZero(const uint256 &hash)
-{
-  std::size_t foundNonZero = hash.GetHex().find_first_not_of("0", 0);
-  if (foundNonZero == std::string::npos) {
-    return hash.size();
-  }
-  return static_cast<unsigned int>(foundNonZero);
-}
-
 #include "../common/errno.h"
 #include "bitcoin/streams.h"
+
+using namespace exch::enclave;
 
 int ecall_append_block_to_fifo(const char *blockHeaderHex)
 {
@@ -39,32 +28,36 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex)
     CDataStream _in(header_bin, SER_NETWORK, PROTOCOL_VERSION);
     _in >> block_header;
 
-    LL_LOG("done unserilize");
-
     uint256 block_hash;
     CHash256 _hash_ctx;
     _hash_ctx.Write(header_bin.data(), header_bin.size());
-    _hash_ctx.Finalize((unsigned char *)&block_hash);
+    _hash_ctx.Finalize(block_hash.begin());
 
     if (block_hash != block_header.GetHash()) {
       LL_CRITICAL("invalid header: wrong hash");
-      return -1;
+      return BLOCKFIFO_INVALID_INPUT;
     }
 
-    // try to push it to the FIFO
-    errno_t ret = state::blockFIFO.enqueue(block_header);
-    if (NO_ERROR == ret) {
-      LL_NOTICE(
-          "block %s appended.", block_header.GetHash().ToString().c_str());
-    } else {
-      LL_CRITICAL("failed to append block %s", block_hash.GetHex().c_str());
-    }
+    // try to push it to the FIFO. throw if fails.
+    state::blockFIFO.try_append_new_block(block_header);
+    LL_NOTICE("block %s appended.", block_header.GetHash().ToString().c_str());
 
-    return ret;
-  } catch (const std::exception &e) {
-    LL_CRITICAL("exception in ecall: %s", e.what());
-    return -1;
+    auto confirms = state::blockFIFO.find_block(state::blockFIFO.first_block());
+
+    LL_LOG(
+        "%d blocks in queue. the head has %d confirmations",
+        state::blockFIFO.size(),
+        confirms.second);
+
+    return NO_ERROR;
+
+  } catch (const exch::enclave::Exception &e) {
+    LL_CRITICAL("failed to append block. error code: %d", e.getErrorCode());
+    return e.getErrorCode();
   }
+  CATCH_STD_AND_ALL_NO_RET
+
+  return ECALL_UNKNOWN_ERROR;
 }
 
 int ecall_get_latest_block_hash(unsigned char *o_buf, size_t cap_obuf)
@@ -72,14 +65,8 @@ int ecall_get_latest_block_hash(unsigned char *o_buf, size_t cap_obuf)
   uint256 last = state::blockFIFO.last_block();
   if (cap_obuf < last.size()) {
     LL_CRITICAL("buffer too small");
-    return -1;
+    return ECALL_BUFFER_TOO_SMALL;
   }
   memcpy(o_buf, last.begin(), last.size());
-  return 0;
-}
-
-int ecall_submit_fork(const char *prev_hash, const char *block_hdrs[], size_t n)
-{
-  LL_CRITICAL("not implemented");
-  return 0;
+  return NO_ERROR;
 }

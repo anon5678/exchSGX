@@ -4,7 +4,7 @@
 #include "../bitcoind-merkleproof.h"
 #include "../../common/merkle_data.h"
 #include "../../common/utils.h"
-#include "../Utils.h"
+#include "../enclave-utils.h"
 
 #include <future>
 #include <memory>

@@ -11,7 +11,7 @@
 #include <string>
 
 #include "Enclave_u.h"
-#include "Utils.h"
+#include "enclave-utils.h"
 
 #include "external/toml.h"
 #include "interrupt.h"

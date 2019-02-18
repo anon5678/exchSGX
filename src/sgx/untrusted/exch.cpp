@@ -22,9 +22,9 @@
 #include <log4cxx/propertyconfigurator.h>
 
 #include "Enclave_u.h"
-#include "Utils.h"
 #include "bitcoind-merkleproof.h"
 #include "config.h"
+#include "enclave-utils.h"
 #include "external/toml.h"
 #include "interrupt.h"
 #include "rpc/bitcoind-client.h"
@@ -50,7 +50,7 @@ extern shared_ptr<aio::io_service> io_service;
 extern unique_ptr<boost::asio::deadline_timer> fairnessTimer;
 sgx_enclave_id_t eid;
 
-void boost_asio_worker(shared_ptr<aio::io_service> io_service)
+void generic_asio_worker(shared_ptr<aio::io_service> io_service)
 {
   LOG4CXX_INFO(logger, "worker thread started");
   while (true) {
@@ -76,8 +76,6 @@ void new_block_listener(const string &bitcoind_endpoint)
   sgx_status_t st;
   int ret;
 
-  LOG4CXX_INFO(logger, "starting the block listener thread")
-
   Bitcoind bitcoind(bitcoind_endpoint);
 
   LOG4CXX_INFO(logger, "block listener started")
@@ -85,8 +83,6 @@ void new_block_listener(const string &bitcoind_endpoint)
   while (!exch::interrupt::quit.load()) {
     try {
       auto blockcount = bitcoind.getblockcount();
-      // FIXME: this is oversimplified!! it only works until the FIFO is filled.
-      // TODO: add an ecall to get the head of the FIFO (i.e., the latest block)
       if (blockcount > num_of_imported_blocks) {
         auto hash = bitcoind.getblockhash(num_of_imported_blocks);
         auto header = bitcoind.getblockheader(hash);
@@ -95,7 +91,7 @@ void new_block_listener(const string &bitcoind_endpoint)
 
         if (SGX_SUCCESS != st || ret != 0) {
           if (SGX_SUCCESS != st) {
-            print_error_message(st);
+            LOG4CXX_ERROR(logger, get_sgx_error_msg(st));
           }
           throw std::runtime_error(
               "can't append block to FIFO: return code " + std::to_string(ret));
@@ -134,9 +130,10 @@ int main(int argc, const char *argv[])
   sgx_status_t st;
   int ret = 0;
 
+  // start fairness works
   boost::thread_group worker_threads;
   for (auto i = 0; i < 5; ++i) {
-    worker_threads.create_thread(boost::bind(&boost_asio_worker, io_service));
+    worker_threads.create_thread(boost::bind(&generic_asio_worker, io_service));
   }
 
   // create a thread for the block listener

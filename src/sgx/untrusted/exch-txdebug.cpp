@@ -2,8 +2,8 @@
 #include <log4cxx/propertyconfigurator.h>
 
 #include "Enclave_u.h"
-#include "Utils.h"
 #include "config.h"
+#include "enclave-utils.h"
 #include "interrupt.h"
 
 using namespace std;

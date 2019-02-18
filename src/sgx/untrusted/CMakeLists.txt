@@ -10,7 +10,7 @@ set(BRIDGE_SRC
         merkle_data.cpp
         Enclave_u.c
         Enclave_u.h
-        Utils.cpp
+        enclave-utils.cpp
         ../common/utils.cpp
         interrupt.cpp
         )
@@ -34,7 +34,7 @@ add_executable(exch exch.cpp
         merkpath/merkpath.cpp
         merkle_data.cpp
         ../common/utils.cpp
-        Utils.cpp
+        enclave-utils.cpp
         ${BRIDGE_SRC}
         config.cpp)
 
