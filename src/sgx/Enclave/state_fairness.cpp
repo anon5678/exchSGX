@@ -127,11 +127,14 @@ int afterTimeout()
 }
 
 // ecall
-int onTxOneConfirmation(const merkle_proof_t *merkle_proof)
+int onTxOneConfirmation(
+        const unsigned char* header_hash, 
+        size_t size,
+        const merkle_proof_t *merkle_proof)
 {
   try {
     State &s = State::getInstance();
-    s.getCurrentProtocol()->txOneConfirmed(merkle_proof);
+    s.getCurrentProtocol()->txOneConfirmed(header_hash, size, merkle_proof);
     return 0;
   }
   CATCH_STD_AND_ALL

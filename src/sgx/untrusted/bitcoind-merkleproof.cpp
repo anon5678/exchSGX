@@ -1,4 +1,5 @@
 #include "bitcoind-merkleproof.h"
+#include <string.h>
 
 #include <algorithm>
 #include <chrono>
@@ -28,6 +29,29 @@ string getRawTransaction(const string &txid)
 {
   Bitcoind rpc;
   return rpc.getrawtransaction(txid, false).asString();
+}
+
+bool getConfirmedHeader(const string &txid, const int NUM_CONFIRMATION, unsigned char* header) 
+{
+  Bitcoind rpc;
+  try {
+    Json::Value txn = rpc.getrawtransaction(txid, true);
+
+    if (!txn.isMember("blockhash")) {
+      throw runtime_error("invalid txn");
+    }
+
+    string block_hash = txn["blockhash"].asString();
+    Json::Value block = rpc.getblock(block_hash);
+    if (block["confirmations"] > NUM_CONFIRMATION) {
+        strcpy((char*) header, block_hash.c_str());
+    } else {
+        return false;
+    }
+  } catch (const bitcoinRPCException &e) {
+    throw runtime_error(e.what());
+  }
+  return true;
 }
 
 TxInclusion isTxIncluded(const string &txid)

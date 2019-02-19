@@ -14,7 +14,7 @@ constexpr const char *SettlementPkg::TX_TWO;
 constexpr const char *SettlementPkg::TX_ONE_CANCEL;
 constexpr const char *SettlementPkg::TX_TWO_CANCEL;
 
-void FairnessProtocol::txOneConfirmed(const merkle_proof_t *proof)
+void FairnessProtocol::txOneConfirmed(const unsigned char* header_hash, size_t size, const merkle_proof_t *proof)
 {
   sgx_thread_mutex_lock(&state_mutex);
   if (stage != SENDTXONE && stage != SENDTXONECANCEL && stage != SENDACK &&
@@ -24,7 +24,8 @@ void FairnessProtocol::txOneConfirmed(const merkle_proof_t *proof)
     try {
       int ret;
       int st;
-      if (merkle_proof_verify(proof) == 0) {
+
+      if (merkle_proof_verify(header_hash, size, proof) == 0) {
         LL_NOTICE("merkle proof verified");
 
         unsigned char *tmp = new unsigned char[33]();

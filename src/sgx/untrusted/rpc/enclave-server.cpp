@@ -69,6 +69,8 @@ extern sgx_enclave_id_t eid;
 const int TIMEOUT_T1_SECOND = 2;
 const int TIMEOUT_T2_SECOND = 5;
 const int INTER_PERIOD_MILLISECOND = 1000;
+const int NUM_COMFIRMATION = 6;
+const int INTER_BLOCK_SECOND = 1;
 
 /// Deposit money to public_key by providing a merkle_proof
 bool EnclaveRPC::deposit(const Json::Value &merkle_proof, const string &public_key) {
@@ -173,41 +175,47 @@ void checkConfirmation(unsigned char *tx1_id, unsigned char *tx1_cancel_id) {
           afterTimeout(eid, &ret);
       }
   }
- 
-  while (attempts++ < TIMEOUT_T2_SECOND * 1000 / INTER_PERIOD_MILLISECOND) {
-      TxInclusion tx_one_confirmed = isTxIncluded(reinterpret_cast<char*>(tx1_id));
-      if (tx_one_confirmed == TxInclusion::Yes) {
-          try{
+
+  this_thread::sleep_for(chrono::seconds(INTER_BLOCK_SECOND * NUM_COMFIRMATION));
+  attempts = 0;
+  while (attempts++ <= TIMEOUT_T2_SECOND * 1000 / INTER_PERIOD_MILLISECOND) {
+      try {
+          TxInclusion tx_one_confirmed = isTxIncluded(reinterpret_cast<char*>(tx1_id));
+          unsigned char header[64];
+          bool confirmed = getConfirmedHeader(reinterpret_cast<char*>(tx1_id), NUM_COMFIRMATION, header);
+          if (tx_one_confirmed == TxInclusion::Yes && confirmed) {
               MerkleProof proof = buildTxInclusionProof(reinterpret_cast<char*>(tx1_id));
               LOG4CXX_INFO(logger, "tx1 confirmed on Bitcoin");
               const auto *serialized = proof.serialize();
               int ret;
-              auto st = onTxOneConfirmation(eid, &ret, serialized);
+              auto st = onTxOneConfirmation(eid, &ret, header, 64, serialized);
               if (st != SGX_SUCCESS || ret != 0) {
                   LOG4CXX_WARN(logger, "failed to call enclave. " << get_sgx_error_msg(st));
               }
               return;
-          } catch (const std::exception &e) {
-              LOG4CXX_ERROR(logger, e.what());
           }
+      } catch (const std::exception &e) {
+          LOG4CXX_ERROR(logger, e.what());
       }
 
-      TxInclusion tx_one_cancelled = isTxIncluded(reinterpret_cast<char*>(tx1_cancel_id));
-      if (tx_one_cancelled == TxInclusion::Yes) {
-          try{
-            MerkleProof proof = buildTxInclusionProof(reinterpret_cast<char*>(tx1_cancel_id));
+      try {
+          TxInclusion tx_one_cancelled = isTxIncluded(reinterpret_cast<char*>(tx1_cancel_id));
+          unsigned char header[64];
+          bool confirmed = getConfirmedHeader(reinterpret_cast<char*>(tx1_cancel_id), NUM_COMFIRMATION, header);
+          if (tx_one_cancelled == TxInclusion::Yes && confirmed) {
+              MerkleProof proof = buildTxInclusionProof(reinterpret_cast<char*>(tx1_cancel_id));
               LOG4CXX_INFO(logger, "tx1_cancel confirmed on Bitcoin");
               const auto *serialized = proof.serialize();
               int ret;
-              auto st = onTxOneConfirmation(eid, &ret, serialized);
+              auto st = onTxOneConfirmation(eid, &ret, header, 64, serialized);
               if (st != SGX_SUCCESS || ret != 0) {
                   LOG4CXX_WARN(logger, "failed to call enclave. " << get_sgx_error_msg(st));
                   get_sgx_error_msg(st);
               }
               return;
-          } catch (const std::exception &e) {
-              LOG4CXX_ERROR(logger, e.what());
           }
+      } catch (const std::exception &e) {
+          LOG4CXX_ERROR(logger, e.what());
       }
       this_thread::sleep_for(chrono::milliseconds(INTER_PERIOD_MILLISECOND));
   }

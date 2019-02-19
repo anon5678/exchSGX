@@ -10,6 +10,7 @@ enum TxInclusion {
   NotSure,
 };
 
+bool getConfirmedHeader(const std::string &txid, const int NUM_CONFIRMATION, unsigned char* header);
 string getRawTransaction(const std::string &txid);
 MerkleProof buildTxInclusionProof(const std::string &txid);
 TxInclusion isTxIncluded(const string &txid);

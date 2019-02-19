@@ -27,6 +27,7 @@ enclave {
         );
         public int afterTimeout();
         public int onTxOneConfirmation(
+            [user_check] const unsigned char* header_hash, size_t size,
             [user_check] const merkle_proof_t* merkle_proof
         );
 
@@ -40,7 +41,10 @@ enclave {
         // testing functions
         public int enclaveTest();
         public int simulate_leader();
-        public int merkle_proof_verify([user_check] const merkle_proof_t* proof);
+        public int merkle_proof_verify(
+            [user_check] const unsigned char* header_hash, size_t size,
+            [user_check] const merkle_proof_t* proof
+        );
 
         // state update
         public int ecall_append_block_to_fifo([in,string]const char *blockHeaderHex);

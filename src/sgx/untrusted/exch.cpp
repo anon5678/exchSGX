@@ -137,7 +137,7 @@ int main(int argc, const char *argv[])
   }
 
   // create a thread for the block listener
-  worker_threads.create_thread(boost::bind(&new_block_listener, "localhost"));
+  worker_threads.create_thread(boost::bind(&new_block_listener, "dockerhost"));
 
   // try to load sealed secret keys
 #if false
