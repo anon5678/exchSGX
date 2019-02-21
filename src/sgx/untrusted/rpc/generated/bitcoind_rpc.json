@@ -17,7 +17,7 @@
       "0xheader hash",
       true
     ],
-    "returns": "binary string"
+    "returns": "hex"
   },
   {
     "method": "getblock",
@@ -33,5 +33,12 @@
       true
     ],
     "returns": {}
+  },
+  {
+    "method": "sendrawtransaction",
+    "params": [
+      "hexstring"
+    ],
+    "returns": "hex"
   }
 ]
