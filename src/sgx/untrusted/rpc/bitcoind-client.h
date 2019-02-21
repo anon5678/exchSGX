@@ -2,82 +2,82 @@
 
 #include <sstream>
 #include <string>
-#include <string>
 
 #include <json/json.h>
 #include <json/reader.h>
 #include <json/value.h>
 
 #include <jsonrpccpp/client.h>
-#include <jsonrpccpp/client.h>
 #include <jsonrpccpp/client/connectors/httpclient.h>
 
 #include <boost/format.hpp>
 
 using namespace std;
-using Json::Value;
 using Json::Reader;
+using Json::Value;
 using jsonrpc::Errors;
 
 #include <log4cxx/logger.h>
 
 using log4cxx::LoggerPtr;
 
-class Bitcoind {
-private:
-    jsonrpc::HttpClient connector;
-    bitcoindRPCClient bitcoind_client;
-
- public:
-
-    // const string& rpc_addr="http://exch:goodpass@dockerhost:18443"
-    explicit Bitcoind(const string& hostname="dockerhost", int port=18443, const string& auth="exch:goodpass")
-      : connector("http://" + auth + "@" + hostname + ":" + std::to_string(port)),
-        bitcoind_client(connector, jsonrpc::JSONRPC_CLIENT_V1)
-        {}
-
-    int getblockcount();
-  string getblockhash(int block_height) noexcept (false) ;
-  string getblockheader(const string &block_hash, bool format=false);
-  Value getblock(const string &block_hash);
-  Value getrawtransaction(const string &tx_hash, bool JSONformat);
-};
-
-/**
- * Based on bitcoin-api-cpp
- * original author: Krzysztof Okupski
- */
-
-class bitcoinRPCException : public std::exception {
+class Bitcoind
+{
  private:
-  int code;
-  std::string msg;
+  jsonrpc::HttpClient connector;
+  bitcoindRPCClient bitcoind_stub;
 
  public:
-  explicit bitcoinRPCException(int errcode, const std::string &message) {
-    /* Connection error */
-    if (errcode == Errors::ERROR_CLIENT_CONNECTOR) {
-      this->code = errcode;
-      this->msg = removePrefix(message, " -> ");
-      /* Authentication error */
-    } else if (errcode == Errors::ERROR_RPC_INTERNAL_ERROR &&
-        message.size() == 18) {
-      this->code = errcode;
-      this->msg = "Failed to authenticate successfully";
-      /* Miscellaneous error */
-    } else {
-      this->code = parseCode(message);
-      this->msg = parseMessage(message);
-    }
+  explicit Bitcoind(
+      const string &hostname = "dockerhost",
+      int port = 18443,
+      const string &auth = "exch:goodpass")
+      : connector(
+            "http://" + auth + "@" + hostname + ":" + std::to_string(port)),
+        bitcoind_stub(connector, jsonrpc::JSONRPC_CLIENT_V1)
+  {
   }
 
-  ~bitcoinRPCException()=default;
+  int getblockcount();
+  string getblockhash(int block_height) noexcept(false);
+  string getblockheader(const string &block_hash, bool format = false);
+  Value getblock(const string &block_hash);
+  Value getrawtransaction(const string &tx_hash, bool JSONformat);
+  string sendrawtransaction(const string &tx_hex);
+};
 
-  int getCode() { return code; }
+class BitcoindRPCException : public std::exception
+{ /**
+   * Based on bitcoin-api-cpp
+   * original author: Krzysztof Okupski
+   */
+  static std::pair<int, string> gen_error_code(
+      int errcode, const std::string &message)
+  {
+    int code;
+    string msg;
 
-  const char *what() const noexcept { return msg.c_str(); }
+    /* Connection error */
+    if (errcode == Errors::ERROR_CLIENT_CONNECTOR) {
+      code = errcode;
+      msg = removePrefix(message, " -> ");
+      /* Authentication error */
+    } else if (
+        errcode == Errors::ERROR_RPC_INTERNAL_ERROR && message.size() == 18) {
+      code = errcode;
+      msg = "Failed to authenticate successfully";
+      /* Miscellaneous error */
+    } else {
+      code = parseCode(message);
+      msg = parseMessage(message);
+    }
 
-  std::string removePrefix(const std::string &in, const std::string &pattern) {
+    return std::make_pair(code, msg);
+  }
+
+  static std::string removePrefix(
+      const std::string &in, const std::string &pattern)
+  {
     std::string ret = in;
 
     size_t pos = ret.find(pattern);
@@ -89,8 +89,8 @@ class bitcoinRPCException : public std::exception {
     return ret;
   }
 
-  /* Auxiliary JSON parsing */
-  int parseCode(const std::string &in) {
+  static int parseCode(const std::string &in)
+  {
     Value root;
     Reader reader;
 
@@ -107,7 +107,8 @@ class bitcoinRPCException : public std::exception {
     return ret;
   }
 
-  std::string parseMessage(const std::string &in) {
+  static std::string parseMessage(const std::string &in)
+  {
     Value root;
     Reader reader;
 
@@ -124,4 +125,15 @@ class bitcoinRPCException : public std::exception {
 
     return ret;
   }
+
+ private:
+  std::runtime_error m_except;
+
+ public:
+  explicit BitcoindRPCException(int errcode, const std::string &message)
+      : m_except(gen_error_code(errcode, message).second)
+  {
+  }
+
+  const char *what() const noexcept { return m_except.what(); }
 };

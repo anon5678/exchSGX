@@ -46,8 +46,8 @@ add_executable(exch-merkleproof
         ../common/utils.cpp
         merkle_data.cpp)
 
-add_executable(exch-txdebug
-        exch-txdebug.cpp
+add_executable(exch-test
+        exch-test.cpp
         ${BRIDGE_SRC})
 
 find_package(Jsoncpp REQUIRED)
@@ -95,7 +95,7 @@ target_link_libraries(exch-merkleproof
         -lpthread
         )
 
-target_link_libraries(exch-txdebug
+target_link_libraries(exch-test
         ${RPC_LIB_BUNDLE}
         ${COMMON_LIBS}
         ${Boost_LIBRARIES}
