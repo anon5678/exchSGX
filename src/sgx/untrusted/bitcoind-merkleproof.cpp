@@ -48,7 +48,7 @@ bool getConfirmedHeader(const string &txid, const int NUM_CONFIRMATION, unsigned
     } else {
         return false;
     }
-  } catch (const bitcoinRPCException &e) {
+  } catch (const BitcoindRPCException &e) {
     throw runtime_error(e.what());
   }
   return true;
@@ -132,7 +132,7 @@ MerkleProof buildTxInclusionProof(const string &txid)
       LOG4CXX_DEBUG(logger, calc_root << " " << block["merkleroot"].asString());
       throw runtime_error("failed to generate a valid proof. Try again later.");
     }
-  } catch (const bitcoinRPCException &e) {
+  } catch (const BitcoindRPCException &e) {
     throw runtime_error(e.what());
   }
 }
