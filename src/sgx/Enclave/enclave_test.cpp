@@ -122,10 +122,10 @@ int enclaveTest()
   //  test_simple_cltv_redeem();
   //  test_settlement();
   test_settle_all();
-  SelectParams(CBaseChainParams::REGTEST);
-  ECC_Start();
-  lest::run(specification);
-  ECC_Stop();
+  // SelectParams(CBaseChainParams::REGTEST);
+  // ECC_Start();
+  // lest::run(specification);
+  // ECC_Stop();
   return 0;
 }
 
