@@ -83,7 +83,8 @@ class State
 extern "C" {
 #endif
 
-int merkle_proof_verify(const unsigned char* header_hash, size_t size, const merkle_proof_t *proof);
+int merkle_proof_verify(
+    const unsigned char *header_hash, size_t size, const merkle_proof_t *proof);
 int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit);
 
 int ecall_append_block_to_fifo(const char *blockHeaderHex);

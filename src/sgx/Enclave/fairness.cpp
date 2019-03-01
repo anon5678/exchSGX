@@ -14,7 +14,8 @@ constexpr const char *SettlementPkg::TX_TWO;
 constexpr const char *SettlementPkg::TX_ONE_CANCEL;
 constexpr const char *SettlementPkg::TX_TWO_CANCEL;
 
-void FairnessProtocol::txOneConfirmed(const unsigned char* header_hash, size_t size, const merkle_proof_t *proof)
+void FairnessProtocol::txOneConfirmed(
+    const unsigned char *header_hash, size_t size, const merkle_proof_t *proof)
 {
   sgx_thread_mutex_lock(&state_mutex);
   if (stage != SENDTXONE && stage != SENDTXONECANCEL && stage != SENDACK &&

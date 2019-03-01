@@ -128,9 +128,9 @@ int afterTimeout()
 
 // ecall
 int onTxOneConfirmation(
-        const unsigned char* header_hash, 
-        size_t size,
-        const merkle_proof_t *merkle_proof)
+    const unsigned char *header_hash,
+    size_t size,
+    const merkle_proof_t *merkle_proof)
 {
   try {
     State &s = State::getInstance();

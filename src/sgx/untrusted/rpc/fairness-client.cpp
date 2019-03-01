@@ -1,31 +1,34 @@
 #include "fairness-client.h"
 
-#include "../Enclave_u.h"
-#include "../bitcoind-merkleproof.h"
 #include "../../common/merkle_data.h"
 #include "../../common/utils.h"
+#include "../Enclave_u.h"
+#include "../bitcoind-merkleproof.h"
 #include "../enclave-utils.h"
 
+#include <log4cxx/logger.h>
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/bind/bind.hpp>
 #include <future>
 #include <memory>
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/deadline_timer.hpp>
-#include <boost/bind/bind.hpp>
-#include <log4cxx/logger.h>
 
-namespace exch {
-namespace fairness {
-namespace ocalls {
+namespace exch
+{
+namespace fairness
+{
+namespace ocalls
+{
 log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("fairness-ocall.cpp"));
 }
-}
-};
+}  // namespace fairness
+};  // namespace exch
 
 using namespace std;
 using exch::fairness::ocalls::logger;
 using exch::rpc::Client;
 
-//using boost::placeholders::_1;
+// using boost::placeholders::_1;
 
 namespace aio = boost::asio;
 
@@ -34,37 +37,46 @@ unique_ptr<boost::asio::deadline_timer> fairnessTimer;
 
 extern sgx_enclave_id_t eid;
 
-static void _sendMessageToFairnessFollower(string host, int port, const string &msg) {
+static void _sendMessageToFairnessFollower(
+    string host, int port, const string &msg)
+{
   Client c(host, port);
   c.distributeSettlementPkg(msg);
 }
 
 // ocall
-int sendMessagesToFairnessFollower(const char *host, int port, const unsigned char *msg, size_t size) {
+int sendMessagesToFairnessFollower(
+    const char *host, int port, const unsigned char *msg, size_t size)
+{
   try {
     LOG4CXX_DEBUG(logger, "sending msg to " << host << ":" << port);
-    io_service->post(boost::bind(&_sendMessageToFairnessFollower, string(host), port, string((char *) msg, size)));
+    io_service->post(boost::bind(
+        &_sendMessageToFairnessFollower,
+        string(host),
+        port,
+        string((char *)msg, size)));
 
     return 0;
-  }
-  catch (const exception &e) {
+  } catch (const exception &e) {
     LOG4CXX_WARN(logger, "cannot send message to follower: " << e.what());
     return -1;
-  }
-  catch (...) {
+  } catch (...) {
     LOG4CXX_WARN(logger, "error happened");
     cerr << "Error happened" << endl;
     return -1;
   }
 }
 
-void _sendAckToFairnessLeader(string host, int port, const string &msg) {
+void _sendAckToFairnessLeader(string host, int port, const string &msg)
+{
   Client c(host, port);
   c.ackSettlementPkg(msg);
 }
 
 // ocall
-int sendAckToFairnessLeader(const char *host, int port, const unsigned char *msg, size_t size) {
+int sendAckToFairnessLeader(
+    const char *host, int port, const unsigned char *msg, size_t size)
+{
   try {
     LOG4CXX_INFO(logger, "sending ack to " << host << ":" << port);
 
@@ -72,21 +84,20 @@ int sendAckToFairnessLeader(const char *host, int port, const unsigned char *msg
     // TODO: remove this when deployed in real network
     this_thread::sleep_for(chrono::milliseconds(std::rand() % 3000));
 
-    io_service->post(boost::bind(&_sendAckToFairnessLeader, string(host), port, string((char *) msg, size)));
+    io_service->post(boost::bind(
+        &_sendAckToFairnessLeader,
+        string(host),
+        port,
+        string((char *)msg, size)));
     return 0;
-  }
-  catch (const exception &e) {
+  } catch (const exception &e) {
     LOG4CXX_WARN(logger, "cannot send ack to leader: " << e.what());
     return -1;
-  }
-  catch (...) {
+  } catch (...) {
     LOG4CXX_WARN(logger, "error happened");
     return -1;
   }
 }
 
-//TODO: send real tx to bitcoin
-int sendTxToBlockchain() {
-    return 0;
-}
-
+// TODO: send real tx to bitcoin
+int sendTxToBlockchain() { return 0; }

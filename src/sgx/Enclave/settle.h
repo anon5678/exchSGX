@@ -17,6 +17,7 @@ enum Action {
 class DepositParams
 {
  private:
+  std::string name;
   CPubKey userPubkey;
   CPubKey exchPubkey;
   uint32_t locktime;
@@ -30,8 +31,13 @@ class DepositParams
 
  public:
   DepositParams() = delete;
-  DepositParams(CPubKey userPubkey, CPubKey exchPubkey, uint32_t locktime)
-      : userPubkey(userPubkey.begin(), userPubkey.end()),
+  DepositParams(
+      std::string name,
+      CPubKey userPubkey,
+      CPubKey exchPubkey,
+      uint32_t locktime)
+      : name(std::move(name)),
+        userPubkey(userPubkey.begin(), userPubkey.end()),
         exchPubkey(exchPubkey.begin(), exchPubkey.end()),
         locktime(locktime)
   {
@@ -44,7 +50,7 @@ class DepositParams
 
   DepositParams UpdateLockTime(uint32_t lockTimeDelta) const
   {
-    return {userPubkey, exchPubkey, locktime + lockTimeDelta};
+    return {name, userPubkey, exchPubkey, locktime + lockTimeDelta};
   }
 
   const CBitcoinAddress &address() const { return _depositAddress; }
@@ -53,18 +59,28 @@ class DepositParams
   CScript spend_redeemScript(
       Action, const CKey &, const CMutableTransaction &, uint32_t nIn) const;
 
-  std::string ToString() const
+  std::string ToString(bool includeScript = false) const
   {
     char buf[BUFSIZ];
-    std::snprintf(
-        buf,
-        BUFSIZ,
-        "address: %s. script=%s",
-        this->address().ToString().c_str(),
-        HexStr(
-            this->deposit_redeemScript().begin(),
-            this->deposit_redeemScript().end())
-            .c_str());
+    if (includeScript) {
+      std::snprintf(
+          buf,
+          BUFSIZ,
+          "%s's address: %s. script=%s",
+          this->name.c_str(),
+          this->address().ToString().c_str(),
+          HexStr(
+              this->deposit_redeemScript().begin(),
+              this->deposit_redeemScript().end())
+              .c_str());
+    } else {
+      std::snprintf(
+          buf,
+          BUFSIZ,
+          "%s's address: %s",
+          this->name.c_str(),
+          this->address().ToString().c_str());
+    }
 
     return std::string(buf);
   }

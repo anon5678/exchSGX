@@ -275,7 +275,10 @@ class FairnessProtocol
 
   FairnessProtocol(const Peer &me) : me(me) {}
 
-  void txOneConfirmed(const unsigned char* header_hash, size_t size, const merkle_proof_t *proof);
+  void txOneConfirmed(
+      const unsigned char *header_hash,
+      size_t size,
+      const merkle_proof_t *proof);
   void foundTxOneInMempool(const uint256 tx);
   void notFoundTxOne();
 };

@@ -52,68 +52,6 @@ CScript DepositParams::spend_redeemScript(
   return s;
 }
 
-CTransaction settle_to_single_addr(
-    const CKey &exch_seckey,
-    const vector<Deposit> &deposits,
-    const CBitcoinAddress &addr,
-    uint32_t nlocktime) noexcept(false)
-{
-  CMutableTransaction unsigned_tx;
-
-  CAmount sum_in = 0;
-
-  // populate all of the inputs
-  for (const auto &d : deposits) {
-    if (!d.Validate()) {
-      throw std::runtime_error("invalid_script");
-    }
-    sum_in += d.prevOut().nValue;
-    // note: cltv is disabled by setting all input's nSequence to 0xFFFFFFFF
-    // so we set it to 0 to enable CLTV
-    unsigned_tx.vin.emplace_back(COutPoint(d.txid(), d.nOut()), CScript(), 0);
-  }
-
-  // FIXME: use estimatesmartfee instead
-  auto tx_size = 4 + 2 + deposits.size() * 153 + 1 + 34 + 4;
-  CFeeRate fixed_rate(10000);
-  CAmount fees = fixed_rate.GetFee(tx_size);
-  LL_NOTICE("fees = %d", fees);
-
-  CAmount amount = sum_in - fees;
-
-  // populate the (only) output
-  unsigned_tx.vout.emplace_back(amount, GetScriptForDestination(addr.Get()));
-  unsigned_tx.nLockTime = nlocktime;
-
-  assert(deposits.size() == unsigned_tx.vin.size());
-
-  // sign all the inputs
-  for (uint32_t i = 0; i < deposits.size(); i++) {
-    auto sigScript = deposits[i].params().spend_redeemScript(
-        Settlement, exch_seckey, unsigned_tx, i);
-    unsigned_tx.vin[i].scriptSig = sigScript;
-  }
-
-  auto t = CTransaction(unsigned_tx);
-
-  // verify the script
-  auto globalHandle = std::unique_ptr<ECCVerifyHandle>(new ECCVerifyHandle());
-  ScriptError serror = SCRIPT_ERR_OK;
-  for (uint32_t i = 0; i < deposits.size(); i++) {
-    if (!VerifyScript(
-            t.vin[i].scriptSig,
-            deposits[i].prevOut().scriptPubKey,
-            nullptr,
-            STANDARD_SCRIPT_VERIFY_FLAGS,
-            TransactionSignatureChecker(&t, i, 0),
-            &serror)) {
-      throw std::runtime_error(ScriptErrorString(serror));
-    }
-  }
-
-  return t;
-}
-
 //! generate a cancellation transaction by spending the feePayment UTXO (to the same scriptPubkey)
 //! \param feePayment UTXO to spend
 //! \param exch exchange object (has the secret)
@@ -130,26 +68,26 @@ CTransaction _generate_cancellation_tx(
   // TODO we need a smarter size estimation
   size_t tx_size = 4 + 2 + 2 + 153 + 34 + 4;
   CAmount fees = feeRate.GetFee(tx_size);
-  LL_NOTICE("fees = %d", fees);
+  LL_LOG("fees = %d", fees);
 
   if (fees > feePayment.prevOut().nValue) {
     throw std::invalid_argument("insufficient fee payment supplied");
   }
 
   CAmount fee_refund = feePayment.prevOut().nValue - fees;
-  LL_NOTICE("fee_refund = %d", fee_refund);
+  LL_LOG("fee_refund = %d", fee_refund);
 
   // start building the settlement transaction
   CMutableTransaction unsigned_tx;
 
   // add fee payment UTXO
   unsigned_tx.vin.emplace_back(feePayment.ToOutPoint(), CScript(), 0);
-  LL_DEBUG("done adding inputs");
+  LL_LOG("done adding inputs");
 
   // set the locktime
   unsigned_tx.nLockTime = nLockTime;
 
-  LL_DEBUG("done adding outputs");
+  LL_LOG("done adding outputs");
 
   // add fee refund
   if (fee_refund > 0) {
@@ -161,7 +99,7 @@ CTransaction _generate_cancellation_tx(
     throw std::invalid_argument("can't sign the fee payment output");
   }
 
-  LL_DEBUG("done signing");
+  LL_LOG("done signing");
   auto tx_cancellation = CTransaction(unsigned_tx);
 
   // verify the script
@@ -175,7 +113,7 @@ CTransaction _generate_cancellation_tx(
           &serror)) {
     throw std::runtime_error(ScriptErrorString(serror));
   } else {
-    LL_DEBUG("script verifies");
+    LL_LOG("script verifies");
   }
 
   return tx_cancellation;
@@ -220,20 +158,20 @@ generate_settlement_tx_bitcoin_or_litecoin(
   // TODO we need a smarter size estimation
   auto tx_size = 4 + 2 + 2 + deposits.size() * (153 + 34) + 4;
   CAmount fees = feeRate.GetFee(tx_size);
-  LL_NOTICE("fees = %d", fees);
+  LL_LOG("fees = %d", fees);
 
   if (fees > feePayment.prevOut().nValue) {
     throw std::invalid_argument("insufficient fee payment supplied");
   }
 
   CAmount fee_refund = feePayment.prevOut().nValue - fees;
-  LL_NOTICE("fee_refund = %d", fee_refund);
+  LL_LOG("fee_refund = %d", fee_refund);
 
   // start building the settlement transaction
   CMutableTransaction unsigned_tx;
 
   // populate all of the inputs
-  for (int i = 0; i < deposits.size(); i++) {
+  for (size_t i = 0; i < deposits.size(); i++) {
     const auto &d = deposits[i];
     if (!d.Validate()) {
       throw std::runtime_error("invalid_script");
@@ -251,10 +189,10 @@ generate_settlement_tx_bitcoin_or_litecoin(
   unsigned_tx.vin.emplace_back(feePayment.ToOutPoint(), CScript(), 0);
   size_t fee_payment_idx = unsigned_tx.vin.size() - 1;
 
-  LL_DEBUG("done adding inputs");
+  LL_LOG("done adding inputs");
 
   // populate the outputs
-  for (int i = 0; i < deposits.size(); i++) {
+  for (size_t i = 0; i < deposits.size(); i++) {
     const auto &deposit = deposits[i];
     auto new_param = deposit.params().UpdateLockTime(lockTimeDelta);
     auto new_amount = deposit.prevOut().nValue + balanceDelta[i];
@@ -270,7 +208,7 @@ generate_settlement_tx_bitcoin_or_litecoin(
   // set the locktime
   unsigned_tx.nLockTime = nLockTime;
 
-  LL_DEBUG("done adding outputs");
+  LL_LOG("done adding outputs");
 
   // add fee refund
   if (fee_refund > 0) {
@@ -284,14 +222,14 @@ generate_settlement_tx_bitcoin_or_litecoin(
     unsigned_tx.vin[i].scriptSig = sigScript;
   }
 
-  LL_DEBUG("done signing deposits");
+  LL_LOG("done signing deposits");
 
   // sign the fee payment input
   if (!feePayment.Sign(exch.privKey(), unsigned_tx, fee_payment_idx)) {
     throw std::invalid_argument("can't sign the fee payment output");
   }
 
-  LL_DEBUG("done signing");
+  LL_LOG("done signing");
   auto tx_settlement = CTransaction(unsigned_tx);
 
   // verify the script
@@ -306,7 +244,7 @@ generate_settlement_tx_bitcoin_or_litecoin(
             &serror)) {
       throw std::runtime_error(ScriptErrorString(serror));
     } else {
-      LL_DEBUG("script verifies");
+      LL_LOG("script verifies");
     }
   }
 
@@ -315,70 +253,6 @@ generate_settlement_tx_bitcoin_or_litecoin(
       _generate_cancellation_tx(feePayment, exch, feeRate, nLockTime);
 
   return std::make_pair(tx_settlement, tx_cancellation);
-}
-
-bool test_settlement()
-{
-  SelectParams(CBaseChainParams::REGTEST);
-  ECC_Start();
-
-  bool ret = true;
-  try {
-    CBitcoinSecret exch_secret(seckey_from_str("exch"));
-
-    vector<CBitcoinSecret> users;
-    users.emplace_back(seckey_from_str("alice"));
-    users.emplace_back(seckey_from_str("bob"));
-
-    const auto &exch_pubKey = exch_secret.GetKey().GetPubKey();
-
-    uint32_t depositExpiration = 1000000;  // 1 million block
-    vector<DepositParams> params;
-    for (const auto &user : users) {
-      params.emplace_back(
-          user.GetKey().GetPubKey(), exch_pubKey, depositExpiration);
-    }
-
-    for (const auto &p : params) {
-      LL_NOTICE("please deposit at: %s", p.address().ToString().c_str());
-    }
-
-    auto _deposit_tx_hex =
-        "020000000125c60a56c9fd0e805bfdd783729d939b81d857954c410c854c8b8f94894e"
-        "c94a0000000048473044022010ee74bbeddfdfc7573da4919b7f514f2112d765f909e0"
-        "146775cde0232778c40220710158c1f8ceb08bdbb84a6e79b4eef794dc8bd3c2de3e05"
-        "6a91b94c6a17c3ea01fdffffff03e44cd0b20000000017a91422132fe15114d4742f5f"
-        "25dc2df43c110941a8378700ca9a3b0000000017a914c0e6d37a01c9999d88b4dc252a"
-        "39e571bea1603a8700ca9a3b0000000017a914e7f1469b5d6f65bcce9c91be45e519ba"
-        "23088aa98794000000";
-
-    CMutableTransaction _deposit;
-    DecodeHexTx(_deposit, _deposit_tx_hex, false);
-    CTransaction deposit_tx(_deposit);
-
-    Deposit alice_deposit(params[0], deposit_tx, 1);
-    Deposit bob_deposit(params[1], deposit_tx, 2);
-
-    CBitcoinAddress target("2NCoX4m42XUEypfdaWo8m58s1hiMu55gbVv");
-
-    vector<Deposit> deposits;
-    deposits.push_back(alice_deposit);
-    deposits.push_back(bob_deposit);
-
-    // 158 is the latest block number so that this tx can be included right away
-    auto t = settle_to_single_addr(exch_secret.GetKey(), deposits, target, 158);
-
-    // dump the hex
-    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
-    ssTx << t;
-
-    LL_NOTICE("Final raw tx: %s", HexStr(ssTx).c_str());
-    LL_NOTICE("Interpreted as: %s", t.ToString().c_str());
-  }
-  CATCHALL_AND(ret = false)
-
-  ECC_Stop();
-  return ret;
 }
 
 void _do_test_settlement_all(
@@ -400,7 +274,7 @@ void _do_test_settlement_all(
   vector<Deposit> currentDeposits;
 
   // load user deposit
-  for (auto i = 0; i < user_deposit_nout.size(); i++) {
+  for (size_t i = 0; i < user_deposit_nout.size(); i++) {
     currentDeposits.emplace_back(
         params[i], user_deposit_tx, user_deposit_nout[i]);
   }
@@ -429,7 +303,7 @@ void _do_test_settlement_all(
       fixedRate);
 
   for (const auto &nd : newDeposits) {
-    LL_NOTICE(
+    LL_LOG(
         "new redeemScript: %s",
         HexStr(
             nd.deposit_redeemScript().begin(), nd.deposit_redeemScript().end())
@@ -464,28 +338,23 @@ bool test_settle_all()
   try {
     CBitcoinSecret exch_secret(seckey_from_str("exch"));
 
-    // simulate a bunch of users
-    vector<CBitcoinSecret> users;
-    for (auto name : {"alice", "bob", "carol", "david"}) {
-      users.emplace_back(seckey_from_str(name));
-    }
-
     // simulate the exchange
     Exchange exch(exch_secret.GetKey());
     const auto &exch_pubkey = exch.pubKey();
-    LL_DEBUG(
+    LL_NOTICE(
         "sgx public key: %s",
         HexStr(exch.pubKey().begin(), exch.pubKey().end()).c_str());
     LL_NOTICE("fee address: %s", exch.P2PKHAddress().ToString().c_str());
 
     uint32_t depositTimeLock = 1000000;
     vector<DepositParams> params;
-    for (const auto &u : users) {
-      params.emplace_back(u.GetKey().GetPubKey(), exch_pubkey, depositTimeLock);
-    }
+    for (auto name : {"alice", "bob", "carol", "david"}) {
+      CBitcoinSecret secret(seckey_from_str(name));
+      params.emplace_back(
+          name, secret.GetKey().GetPubKey(), exch_pubkey, depositTimeLock);
 
-    for (const auto &p : params) {
-      LL_NOTICE("user: %s", p.ToCStr());
+      auto u = params.back();
+      LL_NOTICE("%s", u.ToString().c_str());
     }
 
     // deposit address are:
