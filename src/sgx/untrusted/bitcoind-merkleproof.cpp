@@ -31,7 +31,8 @@ string getRawTransaction(const string &txid)
   return rpc.getrawtransaction(txid, false).asString();
 }
 
-bool getConfirmedHeader(const string &txid, const int NUM_CONFIRMATION, unsigned char* header) 
+bool getConfirmedHeader(
+    const string &txid, const int NUM_CONFIRMATION, unsigned char *header)
 {
   Bitcoind rpc;
   try {
@@ -44,9 +45,9 @@ bool getConfirmedHeader(const string &txid, const int NUM_CONFIRMATION, unsigned
     string block_hash = txn["blockhash"].asString();
     Json::Value block = rpc.getblock(block_hash);
     if (block["confirmations"] > NUM_CONFIRMATION) {
-        strcpy((char*) header, block_hash.c_str());
+      strcpy((char *)header, block_hash.c_str());
     } else {
-        return false;
+      return false;
     }
   } catch (const BitcoindRPCException &e) {
     throw runtime_error(e.what());

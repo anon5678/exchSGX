@@ -52,6 +52,7 @@ EXPECT(addr.ToString() == "2NGFQnjaHX38fmS1di3MH8bf9Hd6NZxZTzv");
 CBitcoinSecret user_secret(seckey_from_str("alice")),
     exch_secret(seckey_from_str("exch"));
 DepositParams params(
+    "alice",
     user_secret.GetKey().GetPubKey(),
     exch_secret.GetKey().GetPubKey(),
     cltvTimeout);
@@ -122,10 +123,10 @@ int enclaveTest()
   //  test_simple_cltv_redeem();
   //  test_settlement();
   test_settle_all();
-  SelectParams(CBaseChainParams::REGTEST);
-  ECC_Start();
-  lest::run(specification);
-  ECC_Stop();
+  // SelectParams(CBaseChainParams::REGTEST);
+  // ECC_Start();
+  // lest::run(specification);
+  // ECC_Stop();
   return 0;
 }
 

@@ -81,30 +81,34 @@ static uint256 __merkle_proof_verify(const merkle_proof_t *proof)
   return uint256B(curr, sizeof curr);
 }
 
-int merkle_proof_verify(const unsigned char* header_hash, size_t size, const merkle_proof_t *proof)
+int merkle_proof_verify(
+    const unsigned char *header_hash, size_t size, const merkle_proof_t *proof)
 {
   uint256 merkle_root = __merkle_proof_verify(proof);
   LL_NOTICE("root: %s", merkle_root.GetHex().c_str());
-  
+
   try {
-      uint256 hash;
-      hash.SetHex(string(reinterpret_cast<char const *>(header_hash), size));
-      LL_DEBUG("look for block header hash: %s", hash.GetHex().c_str());
-      pair<const CBlockHeader &, int> findHeader = state::blockFIFO.find_block(hash);
-      
-      if (findHeader.second < NUM_CONFIRMATION) {
-          LL_CRITICAL("insufficient confirmations, confirmed by only %d blocks", 
-                  findHeader.second);
-          return 1;
-      }
-      if (findHeader.first.hashMerkleRoot != merkle_root) {
-          LL_CRITICAL("wrong merkle root, want %s", 
-                  findHeader.first.hashMerkleRoot.GetHex().c_str());
-          return 2;
-      }
+    uint256 hash;
+    hash.SetHex(string(reinterpret_cast<char const *>(header_hash), size));
+    LL_DEBUG("look for block header hash: %s", hash.GetHex().c_str());
+    pair<const CBlockHeader &, int> findHeader =
+        state::blockFIFO.find_block(hash);
+
+    if (findHeader.second < NUM_CONFIRMATION) {
+      LL_CRITICAL(
+          "insufficient confirmations, confirmed by only %d blocks",
+          findHeader.second);
+      return 1;
+    }
+    if (findHeader.first.hashMerkleRoot != merkle_root) {
+      LL_CRITICAL(
+          "wrong merkle root, want %s",
+          findHeader.first.hashMerkleRoot.GetHex().c_str());
+      return 2;
+    }
   } catch (const std::exception &e) {
-      LL_CRITICAL("%s", e.what());
-      return 3;
+    LL_CRITICAL("%s", e.what());
+    return 3;
   }
   return 0;
 }
