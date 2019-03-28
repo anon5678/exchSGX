@@ -38,12 +38,12 @@ void FairnessProtocol::txOneConfirmed(
         if (tx_id == msg.tx_1_id_hex) {
           LL_NOTICE(
               "tx1 confirmed on the blockchain, sending tx2 to blockchain");
-          st = sendTxToBlockchain(&ret);
+          st = sendTxToBlockchain(&ret, 2, HexStr(msg.tx_2).c_str());
         } else if (tx_id == msg.tx_1_cancel_id_hex) {
           LL_NOTICE(
               "tx1_cancel confirmed on the blockchain, sending tx2_cancel to "
               "blockchain");
-          st = sendTxToBlockchain(&ret);
+          st = sendTxToBlockchain(&ret, 2, HexStr(msg.tx_2_cancel).c_str());
         }
 
         if (st != SGX_SUCCESS || ret != 0) {
@@ -194,7 +194,7 @@ void Leader::receiveAck(
             msg.tx_1.size());
 
         int ret;
-        auto st = sendTxToBlockchain(&ret);
+        auto st = sendTxToBlockchain(&ret, 1, HexStr(msg.tx_1).c_str());
 
         if (st != SGX_SUCCESS || ret != 0) {
           LL_CRITICAL("cannot send tx1 to blockchain");
@@ -312,7 +312,7 @@ void FairnessProtocol::notFoundTxOne()
             "not found tx1 in mempool after timeout, start to send tx1_cancel");
 
         int ret = 0;
-        auto st = sendTxToBlockchain(&ret);
+        auto st = sendTxToBlockchain(&ret, 1, HexStr(msg.tx_1_cancel).c_str());
         if (st != SGX_SUCCESS || ret != 0) {
           LL_CRITICAL("cannot send tx1_cancel to the blockchain");
         } else {

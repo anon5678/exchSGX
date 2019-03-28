@@ -10,6 +10,9 @@
 #include "bitcoin/utilstrencodings.h"
 #include "bitcoin_helpers.h"
 #include "settle.h"
+#include "bitcoin/streams.h"
+#include "../common/utils.h"
+
 
 using namespace std;
 
@@ -130,6 +133,73 @@ int enclaveTest()
   return 0;
 }
 
+int generate_settlement_tx(
+        unsigned char* deposit_tx_hex_bitcoin,
+        size_t* size_bitcoin,
+        unsigned char* deposit_tx_hex_litecoin,
+        size_t* size_litecoin) {
+    LL_NOTICE("start generating settlement transaction...");
+   
+    int ret = 0;
+
+    SelectParams(CBaseChainParams::TESTNET);
+    ECC_Start();
+
+    try {
+        std::pair<CTransaction, CTransaction> tx1_pair = _do_test_settlement_all(
+                deposit_tx_hex_bitcoin, size_bitcoin);
+
+        std::pair<CTransaction, CTransaction> tx2_pair = _do_test_settlement_all(
+                deposit_tx_hex_litecoin, size_litecoin);
+      
+        unsigned char *tx_tmp = new unsigned char[33];
+        hex2bin(tx_tmp, HexStr(tx1_pair.first.GetHash()).c_str());
+        byte_swap(tx_tmp, 32);
+        string tx_1_id = bin2hex(tx_tmp, 32);
+        LL_NOTICE("%s", tx_1_id.c_str());
+        
+        hex2bin(tx_tmp, HexStr(tx1_pair.second.GetHash()).c_str());
+        byte_swap(tx_tmp, 32);
+        string tx_1_cancel_id = bin2hex(tx_tmp, 32);
+        LL_NOTICE("%s", tx_1_cancel_id.c_str());
+        
+        bytes tx1, tx2, tx1_cancel, tx2_cancel;
+        {
+            CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+            ss << tx1_pair.first;
+            tx1 = ToByteVector(ss);
+        }
+        {
+            CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+            ss << tx2_pair.first;
+            tx2 = ToByteVector(ss);
+        }
+        {
+            CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+            ss << tx1_pair.second;
+            tx1_cancel = ToByteVector(ss);
+        }
+        {
+            CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+            ss << tx2_pair.second;
+            tx2_cancel = ToByteVector(ss);
+        }
+        LL_NOTICE("generation finished...");
+        fairness::SettlementPkg msg(
+                tx_1_id, tx_1_cancel_id, tx1, tx2, tx1_cancel, tx2_cancel);
+
+        State &s = State::getInstance();
+        fairness::Leader *prot = s.initFairnessProtocol(move(msg));
+
+        return 0;
+    }
+  CATCHALL_AND(ret = -1)
+
+  ECC_Stop();
+  return ret;
+}
+
+
 int simulate_leader()
 {
   LL_NOTICE("launching leader...");
@@ -137,22 +207,8 @@ int simulate_leader()
   try {
     State &s = State::getInstance();
 
-    // TODO: put real data in here
-    string tx_1_cancel_id =
-        "1eb0b8a98f88c49be280b087d0944f7e60a09bda246b7b9b99bac8b6acca0283";
-    string tx_1_id =
-        "288bcaaa05389922d5da1ee0e6d2d08e72770754e0c830adba50e0daa95efd40";
-    bytes tx1{1, 2, 3, 4};
-    bytes tx2{1, 2, 3, 4};
-    bytes tx1_cancel{1, 2, 3, 4};
-    bytes tx2_cancel{1, 2, 3, 4};
-
-    fairness::SettlementPkg msg(
-        tx_1_id, tx_1_cancel_id, tx1, tx2, tx1_cancel, tx2_cancel);
-
-    fairness::Leader *prot = s.initFairnessProtocol(move(msg));
     LL_NOTICE("starting settlement...");
-    prot->disseminate();
+    (s.getProtocolLeader())->disseminate();
 
     return 0;
   }

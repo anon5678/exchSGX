@@ -7,6 +7,7 @@
 #include <memory>
 #include <stdexcept>
 #include <thread>
+#include <stdio.h>
 
 #include <boost/algorithm/hex.hpp>
 #include <boost/asio/deadline_timer.hpp>
@@ -106,7 +107,7 @@ void new_block_listener(const string &bitcoind_endpoint)
           "can't get block " << num_of_imported_blocks << ". " << e.what());
     }
 
-    std::this_thread::sleep_for(chrono::seconds(1));
+    std::this_thread::sleep_for(chrono::milliseconds(10)); //TODO: for demo
   }
 }
 
@@ -254,7 +255,45 @@ int main(int argc, const char *argv[])
   }
 
   // TODO: test only
+  LOG4CXX_INFO(logger, "sleep for 10 seconds for block syncing...");
+  this_thread::sleep_for(chrono::seconds(10));
   if (conf.getIsFairnessLeader()) {
+      LOG4CXX_INFO(logger, "Start reading from file");
+      unsigned char* tx_hex_bitcoin = new unsigned char[5 * 500]();
+      size_t* size_bitcoin = new size_t[5]();
+      unsigned char *tx_hex_litecoin = new unsigned char[5 * 500]();
+      size_t* size_litecoin = new size_t[5]();
+      try {
+          freopen ("/code/sgx/untrusted/test_data/bitcoin-deposit","r",stdin);
+          size_t tmp = 0;
+          for (int i = 0; i < 5; ++i) {
+              char st[500];
+              scanf("%s", st);
+              strncpy((char*)tx_hex_bitcoin + tmp, st, strlen(st));
+              size_bitcoin[i] = strlen((char*)tx_hex_bitcoin) - tmp;
+              tmp = strlen((char*)tx_hex_bitcoin);
+          }
+          fclose(stdin);
+
+          freopen ("/code/sgx/untrusted/test_data/bitcoin-deposit","r",stdin);
+          tmp = 0;
+          for (int i = 0; i < 5; ++i) {
+              char st[500];
+              scanf("%s", st);
+              strncpy((char*)tx_hex_litecoin + tmp, st, strlen(st));
+              size_litecoin[i] = strlen((char*)tx_hex_litecoin) - tmp;
+              tmp = strlen((char*)tx_hex_litecoin);
+          }
+          fclose(stdin);
+      } catch (const std::exception &e) {
+          cerr << "cannot read from file: " << e.what() << endl;
+          exit(-1);
+      }
+    
+    generate_settlement_tx(eid, &ret, 
+            tx_hex_bitcoin, size_bitcoin,
+            tx_hex_litecoin, size_litecoin);
+
     simulate_leader(eid, &ret);
   }
 

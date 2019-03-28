@@ -25,7 +25,7 @@
 #include <string>
 #include <utility>
 
-const int NUM_CONFIRMATION = 6;
+const int NUM_CONFIRMATION = 0; //TODO: modify confirmation number
 
 using namespace std;
 using namespace exch::enclave;

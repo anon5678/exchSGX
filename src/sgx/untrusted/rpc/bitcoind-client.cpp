@@ -57,10 +57,19 @@ Json::Value Bitcoind::getrawtransaction(const string &txn_hash, bool JSONformat)
   }
 }
 
-string Bitcoind::sendrawtransaction(const string &tx_hex)
+void Bitcoind::sendrawtransaction(const string &tx_hex)
 {
   try {
-    return this->bitcoind_stub.sendrawtransaction(tx_hex);
+    this->bitcoind_stub.sendrawtransaction(tx_hex);
+  } catch (const jsonrpc::JsonRpcException &e) {
+    throw BitcoindRPCException(e.GetCode(), e.GetMessage());
+  }
+}
+
+void Bitcoind::generate(int nblocks)
+{
+  try {
+    this->bitcoind_stub.generate(nblocks);
   } catch (const jsonrpc::JsonRpcException &e) {
     throw BitcoindRPCException(e.GetCode(), e.GetMessage());
   }

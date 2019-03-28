@@ -43,7 +43,8 @@ class Bitcoind
   string getblockheader(const string &block_hash, bool format = false);
   Value getblock(const string &block_hash);
   Value getrawtransaction(const string &tx_hash, bool JSONformat);
-  string sendrawtransaction(const string &tx_hex);
+  void sendrawtransaction(const string &tx_hex);
+  void generate(int nblocks);
 };
 
 class BitcoindRPCException : public std::exception

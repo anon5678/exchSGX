@@ -24,7 +24,7 @@ namespace exch
 namespace rpc
 {
 log4cxx::LoggerPtr logger(
-    log4cxx::Logger::getLogger("enclave-rpc-server-impl.cpp"));
+    log4cxx::Logger::getLogger("rpc/enclave-server.cpp"));
 }
 }  // namespace exch
 
@@ -76,10 +76,10 @@ extern shared_ptr<boost::asio::io_service> io_service;
 extern sgx_enclave_id_t eid;
 
 const int TIMEOUT_T1_SECOND = 2;
-const int TIMEOUT_T2_SECOND = 5;
+const int TIMEOUT_T2_SECOND = 10;
+const int TRY_SECOND = 2;
 const int INTER_PERIOD_MILLISECOND = 1000;
-const int NUM_COMFIRMATION = 6;
-const int INTER_BLOCK_SECOND = 1;
+const int NUM_COMFIRMATION = 0; //TODO: modify confirmation number
 
 /// Deposit money to public_key by providing a merkle_proof
 bool EnclaveRPC::deposit(
@@ -173,30 +173,23 @@ void checkConfirmation(unsigned char *tx1_id, unsigned char *tx1_cancel_id)
 
   if (!find) {
     afterTimeout(eid, &ret);
-    this_thread::sleep_for(
-        chrono::seconds(TIMEOUT_T2_SECOND - TIMEOUT_T1_SECOND));
+    this_thread::sleep_for(chrono::seconds(TIMEOUT_T2_SECOND));
   } else {
     this_thread::sleep_for(
         chrono::seconds(TIMEOUT_T2_SECOND - TIMEOUT_T1_SECOND));
     TxInclusion tx_one_confirmed =
         isTxIncluded(reinterpret_cast<char *>(tx1_id));
-    if (tx_one_confirmed == TxInclusion::Yes) {
-      try {
-        MerkleProof proof =
-            buildTxInclusionProof(reinterpret_cast<char *>(tx1_id));
-      } catch (const std::exception &e) {
-        LOG4CXX_ERROR(logger, e.what());
-        afterTimeout(eid, &ret);
-      }
-    } else {
+    unsigned char header[64];
+    bool confirmed = getConfirmedHeader(
+        reinterpret_cast<char *>(tx1_id), NUM_COMFIRMATION, header);
+    if (tx_one_confirmed != TxInclusion::Yes || !confirmed) {
       afterTimeout(eid, &ret);
+      this_thread::sleep_for(chrono::seconds(TIMEOUT_T2_SECOND));
     }
   }
 
-  this_thread::sleep_for(
-      chrono::seconds(INTER_BLOCK_SECOND * NUM_COMFIRMATION));
   attempts = 0;
-  while (attempts++ <= TIMEOUT_T2_SECOND * 1000 / INTER_PERIOD_MILLISECOND) {
+  while (attempts++ <= TRY_SECOND * 1000 / INTER_PERIOD_MILLISECOND) {
     try {
       TxInclusion tx_one_confirmed =
           isTxIncluded(reinterpret_cast<char *>(tx1_id));

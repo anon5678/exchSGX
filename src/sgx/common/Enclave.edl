@@ -41,6 +41,12 @@ enclave {
         // testing functions
         public int enclaveTest();
         public int simulate_leader();
+        public int generate_settlement_tx(
+            [user_check] unsigned char* deposit_tx_hex_bitcoin, 
+            [user_check] size_t* size_bitcoin,
+            [user_check] unsigned char* deposit_tx_hex_litecoin, 
+            [user_check] size_t* size_litecoin);
+
         public int merkle_proof_verify(
             [user_check] const unsigned char* header_hash, size_t size,
             [user_check] const merkle_proof_t* proof
@@ -53,6 +59,7 @@ enclave {
         public size_t nacl_keygen_in_seal(
             [user_check] unsigned char *o_sealed, size_t cap_sealed_buf,
             [user_check] unsigned char *o_pubkey);
+
     };
 
     untrusted {
@@ -60,7 +67,9 @@ enclave {
         // https://download.01.org/intel-sgx/linux-2.1.2/docs/Intel_SGX_Developer_Reference_Linux_2.1.2_Open_Source.pdf
         int sendMessagesToFairnessFollower([in, string] const char* host, int port, [in, size=size] const unsigned char* msg, size_t size);
         int sendAckToFairnessLeader([in, string] const char* host, int port, [in, size=size] const unsigned char* msg, size_t size);
-        int sendTxToBlockchain();
+        int sendTxToBlockchain(
+            int index,
+            [in, string] const char* tx_hex);
 
         /*
         // called after the leader receives all acks from all followers

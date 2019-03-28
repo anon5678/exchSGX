@@ -14,41 +14,41 @@ namespace exch {
             public:
                 AbsClient(jsonrpc::IClientConnector &conn, jsonrpc::clientVersion_t type = jsonrpc::JSONRPC_CLIENT_V2) : jsonrpc::Client(conn, type) {}
 
-                bool appendBlock2FIFO(const std::string& param1) throw (jsonrpc::JsonRpcException)
+                bool appendBlock2FIFO(const std::string& param01) 
                 {
                     Json::Value p;
-                    p.append(param1);
+                    p.append(param01);
                     Json::Value result = this->CallMethod("appendBlock2FIFO",p);
                     if (result.isBool())
                         return result.asBool();
                     else
                         throw jsonrpc::JsonRpcException(jsonrpc::Errors::ERROR_CLIENT_INVALID_RESPONSE, result.toStyledString());
                 }
-                bool deposit(const Json::Value& param1, const std::string& param2) throw (jsonrpc::JsonRpcException)
+                bool deposit(const Json::Value& param01, const std::string& param02) 
                 {
                     Json::Value p;
-                    p.append(param1);
-                    p.append(param2);
+                    p.append(param01);
+                    p.append(param02);
                     Json::Value result = this->CallMethod("deposit",p);
                     if (result.isBool())
                         return result.asBool();
                     else
                         throw jsonrpc::JsonRpcException(jsonrpc::Errors::ERROR_CLIENT_INVALID_RESPONSE, result.toStyledString());
                 }
-                bool distributeSettlementPkg(const std::string& param1) throw (jsonrpc::JsonRpcException)
+                bool distributeSettlementPkg(const std::string& param01) 
                 {
                     Json::Value p;
-                    p.append(param1);
+                    p.append(param01);
                     Json::Value result = this->CallMethod("distributeSettlementPkg",p);
                     if (result.isBool())
                         return result.asBool();
                     else
                         throw jsonrpc::JsonRpcException(jsonrpc::Errors::ERROR_CLIENT_INVALID_RESPONSE, result.toStyledString());
                 }
-                bool ackSettlementPkg(const std::string& param1) throw (jsonrpc::JsonRpcException)
+                bool ackSettlementPkg(const std::string& param01) 
                 {
                     Json::Value p;
-                    p.append(param1);
+                    p.append(param01);
                     Json::Value result = this->CallMethod("ackSettlementPkg",p);
                     if (result.isBool())
                         return result.asBool();

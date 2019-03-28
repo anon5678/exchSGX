@@ -12,6 +12,7 @@
 
 #include "merkpath/merkpath.h"
 #include "rpc/bitcoind-client.h"
+#include "Enclave_u.h"
 
 namespace exch
 {
@@ -47,6 +48,7 @@ bool getConfirmedHeader(
     if (block["confirmations"] > NUM_CONFIRMATION) {
       strcpy((char *)header, block_hash.c_str());
     } else {
+      LOG4CXX_INFO(logger, "not enough confirmation yet");
       return false;
     }
   } catch (const BitcoindRPCException &e) {
@@ -137,3 +139,18 @@ MerkleProof buildTxInclusionProof(const string &txid)
     throw runtime_error(e.what());
   }
 }
+
+int sendTxToBlockchain(int index, const char* tx_hex) {
+    if (index == 1) {
+        Bitcoind rpc;
+        LOG4CXX_INFO(logger, "start sending tx to bitcoin");
+        rpc.sendrawtransaction(string(tx_hex));
+        LOG4CXX_INFO(logger, "tx sent to bitcoin, try mining one tx in bitcoin");
+        rpc.generate(2); //TODO: just for demo, note that the last generated block is not fed into blockfifo!!!
+        LOG4CXX_INFO(logger, "tx mined in bitcoin");
+    } else {
+        //TODO: send transaction to litecoin
+    }
+    return 0;
+}
+

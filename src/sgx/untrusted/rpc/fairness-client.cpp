@@ -99,5 +99,3 @@ int sendAckToFairnessLeader(
   }
 }
 
-// TODO: send real tx to bitcoin
-int sendTxToBlockchain() { return 0; }

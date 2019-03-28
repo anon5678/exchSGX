@@ -171,4 +171,9 @@ class FeePayment
   }
 };
 
+std::pair<CTransaction, CTransaction> _do_test_settlement_all(
+    unsigned char* deposit_tx_hex,
+    size_t* size);
+
+
 #endif  // TESSERACT_SETTLE_H

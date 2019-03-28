@@ -1,5 +1,12 @@
 [
   {
+    "method": "generate",
+    "params": [
+      123123123
+    ],
+    "returns": [] 
+  },
+  {
     "method": "getblockcount",
     "params": [],
     "returns": 123123123

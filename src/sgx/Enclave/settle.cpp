@@ -255,78 +255,108 @@ generate_settlement_tx_bitcoin_or_litecoin(
   return std::make_pair(tx_settlement, tx_cancellation);
 }
 
-void _do_test_settlement_all(
-    const std::string &user_deposit_tx_hex,
-    const std::string &exchamge_deposit_tx_hex,
-    vector<uint32_t> user_deposit_nout,
-    uint32_t exchange_deposit_nout,
-    const vector<DepositParams> &params,
-    const Exchange &exch)
+std::pair<CTransaction, CTransaction> _do_test_settlement_all(
+    //const std::string &user_deposit_tx_hex,
+    unsigned char* deposit_tx_hex, 
+    size_t* size)
+    //uint32_t* deposit_nout,
+    //uint32_t exchange_deposit_nout,
+    //const vector<DepositParams> &params,
+    //const Exchange &exch)
 {
-  CMutableTransaction _user_deposit;
-  DecodeHexTx(_user_deposit, user_deposit_tx_hex, false);
-  CTransaction user_deposit_tx(_user_deposit);
+        CBitcoinSecret exch_secret(seckey_from_str("exch"));
+        // simulate the exchange
+        Exchange exch(exch_secret.GetKey());
+        const auto &exch_pubkey = exch.pubKey();
+        LL_NOTICE(
+                "sgx public key: %s",
+                HexStr(exch.pubKey().begin(), exch.pubKey().end()).c_str());
+        LL_NOTICE("fee address: %s", exch.P2PKHAddress().ToString().c_str());
 
-  CMutableTransaction _exch_deposit;
-  DecodeHexTx(_exch_deposit, exchamge_deposit_tx_hex, false);
-  CTransaction exch_deposit_tx(_exch_deposit);
+        uint32_t depositTimeLock = 1000000;
+        vector<DepositParams> params;
+        for (auto name : {"alice", "bob", "carol", "david"}) {
+            CBitcoinSecret secret(seckey_from_str(name));
+            params.emplace_back(
+                    name, secret.GetKey().GetPubKey(), exch_pubkey, depositTimeLock);
 
-  vector<Deposit> currentDeposits;
+            auto u = params.back();
+            LL_NOTICE("%s", u.ToString().c_str());
+        }
 
-  // load user deposit
-  for (size_t i = 0; i < user_deposit_nout.size(); i++) {
-    currentDeposits.emplace_back(
-        params[i], user_deposit_tx, user_deposit_nout[i]);
-  }
+        size_t tmp = 0;
+        CMutableTransaction _exch_deposit;
+        DecodeHexTx(_exch_deposit, 
+                std::string(reinterpret_cast<char *>(deposit_tx_hex), size[0]), false);
+        tmp += size[0];
+        CTransaction exch_deposit_tx(_exch_deposit);
 
-  // load fee payment transaction
-  FeePayment feePayment(exch_deposit_tx, exchange_deposit_nout);
+        CMutableTransaction _user_deposit[4];
+        for (int i = 1; i < 5; ++i) {
+            DecodeHexTx(_user_deposit[i - 1], 
+                    std::string(reinterpret_cast<char *>(deposit_tx_hex + tmp), size[i]), false);
+            tmp += size[i];
+            //CTransaction user_deposit_tx(_user_deposit[i - 1]);
+        }
 
-  // simulate balance delta
-  vector<int64_t> balance_delta = {0, 0, 0, 0};
+        vector<Deposit> currentDeposits;
 
-  // lockTime
-  uint32_t nLockTime = 0;  // this concrete value doesn't matter as long as
-  // nLockTime <= blockcount
-  CFeeRate fixedRate(10000);  // FIXME using a static 10000 Satoshi / KB
+        // load user deposit
+        for (size_t i = 0; i < 4; i++) {//user_deposit_nout.size(); i++) {
+            currentDeposits.emplace_back(
+                    params[i], CTransaction(_user_deposit[i]), 0);//user_deposit_nout[i]);
+        }
 
-  // newDeposits is generated
-  vector<DepositParams> newDeposits;
-  auto tx_pair = generate_settlement_tx_bitcoin_or_litecoin(
-      newDeposits,
-      exch,
-      feePayment,
-      currentDeposits,
-      balance_delta,
-      100,  // increase the time lock with 100 blocks
-      nLockTime,
-      fixedRate);
+        // load fee payment transaction
+        FeePayment feePayment(exch_deposit_tx, 0);//exchange_deposit_nout);
 
-  for (const auto &nd : newDeposits) {
-    LL_LOG(
-        "new redeemScript: %s",
-        HexStr(
-            nd.deposit_redeemScript().begin(), nd.deposit_redeemScript().end())
-            .c_str());
-  }
+        // simulate balance delta
+        vector<int64_t> balance_delta = {1, 2, -1, -2};
 
-  {
-    // dump the hex
-    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-    ss << tx_pair.first;
+        // lockTime
+        uint32_t nLockTime = 0;  // this concrete value doesn't matter as long as
+        // nLockTime <= blockcount
+        CFeeRate fixedRate(10000);  // FIXME using a static 10000 Satoshi / KB
 
-    LL_NOTICE("settlement tx: %s", tx_pair.first.ToString().c_str());
-    LL_NOTICE("settlement tx (raw) : %s", HexStr(ss).c_str());
-  }
+        // newDeposits is generated
+        vector<DepositParams> newDeposits;
+        std::pair<CTransaction, CTransaction> tx_pair = generate_settlement_tx_bitcoin_or_litecoin(
+                newDeposits,
+                exch,
+                feePayment,
+                currentDeposits,
+                balance_delta,
+                100,  // increase the time lock with 100 blocks
+                nLockTime,
+                fixedRate);
 
-  {
-    // dump the hex
-    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-    ss << tx_pair.second;
+        for (const auto &nd : newDeposits) {
+            LL_LOG(
+                    "new redeemScript: %s",
+                    HexStr(
+                        nd.deposit_redeemScript().begin(), nd.deposit_redeemScript().end())
+                    .c_str());
+        }
 
-    LL_NOTICE("cancellation tx: %s", tx_pair.second.ToString().c_str());
-    LL_NOTICE("cancellation tx (raw) : %s", HexStr(ss).c_str());
-  }
+        {
+            // dump the hex
+            CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+            ss << tx_pair.first;
+
+            LL_NOTICE("settlement tx: %s", tx_pair.first.ToString().c_str());
+            LL_NOTICE("settlement tx (raw) : %s", HexStr(ss).c_str());
+        }
+
+        {
+            // dump the hex
+            CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+            ss << tx_pair.second;
+
+            LL_NOTICE("cancellation tx: %s", tx_pair.second.ToString().c_str());
+            LL_NOTICE("cancellation tx (raw) : %s", HexStr(ss).c_str());
+        }
+
+    return tx_pair;
 }
 
 bool test_settle_all()
@@ -365,6 +395,7 @@ bool test_settle_all()
     //  2MvdHzi7sxRbJTwjcH7wMT7z5GDpiq7ktfJ
     //  2MuAaNqaBaWTKFPq5CENWmhd58u7zJQLpnG
 
+/*    
     {
 #include "test_data/settlement_bitcoin"
       _do_test_settlement_all(
@@ -386,7 +417,9 @@ bool test_settle_all()
           params,
           exch);
     }
+*/
   }
+
   CATCHALL_AND(ret = false)
 
   ECC_Stop();
