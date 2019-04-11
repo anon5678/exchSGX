@@ -92,7 +92,7 @@ int merkle_proof_verify(
     hash.SetHex(string(reinterpret_cast<char const *>(header_hash), size));
     LL_DEBUG("look for block header hash: %s", hash.GetHex().c_str());
     pair<const CBlockHeader &, int> findHeader =
-        state::blockFIFO.find_block(hash);
+        state::blockFIFO[0].find_block(hash);
 
     if (findHeader.second < NUM_CONFIRMATION) {
       LL_CRITICAL(
@@ -190,7 +190,7 @@ int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit)
     // 0. find the block
     uint256 _block_hash;
     _block_hash.SetHex(deposit->block);
-    auto ref_block_in_fifo = state::blockFIFO.find_block(_block_hash);
+    auto ref_block_in_fifo = state::blockFIFO[0].find_block(_block_hash);
     const CBlockHeader &block_header = ref_block_in_fifo.first;
     // 1. verify the integrity of tx_raw
     vector<unsigned char> tx_raw = hex2bin(deposit->tx_raw);

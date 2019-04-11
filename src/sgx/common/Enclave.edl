@@ -53,7 +53,8 @@ enclave {
         );
 
         // state update
-        public int ecall_append_block_to_fifo([in,string]const char *blockHeaderHex);
+        public int ecall_append_block_to_fifo(
+            uint16_t index, [in,string]const char *blockHeaderHex);
 
         // key management
         public size_t nacl_keygen_in_seal(

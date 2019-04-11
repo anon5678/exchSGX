@@ -13,7 +13,7 @@
 
 using namespace exch::enclave;
 
-int ecall_append_block_to_fifo(const char *blockHeaderHex)
+int ecall_append_block_to_fifo(uint16_t index, const char *blockHeaderHex)
 {
   try {
     // sanity check
@@ -39,14 +39,14 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex)
     }
 
     // try to push it to the FIFO. throw if fails.
-    state::blockFIFO.try_append_new_block(block_header);
+    state::blockFIFO[index - 1].try_append_new_block(block_header);
     LL_NOTICE("block %s appended.", block_header.GetHash().ToString().c_str());
 
-    auto confirms = state::blockFIFO.find_block(state::blockFIFO.first_block());
+    auto confirms = state::blockFIFO[index - 1].find_block(state::blockFIFO[index - 1].first_block());
 
     LL_LOG(
         "%d blocks in queue. the head has %d confirmations",
-        state::blockFIFO.size(),
+        state::blockFIFO[index - 1].size(),
         confirms.second);
 
     return NO_ERROR;
@@ -60,9 +60,9 @@ int ecall_append_block_to_fifo(const char *blockHeaderHex)
   return ECALL_UNKNOWN_ERROR;
 }
 
-int ecall_get_latest_block_hash(unsigned char *o_buf, size_t cap_obuf)
+int ecall_get_latest_block_hash(uint16_t index, unsigned char *o_buf, size_t cap_obuf)
 {
-  uint256 last = state::blockFIFO.last_block();
+  uint256 last = state::blockFIFO[index - 1].last_block();
   if (cap_obuf < last.size()) {
     LL_CRITICAL("buffer too small");
     return ECALL_BUFFER_TOO_SMALL;

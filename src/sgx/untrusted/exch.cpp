@@ -71,13 +71,13 @@ void generic_asio_worker(shared_ptr<aio::io_service> io_service)
   LOG4CXX_INFO(logger, "worker thread finishes.");
 }
 
-void new_block_listener(const string &bitcoind_endpoint)
+void new_block_listener(int index, const string &bitcoind_endpoint, int port)
 {
   int num_of_imported_blocks = 0;
   sgx_status_t st;
   int ret;
 
-  Bitcoind bitcoind(bitcoind_endpoint);
+  Bitcoind bitcoind(bitcoind_endpoint, port);
 
   LOG4CXX_INFO(logger, "block listener started")
 
@@ -88,14 +88,14 @@ void new_block_listener(const string &bitcoind_endpoint)
         auto hash = bitcoind.getblockhash(num_of_imported_blocks);
         auto header = bitcoind.getblockheader(hash);
 
-        st = ecall_append_block_to_fifo(eid, &ret, header.c_str());
+        st = ecall_append_block_to_fifo(eid, &ret, index, header.c_str());
 
         if (SGX_SUCCESS != st || ret != 0) {
           if (SGX_SUCCESS != st) {
             LOG4CXX_ERROR(logger, get_sgx_error_msg(st));
           }
           throw std::runtime_error(
-              "can't append block to FIFO: return code " + std::to_string(ret));
+              "can't append block to FIFO #" + std::to_string(index) + ": return code " + std::to_string(ret));
         }
         num_of_imported_blocks++;
       }
@@ -138,7 +138,8 @@ int main(int argc, const char *argv[])
   }
 
   // create a thread for the block listener
-  worker_threads.create_thread(boost::bind(&new_block_listener, "dockerhost"));
+  worker_threads.create_thread(boost::bind(&new_block_listener, 1, "dockerhost", 18443));
+  worker_threads.create_thread(boost::bind(&new_block_listener, 2, "dockerhost", 8335));
 
   // try to load sealed secret keys
 #if false
@@ -275,7 +276,7 @@ int main(int argc, const char *argv[])
           }
           fclose(stdin);
 
-          freopen ("/code/sgx/untrusted/test_data/bitcoin-deposit","r",stdin);
+          freopen ("/code/sgx/untrusted/test_data/litecoin-deposit","r",stdin);
           tmp = 0;
           for (int i = 0; i < 5; ++i) {
               char st[500];

@@ -22,7 +22,7 @@ namespace enclave
 namespace state
 {
 extern BalanceBook balanceBook;
-extern BlockFIFO<1000> blockFIFO;
+extern BlockFIFO<1000> blockFIFO[2];
 }  // namespace state
 }  // namespace enclave
 }  // namespace exch
@@ -87,8 +87,8 @@ int merkle_proof_verify(
     const unsigned char *header_hash, size_t size, const merkle_proof_t *proof);
 int ecall_bitcoin_deposit(const bitcoin_deposit_t *deposit);
 
-int ecall_append_block_to_fifo(const char *blockHeaderHex);
-int ecall_get_latest_block_hash(unsigned char *o_buf, size_t cap_obuf);
+int ecall_append_block_to_fifo(uint16_t index, const char *blockHeaderHex);
+int ecall_get_latest_block_hash(uint16_t index, unsigned char *o_buf, size_t cap_obuf);
 
 // SSL server & client
 // int fairness_tls_server_init(void);

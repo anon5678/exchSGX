@@ -2,6 +2,7 @@
 
 #include <sstream>
 #include <string>
+#include <iostream>
 
 #include <json/json.h>
 #include <json/reader.h>
@@ -71,6 +72,9 @@ class BitcoindRPCException : public std::exception
     } else {
       code = parseCode(message);
       msg = parseMessage(message);
+      if (msg == "Transaction already in block chain") {
+          code = 0;
+      }
     }
 
     return std::make_pair(code, msg);
@@ -129,12 +133,18 @@ class BitcoindRPCException : public std::exception
 
  private:
   std::runtime_error m_except;
+  int error;
 
  public:
   explicit BitcoindRPCException(int errcode, const std::string &message)
-      : m_except(gen_error_code(errcode, message).second)
+      : error(gen_error_code(errcode, message).first), m_except(gen_error_code(errcode, message).second)
   {
   }
 
-  const char *what() const noexcept { return m_except.what(); }
+  const int getCode() {
+      return error;
+  }
+
+  const char *what() const noexcept { 
+      return m_except.what(); }
 };

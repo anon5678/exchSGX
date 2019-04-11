@@ -38,6 +38,8 @@ EnclaveRPC::EnclaveRPC(
 
 bool EnclaveRPC::appendBlock2FIFO(const std::string &block_header)
 {
+  throw runtime_error("should not call appendBlock2FIFO");
+  /*
   int ret;
   sgx_status_t st = ecall_append_block_to_fifo(eid, &ret, block_header.c_str());
   if (st != SGX_SUCCESS || ret != 0) {
@@ -45,6 +47,7 @@ bool EnclaveRPC::appendBlock2FIFO(const std::string &block_header)
     return false;
   }
   return true;
+  */
 }
 
 namespace exch

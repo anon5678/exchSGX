@@ -3,7 +3,7 @@
 using namespace exch::enclave;
 using namespace exch::enclave::fairness;
 
-BlockFIFO<1000> state::blockFIFO;
+BlockFIFO<1000> state::blockFIFO[2];
 BalanceBook state::balanceBook;
 
 sgx_thread_mutex_t state_mutex = SGX_THREAD_MUTEX_INITIALIZER;

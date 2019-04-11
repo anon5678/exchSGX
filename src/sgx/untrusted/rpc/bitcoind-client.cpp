@@ -62,7 +62,8 @@ void Bitcoind::sendrawtransaction(const string &tx_hex)
   try {
     this->bitcoind_stub.sendrawtransaction(tx_hex);
   } catch (const jsonrpc::JsonRpcException &e) {
-    throw BitcoindRPCException(e.GetCode(), e.GetMessage());
+    BitcoindRPCException err(e.GetCode(), e.GetMessage());
+    if (err.getCode() != 0) throw err;
   }
 }
 
