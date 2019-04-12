@@ -1,8 +1,4 @@
-const lock = require('locks');
-const bitcoin = require('bitcoinjs-lib');
-const regtest = bitcoin.networks.testnet;
 const RpcClient = require('bitcoind-rpc');
-const assert = require('assert');
 const fs = require('fs');
 const file = "../src/sgx/untrusted/test_data/bitcoin-deposit"
 
@@ -15,14 +11,6 @@ const config = {
   };
 
 const rpc = new RpcClient(config);
-
-const keyCoinbase = bitcoin.ECPair.fromWIF("L1Kzcyy88LyckShYdvoLFg1FYpB5ce1JmTYtieHrhkN65GhVoq73");
-const addrCoinbase = bitcoin.payments.p2pkh(
-                            {pubkey: keyCoinbase.publicKey, 
-                             network: regtest}).address;
-console.log("Coinbase address: " + addrCoinbase);
-console.log("Coinbase pubkey: " + keyCoinbase.publicKey.toString("hex"));
-console.log("Coinbase seckey: " + keyCoinbase.toWIF());
 
 const addr = ["muEPF2wfm1QdLy3LKocBQiW8g73WpzFq72",     //sgx
               "2NAqCFC8FazvtUzGv23reB9kQyR9JBW48PB",    //alice

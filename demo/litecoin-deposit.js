@@ -1,8 +1,4 @@
-const lock = require('locks');
-const bitcoin = require('bitcoinjs-lib');
-const regtest = bitcoin.networks.testnet;
 const RpcClient = require('bitcoind-rpc');
-const assert = require('assert');
 const fs = require('fs');
 const file = "../src/sgx/untrusted/test_data/litecoin-deposit"
 
