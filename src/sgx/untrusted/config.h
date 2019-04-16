@@ -1,6 +1,8 @@
 #ifndef PROJECT_CONFIG_H
 #define PROJECT_CONFIG_H
 
+#define DEMO
+
 #include <jsonrpccpp/client/connectors/httpclient.h>
 #include <jsonrpccpp/server/connectors/httpserver.h>
 #include <boost/algorithm/hex.hpp>
@@ -32,7 +34,13 @@ class Config
   string leader_addr;
   vector<string> follower_addr_list;
 
+#ifdef DEMO
+  bool failure;
+#endif
+
  public:
+  Config() {}
+
   Config(int argc, const char *argv[])
   {
     try {
@@ -41,6 +49,11 @@ class Config
           "c,config",
           po::value(&config_file)->default_value("config.toml"),
           "config file")(
+#ifdef DEMO
+          "f,failure",
+          po::bool_switch(&failure)->default_value(false),
+          "test failure in sending settlement transaction")(
+#endif
           "l,leader",
           po::bool_switch(&is_fairness_leader)->default_value(false),
           "work as the fairness leader");
@@ -91,6 +104,10 @@ class Config
   {
     return follower_addr_list;
   }
+
+#ifdef DEMO
+  bool getFailure() const { return failure; }
+#endif
 };
 
 #endif  // PROJECT_CONFIG_H

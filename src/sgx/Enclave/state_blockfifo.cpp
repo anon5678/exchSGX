@@ -40,7 +40,7 @@ int ecall_append_block_to_fifo(uint16_t index, const char *blockHeaderHex)
 
     // try to push it to the FIFO. throw if fails.
     state::blockFIFO[index - 1].try_append_new_block(block_header);
-    LL_NOTICE("block %s appended.", block_header.GetHash().ToString().c_str());
+    //LL_NOTICE("block %s appended.", block_header.GetHash().ToString().c_str());
 
     auto confirms = state::blockFIFO[index - 1].find_block(state::blockFIFO[index - 1].first_block());
 

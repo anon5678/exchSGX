@@ -13,6 +13,7 @@
 #include "merkpath/merkpath.h"
 #include "rpc/bitcoind-client.h"
 #include "Enclave_u.h"
+#include "config.h"
 
 namespace exch
 {
@@ -25,6 +26,10 @@ log4cxx::LoggerPtr logger(
 
 using namespace std;
 using exch::bitcoin::logger;
+
+//#ifdef DEMO
+Config conf;
+//#endif
 
 string getRawTransaction(const string &txid)
 {
@@ -142,6 +147,9 @@ MerkleProof buildTxInclusionProof(const string &txid)
 
 int sendTxToBlockchain(int index, const char* tx_hex) {
     if (index == 1) {
+#ifdef DEMO
+        if (conf.getFailure() && conf.getIsFairnessLeader()) return 0;
+#endif
         Bitcoind rpc;
         LOG4CXX_INFO(logger, "start sending tx to bitcoin");
         rpc.sendrawtransaction(string(tx_hex));

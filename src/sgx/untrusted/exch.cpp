@@ -50,6 +50,7 @@ using exch::main::logger;
 extern shared_ptr<aio::io_service> io_service;
 extern unique_ptr<boost::asio::deadline_timer> fairnessTimer;
 sgx_enclave_id_t eid;
+extern Config conf;
 
 void generic_asio_worker(shared_ptr<aio::io_service> io_service)
 {
@@ -114,7 +115,7 @@ void new_block_listener(int index, const string &bitcoind_endpoint, int port)
 int main(int argc, const char *argv[])
 {
   // initialize logging and stuff
-  Config conf(argc, argv);
+  conf = Config(argc, argv);
   log4cxx::PropertyConfigurator::configure(LOGGING_CONF);
   exch::interrupt::init_signal_handler();
 
