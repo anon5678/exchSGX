@@ -64,6 +64,16 @@ Make sure a Bitcoin client is running. In the docker container, Run the fairness
     # launch the leader
     root@1a14107187db:/build# ./exch -l
 
+To demostrate a case when there is failure in sending the first settlement transaction and the system falls into cancelling transactions, run the exchange by:
+
+.. code-block:: bash
+
+    # launch a follower
+    root@1a14107187db:/build# ./exch -f &
+    # launch another folloewr
+    root@1a14107187db:/build# ./exch -f &
+    # launch the leader
+    root@1a14107187db:/build# ./exch -l -f
 
 You may want to run the above in three terminal windows so the output doesn't mix up. To get a bash from any terminal window, run ``scripts/sgx-enter.sh``.
 
