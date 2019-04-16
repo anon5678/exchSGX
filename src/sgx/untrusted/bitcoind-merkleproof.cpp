@@ -28,7 +28,7 @@ using namespace std;
 using exch::bitcoin::logger;
 
 //#ifdef DEMO
-Config conf;
+extern Config conf;
 //#endif
 
 string getRawTransaction(const string &txid)

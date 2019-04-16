@@ -50,7 +50,7 @@ using exch::main::logger;
 extern shared_ptr<aio::io_service> io_service;
 extern unique_ptr<boost::asio::deadline_timer> fairnessTimer;
 sgx_enclave_id_t eid;
-extern Config conf;
+Config conf;
 
 void generic_asio_worker(shared_ptr<aio::io_service> io_service)
 {
