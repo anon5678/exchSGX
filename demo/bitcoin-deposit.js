@@ -7,7 +7,7 @@ const config = {
     user: 'exch',
     pass: 'goodpass',
     host: '127.0.0.1',
-    port: '18443',
+    port: '8332',
   };
 
 const rpc = new RpcClient(config);

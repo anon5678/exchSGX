@@ -23,7 +23,12 @@ Copy the supplied configuration file ``conf/bitcoin.conf`` to the right place. O
     mkdir -p ~/.bitcoin && ln -sf $(pwd)/conf/bitcoin.conf ~/.bitcoin
 
 
-Launch ``bitcoin-qt``.
+Launch bitcoind:
+
+.. code-block:: bash
+
+    bitcoind -server
+
 
 Similar for Litecoin.
 
@@ -36,6 +41,7 @@ After launching Bitcoin Client and Litecoin Client, run scripts to deposit money
 
     cd demo
     npm install bitcoind-rpc
+    mkdir ../src/sgx/untrusted/test_data 
     node bitcoin-deposit.js
     node litecoin-deposit.js
 
