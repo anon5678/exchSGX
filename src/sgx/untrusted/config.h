@@ -36,6 +36,7 @@ class Config
 
 #ifdef DEMO
   bool failure;
+  int users;
 #endif
 
  public:
@@ -53,6 +54,9 @@ class Config
           "f,failure",
           po::bool_switch(&failure)->default_value(false),
           "test failure in sending settlement transaction")(
+          "n,number",
+          po::value(&users)->default_value(4),
+          "number of users")(
 #endif
           "l,leader",
           po::bool_switch(&is_fairness_leader)->default_value(false),
@@ -107,6 +111,7 @@ class Config
 
 #ifdef DEMO
   bool getFailure() const { return failure; }
+  int getUsers() const {return users; }
 #endif
 };
 

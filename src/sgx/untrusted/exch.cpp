@@ -105,7 +105,7 @@ void new_block_listener(int index, const string &bitcoind_endpoint, int port)
     catch (const std::exception &e) {
       LOG4CXX_ERROR(
           logger,
-          "can't get block " << num_of_imported_blocks << ". " << e.what());
+          "port: " + std::to_string(port) + " can't get block " << num_of_imported_blocks << ". " << e.what());
     }
 
     std::this_thread::sleep_for(chrono::milliseconds(10)); //TODO: for demo
@@ -119,6 +119,7 @@ int main(int argc, const char *argv[])
   log4cxx::PropertyConfigurator::configure(LOGGING_CONF);
   exch::interrupt::init_signal_handler();
 
+  
   // create the global io_service
   io_service = std::make_shared<aio::io_service>();
   aio::io_service::work io_work(*io_service);
@@ -139,8 +140,8 @@ int main(int argc, const char *argv[])
   }
 
   // create a thread for the block listener
-  worker_threads.create_thread(boost::bind(&new_block_listener, 1, "dockerhost", 18443));
-  worker_threads.create_thread(boost::bind(&new_block_listener, 2, "dockerhost", 8335));
+  worker_threads.create_thread(boost::bind(&new_block_listener, 1, "localhost", 8332));
+  worker_threads.create_thread(boost::bind(&new_block_listener, 2, "localhost", 8335));
 
   // try to load sealed secret keys
 #if false
@@ -256,19 +257,24 @@ int main(int argc, const char *argv[])
     exit(-1);
   }
 
+
+
   // TODO: test only
+  
   LOG4CXX_INFO(logger, "sleep for 10 seconds for block syncing...");
   this_thread::sleep_for(chrono::seconds(10));
   if (conf.getIsFairnessLeader()) {
+      int num_users = conf.getUsers(); 
+
       LOG4CXX_INFO(logger, "Start reading from file");
-      unsigned char* tx_hex_bitcoin = new unsigned char[5 * 500]();
-      size_t* size_bitcoin = new size_t[5]();
-      unsigned char *tx_hex_litecoin = new unsigned char[5 * 500]();
-      size_t* size_litecoin = new size_t[5]();
+      unsigned char* tx_hex_bitcoin = new unsigned char[(num_users + 1) * 500]();
+      size_t* size_bitcoin = new size_t[num_users + 1]();
+      unsigned char *tx_hex_litecoin = new unsigned char[(num_users + 1) * 500]();
+      size_t* size_litecoin = new size_t[num_users + 1]();
       try {
           freopen ("/code/sgx/untrusted/test_data/bitcoin-deposit","r",stdin);
           size_t tmp = 0;
-          for (int i = 0; i < 5; ++i) {
+          for (int i = 0; i < num_users + 1; ++i) {
               char st[500];
               scanf("%s", st);
               strncpy((char*)tx_hex_bitcoin + tmp, st, strlen(st));
@@ -279,7 +285,7 @@ int main(int argc, const char *argv[])
 
           freopen ("/code/sgx/untrusted/test_data/litecoin-deposit","r",stdin);
           tmp = 0;
-          for (int i = 0; i < 5; ++i) {
+          for (int i = 0; i < num_users + 1; ++i) {
               char st[500];
               scanf("%s", st);
               strncpy((char*)tx_hex_litecoin + tmp, st, strlen(st));
@@ -292,11 +298,16 @@ int main(int argc, const char *argv[])
           exit(-1);
       }
     
-    generate_settlement_tx(eid, &ret, 
-            tx_hex_bitcoin, size_bitcoin,
-            tx_hex_litecoin, size_litecoin);
+    
+    LOG4CXX_INFO(logger, "number of users: " << conf.getUsers());
+ 
+    generate_settlement_tx(eid, &ret,
+            num_users, num_users, tx_hex_bitcoin, size_bitcoin,
+            num_users, num_users, tx_hex_litecoin, size_litecoin);
 
+#ifdef DEMO
     simulate_leader(eid, &ret);
+#endif
   }
 
   while (!exch::interrupt::quit.load()) {

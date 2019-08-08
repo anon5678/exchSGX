@@ -1,13 +1,18 @@
-rm -rf ~/Library/Application\ Support/Bitcoin/*
-rm -rf ~/Library/Application\ Support/Litecoin/*
-
-cp ../conf/bitcoin.conf ~/Library/Application\ Support/Bitcoin/
-cp ../conf/litecoin.conf ~/Library/Application\ Support/Litecoin/
-
-./bitcoin-0.17.1/bin/bitcoind --daemon
-./litecoin-0.16.3/bin/litecoind --daemon
+bitcoin-cli stop
+litecoin-cli stop
 
 sleep 2s
 
-node bitcoin-deposit.js
-node litecoin-deposit.js
+rm -rf ~/.bitcoin/regtest
+rm -rf ~/.litecoin/regtest
+
+sleep 2s
+
+bitcoind --daemon
+litecoind --daemon
+
+sleep 5s
+
+node bitcoin-deposit.js ${1:-4}
+node litecoin-deposit.js ${1:-4}
+

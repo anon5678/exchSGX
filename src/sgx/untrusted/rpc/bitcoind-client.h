@@ -30,8 +30,8 @@ class Bitcoind
 
  public:
   explicit Bitcoind(
-      const string &hostname = "dockerhost",
-      int port = 18443,
+      const string &hostname = "localhost",
+      int port = 8332,
       const string &auth = "exch:goodpass")
       : connector(
             "http://" + auth + "@" + hostname + ":" + std::to_string(port)),

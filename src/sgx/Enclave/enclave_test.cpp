@@ -134,8 +134,10 @@ int enclaveTest()
 }
 
 int generate_settlement_tx(
+        int num_input_bitcoin, int num_output_bitcoin,
         unsigned char* deposit_tx_hex_bitcoin,
         size_t* size_bitcoin,
+        int num_input_litecoin, int num_output_litecoin,
         unsigned char* deposit_tx_hex_litecoin,
         size_t* size_litecoin) {
     LL_NOTICE("start generating settlement transaction...");
@@ -147,10 +149,10 @@ int generate_settlement_tx(
 
     try {
         std::pair<CTransaction, CTransaction> tx1_pair = _do_test_settlement_all(
-                deposit_tx_hex_bitcoin, size_bitcoin);
+                num_input_bitcoin, num_output_bitcoin, deposit_tx_hex_bitcoin, size_bitcoin);
 
         std::pair<CTransaction, CTransaction> tx2_pair = _do_test_settlement_all(
-                deposit_tx_hex_litecoin, size_litecoin);
+                num_input_litecoin, num_output_litecoin, deposit_tx_hex_litecoin, size_litecoin);
       
         unsigned char *tx_tmp = new unsigned char[33];
         hex2bin(tx_tmp, HexStr(tx1_pair.first.GetHash()).c_str());

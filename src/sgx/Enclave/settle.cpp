@@ -8,6 +8,7 @@
 #include "bitcoin/utilstrencodings.h"
 #include "bitcoin_helpers.h"
 
+
 using std::vector;
 
 void DepositParams::_gen_deposit_redeemScript()
@@ -257,6 +258,8 @@ generate_settlement_tx_bitcoin_or_litecoin(
 
 std::pair<CTransaction, CTransaction> _do_test_settlement_all(
     //const std::string &user_deposit_tx_hex,
+    int num_input,
+    int num_output,
     unsigned char* deposit_tx_hex, 
     size_t* size)
     //uint32_t* deposit_nout,
@@ -275,7 +278,18 @@ std::pair<CTransaction, CTransaction> _do_test_settlement_all(
 
         uint32_t depositTimeLock = 1000000;
         vector<DepositParams> params;
-        for (auto name : {"alice", "bob", "carol", "david"}) {
+
+#ifdef GETKEYS
+        for (auto i = 0; i < 6000; ++i) {
+            auto name = "User" + std::to_string(i);
+            CBitcoinSecret secret(seckey_from_str(name));
+            auto u = DepositParams(name, secret.GetKey().GetPubKey(), exch_pubkey, depositTimeLock);
+            LL_NOTICE("%s", u.address().ToString().c_str());
+        }
+#endif
+        
+        for (auto i = 0; i < num_output; ++i) {
+            auto name = "User" + std::to_string(i);
             CBitcoinSecret secret(seckey_from_str(name));
             params.emplace_back(
                     name, secret.GetKey().GetPubKey(), exch_pubkey, depositTimeLock);
@@ -291,8 +305,8 @@ std::pair<CTransaction, CTransaction> _do_test_settlement_all(
         tmp += size[0];
         CTransaction exch_deposit_tx(_exch_deposit);
 
-        CMutableTransaction _user_deposit[4];
-        for (int i = 1; i < 5; ++i) {
+        CMutableTransaction _user_deposit[num_input];
+        for (int i = 1; i < num_input + 1; ++i) {
             DecodeHexTx(_user_deposit[i - 1], 
                     std::string(reinterpret_cast<char *>(deposit_tx_hex + tmp), size[i]), false);
             tmp += size[i];
@@ -302,7 +316,7 @@ std::pair<CTransaction, CTransaction> _do_test_settlement_all(
         vector<Deposit> currentDeposits;
 
         // load user deposit
-        for (size_t i = 0; i < 4; i++) {//user_deposit_nout.size(); i++) {
+        for (size_t i = 0; i < num_input; i++) {//user_deposit_nout.size(); i++) {
             currentDeposits.emplace_back(
                     params[i], CTransaction(_user_deposit[i]), 0);//user_deposit_nout[i]);
         }
@@ -311,7 +325,16 @@ std::pair<CTransaction, CTransaction> _do_test_settlement_all(
         FeePayment feePayment(exch_deposit_tx, 0);//exchange_deposit_nout);
 
         // simulate balance delta
-        vector<int64_t> balance_delta = {1, 2, -1, -2};
+        vector<int64_t> balance_delta;
+        for (auto i = 0; i < num_input / 2; ++i) {
+            balance_delta.push_back(-1);
+        }
+        if (num_input % 2 == 1) {
+            balance_delta.push_back(0);
+        }
+        for (auto i = 0; i < num_input / 2; ++i) {
+            balance_delta.push_back(1);
+        }
 
         // lockTime
         uint32_t nLockTime = 0;  // this concrete value doesn't matter as long as
@@ -344,7 +367,7 @@ std::pair<CTransaction, CTransaction> _do_test_settlement_all(
             ss << tx_pair.first;
 
             LL_NOTICE("settlement tx: %s", tx_pair.first.ToString().c_str());
-            LL_NOTICE("settlement tx (raw) : %s", HexStr(ss).c_str());
+            LL_NOTICE("settlement tx (raw) with %d bytes: %s", HexStr(ss).length() / 2, HexStr(ss).c_str());
         }
 
         {
@@ -353,7 +376,7 @@ std::pair<CTransaction, CTransaction> _do_test_settlement_all(
             ss << tx_pair.second;
 
             LL_NOTICE("cancellation tx: %s", tx_pair.second.ToString().c_str());
-            LL_NOTICE("cancellation tx (raw) : %s", HexStr(ss).c_str());
+            LL_NOTICE("cancellation tx (raw) with %d bytes: %s", HexStr(ss).length() / 2, HexStr(ss).c_str());
         }
 
     return tx_pair;

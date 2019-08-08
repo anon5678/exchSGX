@@ -157,7 +157,7 @@ int sendTxToBlockchain(int index, const char* tx_hex) {
         rpc.generate(2); //TODO: just for demo, note that the last generated block is not fed into blockfifo!!!
         LOG4CXX_INFO(logger, "tx mined in bitcoin");
     } else {
-        Bitcoind rpc("dockerhost", 8335);
+        Bitcoind rpc("localhost", 8335);
         LOG4CXX_INFO(logger, "start sending tx to litecoin");
         rpc.sendrawtransaction(string(tx_hex));
         LOG4CXX_INFO(logger, "tx sent to litecoin, try mining one tx in litecoin");

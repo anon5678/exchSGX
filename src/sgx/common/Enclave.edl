@@ -42,8 +42,10 @@ enclave {
         public int enclaveTest();
         public int simulate_leader();
         public int generate_settlement_tx(
+            int num_input_bitcoin, int num_output_bitcoin,
             [user_check] unsigned char* deposit_tx_hex_bitcoin, 
             [user_check] size_t* size_bitcoin,
+            int num_intput_litecoin, int num_output_litecoin,
             [user_check] unsigned char* deposit_tx_hex_litecoin, 
             [user_check] size_t* size_litecoin);
 
