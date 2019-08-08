@@ -79,10 +79,8 @@ bool validate_redeemScript(
     LL_CRITICAL("not an P2SH");
     return false;
   } else {
-    return equal(
-        std::begin(scriptHash),
-        std::end(scriptHash),
-        std::begin(redeemScriptHash));
+    return std::equal(
+        scriptHash.begin(), scriptHash.end(), redeemScriptHash.begin());
   }
 }
 
