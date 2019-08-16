@@ -125,12 +125,23 @@ int enclaveTest()
 {
   //  test_simple_cltv_redeem();
   //  test_settlement();
-  test_settle_all();
+  //  test_settle_all();
   // SelectParams(CBaseChainParams::REGTEST);
-  // ECC_Start();
-  // lest::run(specification);
-  // ECC_Stop();
   return 0;
+}
+
+void sign_n_times(int n)
+{
+  ECC_Start();
+  auto _ = std::unique_ptr<ECCVerifyHandle>(new ECCVerifyHandle());
+  auto key = seckey_from_str("test");
+  uint256 hash;
+  vector<uint8_t> vchSig;
+
+  for (int i = 0; i < n; i++) {
+    key.Sign(hash, vchSig);
+  }
+  ECC_Stop();
 }
 
 int generate_settlement_tx(
