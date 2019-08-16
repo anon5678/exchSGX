@@ -134,6 +134,7 @@ void sign_n_times(int n)
 {
   ECC_Start();
   auto _ = std::unique_ptr<ECCVerifyHandle>(new ECCVerifyHandle());
+  auto _mem = std::unique_ptr<char[]>(new char[95 * 1024 * 1024]);
   auto key = seckey_from_str("test");
   uint256 hash;
   vector<uint8_t> vchSig;
