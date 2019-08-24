@@ -106,6 +106,7 @@ target_link_libraries(exch-test
         )
 
 add_dependencies(exch enclave)
+add_dependencies(exch-test enclave)
 
 add_custom_command(TARGET exch
         POST_BUILD

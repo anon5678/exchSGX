@@ -7,6 +7,7 @@
 #include "external/catch.hpp"
 
 using namespace std;
+Config conf;
 
 sgx_enclave_id_t eid;
 
@@ -22,6 +23,23 @@ BitcoindRPCException);
 }
 */
 
+#include <chrono>
+
+using std::chrono::high_resolution_clock;
+using std::chrono::time_point;
+
+inline time_point<high_resolution_clock> clock_start()
+{
+  return high_resolution_clock::now();
+}
+
+inline double time_from(const time_point<high_resolution_clock>& s)
+{
+  return std::chrono::duration_cast<std::chrono::milliseconds>(
+             high_resolution_clock::now() - s)
+      .count();
+}
+
 TEST_CASE("enclave", "[all]")
 {
   exch::interrupt::init_signal_handler();
@@ -35,10 +53,12 @@ TEST_CASE("enclave", "[all]")
   sgx_status_t st;
   int ret = 0;
 
-  // call the function at Enclave/enclave_test.cpp:55
-  st = enclaveTest(eid, &ret);
-  REQUIRE(st == SGX_SUCCESS);
-  REQUIRE(ret == 0);
+  for (int n : {100, 200, 300, 400, 500, 600, 1000, 2000, 5000}) {
+    auto time_start = clock_start();
+    st = sign_n_times(eid, n);
+    REQUIRE(st == SGX_SUCCESS);
+    std::printf("signing %d times takes %f ms\n", n, time_from(time_start));
+  }
 
   // destroy the enclave last
   sgx_destroy_enclave(eid);
