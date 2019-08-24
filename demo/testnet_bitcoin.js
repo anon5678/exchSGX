@@ -6032,7 +6032,7 @@ function work(i, txid) {
     } else {
         fs.appendFile(file, txid + " " + i.toString() + "\n", (err) => {
             if (err) return console.log(err);
-            work(i + 1);
+            work(i + 1, txid);
         });
     }
 }
