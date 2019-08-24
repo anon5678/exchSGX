@@ -44,12 +44,14 @@ enclave {
 
         public int simulate_leader();
         public int generate_settlement_tx(
-            int num_input_bitcoin, int num_output_bitcoin,
+            int num_bitcoin,
             [user_check] unsigned char* deposit_tx_hex_bitcoin, 
             [user_check] size_t* size_bitcoin,
-            int num_intput_litecoin, int num_output_litecoin,
+            [user_check] uint16_t* vout_bitcoin,
+            int num_litecoin,
             [user_check] unsigned char* deposit_tx_hex_litecoin, 
-            [user_check] size_t* size_litecoin);
+            [user_check] size_t* size_litecoin,
+            [user_check] uint16_t* vout_litecoin);
 
         public int merkle_proof_verify(
             [user_check] const unsigned char* header_hash, size_t size,

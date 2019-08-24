@@ -14,7 +14,7 @@ const rpc = new RpcClient(config);
 
 var myArgs = process.argv.slice(2);
 var num_user = 4;
-if (myArgs == undefined) {
+if (myArgs[0] == undefined) {
     num_user = 4;
 } else {
     num_user = parseInt(myArgs[0]);
@@ -6040,7 +6040,8 @@ function work(i) {
                 if (err) return console.log(err);
                 console.log(res["result"]["tx"][0]);
                 rpc.getrawtransaction(res["result"]["tx"][0], false, function(err, res) {
-                    fs.appendFile(file, res["result"] + "\n", (err) => {
+                    if (err) return console.log(err);
+                    fs.appendFile(file, res["result"] + " 0\n", (err) => {
                         if (err) return console.log(err);
                         work(i + 1);
                     });

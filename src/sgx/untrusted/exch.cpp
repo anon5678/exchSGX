@@ -269,8 +269,10 @@ int main(int argc, const char *argv[])
       LOG4CXX_INFO(logger, "Start reading from file");
       unsigned char* tx_hex_bitcoin = new unsigned char[(num_users + 1) * 500]();
       size_t* size_bitcoin = new size_t[num_users + 1]();
+      uint16_t* vout_bitcoin = new uint16_t[num_users + 1]();
       unsigned char *tx_hex_litecoin = new unsigned char[(num_users + 1) * 500]();
       size_t* size_litecoin = new size_t[num_users + 1]();
+      uint16_t* vout_litecoin = new uint16_t[num_users + 1]();
       
       string folder = "../untrusted/test_data/";
       try {
@@ -281,7 +283,7 @@ int main(int argc, const char *argv[])
           size_t tmp = 0;
           for (int i = 0; i < num_users + 1; ++i) {
               char st[500];
-              if (scanf("%s", st) != 1) {
+              if (scanf("%s %d", st, &vout_bitcoin[i]) != 2) {
                   throw std::runtime_error("not enough inputs in bitcoin-deposit");
               }
               strncpy((char*)tx_hex_bitcoin + tmp, st, strlen(st));
@@ -297,7 +299,7 @@ int main(int argc, const char *argv[])
           tmp = 0;
           for (int i = 0; i < num_users + 1; ++i) {
               char st[500];
-              if (scanf("%s", st) != 1) {
+              if (scanf("%s %d", st, &vout_litecoin[i]) != 2) {
                   throw std::runtime_error("not enough inputs in litecoin-deposit");
               }
               strncpy((char*)tx_hex_litecoin + tmp, st, strlen(st));
@@ -314,11 +316,10 @@ int main(int argc, const char *argv[])
     LOG4CXX_INFO(logger, "number of users: " << conf.getUsers());
  
     generate_settlement_tx(eid, &ret,
-            num_users, num_users, tx_hex_bitcoin, size_bitcoin,
-            num_users, num_users, tx_hex_litecoin, size_litecoin);
+            num_users, tx_hex_bitcoin, size_bitcoin, vout_bitcoin,
+            num_users, tx_hex_litecoin, size_litecoin, vout_litecoin);
     if (ret != 0) {
         LOG4CXX_ERROR(logger, "tx generation error!");
-        break;
     }
     
     delete[] tx_hex_bitcoin;

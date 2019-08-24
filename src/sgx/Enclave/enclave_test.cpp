@@ -146,12 +146,14 @@ void sign_n_times(int n)
 }
 
 int generate_settlement_tx(
-        int num_input_bitcoin, int num_output_bitcoin,
+        int num_bitcoin,
         unsigned char* deposit_tx_hex_bitcoin,
         size_t* size_bitcoin,
-        int num_input_litecoin, int num_output_litecoin,
+        uint16_t* vout_bitcoin,
+        int num_litecoin,
         unsigned char* deposit_tx_hex_litecoin,
-        size_t* size_litecoin) {
+        size_t* size_litecoin,
+        uint16_t* vout_litecoin) {
     LL_NOTICE("start generating settlement transaction...");
    
     int ret = 0;
@@ -161,10 +163,10 @@ int generate_settlement_tx(
 
     try {
         std::pair<CTransaction, CTransaction> tx1_pair = _do_test_settlement_all(
-                num_input_bitcoin, num_output_bitcoin, deposit_tx_hex_bitcoin, size_bitcoin);
+                num_bitcoin, deposit_tx_hex_bitcoin, size_bitcoin, vout_bitcoin);
 
         std::pair<CTransaction, CTransaction> tx2_pair = _do_test_settlement_all(
-                num_input_litecoin, num_output_litecoin, deposit_tx_hex_litecoin, size_litecoin);
+                num_litecoin, deposit_tx_hex_litecoin, size_litecoin, vout_litecoin);
       
         unsigned char *tx_tmp = new unsigned char[33];
         hex2bin(tx_tmp, HexStr(tx1_pair.first.GetHash()).c_str());

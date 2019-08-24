@@ -175,10 +175,10 @@ class FeePayment
 };
 
 std::pair<CTransaction, CTransaction> _do_test_settlement_all(
-    int num_input,
-    int num_output,
+    int num,
     unsigned char* deposit_tx_hex,
-    size_t* size);
+    size_t* size,
+    uint16_t* vout);
 
 
 #endif  // TESSERACT_SETTLE_H

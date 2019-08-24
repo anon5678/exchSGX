@@ -258,10 +258,10 @@ generate_settlement_tx_bitcoin_or_litecoin(
 
 std::pair<CTransaction, CTransaction> _do_test_settlement_all(
     //const std::string &user_deposit_tx_hex,
-    int num_input,
-    int num_output,
+    int num,
     unsigned char* deposit_tx_hex, 
-    size_t* size)
+    size_t* size,
+    uint16_t* vout)
     //uint32_t* deposit_nout,
     //uint32_t exchange_deposit_nout,
     //const vector<DepositParams> &params,
@@ -288,7 +288,7 @@ std::pair<CTransaction, CTransaction> _do_test_settlement_all(
         }
 #endif
         
-        for (auto i = 0; i < num_output; ++i) {
+        for (auto i = 0; i < num; ++i) {
             auto name = "User" + std::to_string(i);
             CBitcoinSecret secret(seckey_from_str(name));
             params.emplace_back(
@@ -305,8 +305,8 @@ std::pair<CTransaction, CTransaction> _do_test_settlement_all(
         tmp += size[0];
         CTransaction exch_deposit_tx(_exch_deposit);
 
-        CMutableTransaction _user_deposit[num_input];
-        for (int i = 1; i < num_input + 1; ++i) {
+        CMutableTransaction _user_deposit[num];
+        for (int i = 1; i < num + 1; ++i) {
             DecodeHexTx(_user_deposit[i - 1], 
                     std::string(reinterpret_cast<char *>(deposit_tx_hex + tmp), size[i]), false);
             tmp += size[i];
@@ -316,23 +316,23 @@ std::pair<CTransaction, CTransaction> _do_test_settlement_all(
         vector<Deposit> currentDeposits;
 
         // load user deposit
-        for (size_t i = 0; i < num_input; i++) {//user_deposit_nout.size(); i++) {
+        for (size_t i = 0; i < num; i++) {//user_deposit_nout.size(); i++) {
             currentDeposits.emplace_back(
-                    params[i], CTransaction(_user_deposit[i]), 0);//user_deposit_nout[i]);
+                    params[i], CTransaction(_user_deposit[i]), vout[i + 1]);//user_deposit_nout[i]);
         }
 
         // load fee payment transaction
-        FeePayment feePayment(exch_deposit_tx, 0);//exchange_deposit_nout);
+        FeePayment feePayment(exch_deposit_tx, vout[0]);//exchange_deposit_nout);
 
         // simulate balance delta
         vector<int64_t> balance_delta;
-        for (auto i = 0; i < num_input / 2; ++i) {
+        for (auto i = 0; i < num / 2; ++i) {
             balance_delta.push_back(-1);
         }
-        if (num_input % 2 == 1) {
+        if (num % 2 == 1) {
             balance_delta.push_back(0);
         }
-        for (auto i = 0; i < num_input / 2; ++i) {
+        for (auto i = 0; i < num / 2; ++i) {
             balance_delta.push_back(1);
         }
 
