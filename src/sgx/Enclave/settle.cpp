@@ -294,8 +294,8 @@ std::pair<CTransaction, CTransaction> _do_test_settlement_all(
             params.emplace_back(
                     name, secret.GetKey().GetPubKey(), exch_pubkey, depositTimeLock);
 
-            auto u = params.back();
-            LL_NOTICE("%s", u.ToString().c_str());
+            //auto u = params.back();
+            //LL_NOTICE("%s", u.ToString().c_str());
         }
 
         size_t tmp = 0;

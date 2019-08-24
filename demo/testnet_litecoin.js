@@ -1,6 +1,6 @@
 const RpcClient = require('bitcoind-rpc');
 const fs = require('fs');
-const file = "../src/sgx/untrusted/test_data/testnet-bitcoin-deposit"
+const file = "../src/sgx/untrusted/test_data/testnet-litecoin-deposit"
 
 const config = {
     protocol: 'http',

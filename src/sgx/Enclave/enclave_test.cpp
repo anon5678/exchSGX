@@ -170,13 +170,14 @@ int generate_settlement_tx(
         hex2bin(tx_tmp, HexStr(tx1_pair.first.GetHash()).c_str());
         byte_swap(tx_tmp, 32);
         string tx_1_id = bin2hex(tx_tmp, 32);
-        LL_NOTICE("%s", tx_1_id.c_str());
+        LL_NOTICE("settment tx1 id: %s", tx_1_id.c_str());        
         
         hex2bin(tx_tmp, HexStr(tx1_pair.second.GetHash()).c_str());
         byte_swap(tx_tmp, 32);
         string tx_1_cancel_id = bin2hex(tx_tmp, 32);
-        LL_NOTICE("%s", tx_1_cancel_id.c_str());
-        
+        LL_NOTICE("cancellation tx1 id: %s", tx_1_cancel_id.c_str());
+        delete[] tx_tmp;
+  
         bytes tx1, tx2, tx1_cancel, tx2_cancel;
         {
             CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
@@ -205,12 +206,16 @@ int generate_settlement_tx(
         State &s = State::getInstance();
         fairness::Leader *prot = s.initFairnessProtocol(move(msg));
 
-        return 0;
+    } catch (const std::exception &e) {
+      LL_CRITICAL("error happened: %s", e.what());
+      ret = -1;
+    } catch (...) {
+      LL_CRITICAL("unknown error happened");
+      ret = -1;
     }
-  CATCHALL_AND(ret = -1)
 
-  ECC_Stop();
-  return ret;
+    ECC_Stop();
+    return ret;
 }
 
 

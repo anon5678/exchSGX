@@ -34,6 +34,7 @@ void FairnessProtocol::txOneConfirmed(
         memcpy(tmp, proof->tx, 32);
         byte_swap(tmp, 32);
         string tx_id = bin2hex(tmp, 32);
+        delete[] tmp;
         // LL_NOTICE("%s", tx_id.c_str());
         if (tx_id == msg.tx_1_id_hex) {
           LL_NOTICE(
@@ -289,6 +290,7 @@ void FairnessProtocol::foundTxOneInMempool(const uint256 tx)
         LL_NOTICE("found tx1 in mempool");
         stage = SENDTXONE;
       }
+      delete[] tx_tmp;
     } catch (const std::exception &e) {
       LL_CRITICAL("%s", e.what());
     }
