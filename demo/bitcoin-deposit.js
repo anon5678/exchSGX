@@ -13,7 +13,12 @@ const config = {
 const rpc = new RpcClient(config);
 
 var myArgs = process.argv.slice(2);
-const num_user = parseInt(myArgs[0]);
+var num_user = 4;
+if (myArgs == undefined) {
+    num_user = 4;
+} else {
+    num_user = parseInt(myArgs[0]);
+}
 
 const addr = ["muEPF2wfm1QdLy3LKocBQiW8g73WpzFq72",     //sgx
 "2MuGvrwMz58AKTyPTxjDUqN9an9nVsPHQy6",
