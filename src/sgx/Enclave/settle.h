@@ -150,9 +150,12 @@ class FeePayment
   FeePayment(CTransaction txin, uint32_t nOut)
       : txin(std::move(txin)), _nOut(nOut)
   {
+    if (this->txin.vout.size() <= _nOut) {
+      throw std::invalid_argument("txin.vout doesn't have the required output");
+    }
   }
 
-  const CTxOut &prevOut() const { return txin.vout[_nOut]; }
+  const CTxOut &prevOut() const { return txin.vout.at(_nOut); }
 
   const uint256 &txid() const { return txin.GetHash(); }
 

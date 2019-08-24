@@ -271,19 +271,26 @@ int main(int argc, const char *argv[])
       size_t* size_bitcoin = new size_t[num_users + 1]();
       unsigned char *tx_hex_litecoin = new unsigned char[(num_users + 1) * 500]();
       size_t* size_litecoin = new size_t[num_users + 1]();
+      
+      string folder = "../untrusted/test_data/";
       try {
-          freopen ("/code/sgx/untrusted/test_data/bitcoin-deposit","r",stdin);
+          auto stream = freopen ((folder + "bitcoin-deposit").c_str(),"r",stdin);
+          if (stream == NULL) {
+              throw std::runtime_error("file (" + folder + "bitcoin-deposit) doesn't exist");
+          }
           size_t tmp = 0;
           for (int i = 0; i < num_users + 1; ++i) {
               char st[500];
-              scanf("%s", st);
+              if (scanf("%s", st) != 1) {
+                  throw std::runtime_error("not enough inputs in bitcoin-deposit");
+              }
               strncpy((char*)tx_hex_bitcoin + tmp, st, strlen(st));
               size_bitcoin[i] = strlen((char*)tx_hex_bitcoin) - tmp;
               tmp = strlen((char*)tx_hex_bitcoin);
           }
           fclose(stdin);
 
-          freopen ("/code/sgx/untrusted/test_data/litecoin-deposit","r",stdin);
+          freopen ("../sgx/untrusted/test_data/litecoin-deposit","r",stdin);
           tmp = 0;
           for (int i = 0; i < num_users + 1; ++i) {
               char st[500];
