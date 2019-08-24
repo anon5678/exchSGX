@@ -7,13 +7,18 @@ const config = {
     user: 'exch',
     pass: 'goodpass',
     host: '127.0.0.1',
-    port: '8335',
+    port: '8335'
   };
 
 const rpc = new RpcClient(config);
 
 var myArgs = process.argv.slice(2);
-const num_user = parseInt(myArgs[0]);
+var num_user = 4;
+if (myArgs == undefined) {
+    num_user = 4;
+} else {
+    num_user = parseInt(myArgs[0]);
+}
 
 const addr = ["muEPF2wfm1QdLy3LKocBQiW8g73WpzFq72",     //sgx
 "2MuGvrwMz58AKTyPTxjDUqN9an9nVsPHQy6",
@@ -6024,7 +6029,7 @@ fs.writeFile(file, "", (err) => {
 
 function work(i) {
     if (i == num_user + 1) {
-        rpc.generate(100, function(err, res) {
+        rpc.generatetoaddress(100, addr[0], function(err, res) {
             if (err) return console.log(err);
             return;
         });

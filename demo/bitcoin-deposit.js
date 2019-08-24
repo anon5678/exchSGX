@@ -6024,7 +6024,7 @@ fs.writeFile(file, "", (err) => {
 
 function work(i) {
     if (i == num_user + 1) {
-        rpc.generate(100, function(err, res) {
+        rpc.generatetoaddress(100, addr[0], function(err, res) {
             if (err) return console.log(err);
             return;
         });
