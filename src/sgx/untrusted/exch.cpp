@@ -290,18 +290,23 @@ int main(int argc, const char *argv[])
           }
           fclose(stdin);
 
-          freopen ("../sgx/untrusted/test_data/litecoin-deposit","r",stdin);
+          stream = freopen ((folder + "litecoin-deposit").c_str(),"r",stdin);
+          if (stream == NULL) {
+              throw std::runtime_error("file (" + folder + "litecoin-deposit) doesn't exist");
+          }
           tmp = 0;
           for (int i = 0; i < num_users + 1; ++i) {
               char st[500];
-              scanf("%s", st);
+              if (scanf("%s", st) != 1) {
+                  throw std::runtime_error("not enough inputs in litecoin-deposit");
+              }
               strncpy((char*)tx_hex_litecoin + tmp, st, strlen(st));
               size_litecoin[i] = strlen((char*)tx_hex_litecoin) - tmp;
               tmp = strlen((char*)tx_hex_litecoin);
           }
           fclose(stdin);
       } catch (const std::exception &e) {
-          cerr << "cannot read from file: " << e.what() << endl;
+          LOG4CXX_ERROR(logger, "cannot read from file: " << e.what());
           exit(-1);
       }
     
@@ -311,10 +316,17 @@ int main(int argc, const char *argv[])
     generate_settlement_tx(eid, &ret,
             num_users, num_users, tx_hex_bitcoin, size_bitcoin,
             num_users, num_users, tx_hex_litecoin, size_litecoin);
+    if (ret != 0) {
+        LOG4CXX_ERROR(logger, "tx generation error!");
+        break;
+    }
+    
+    delete[] tx_hex_bitcoin;
+    delete[] size_bitcoin;
+    delete[] tx_hex_litecoin;
+    delete[] size_litecoin;
 
-#ifdef DEMO
     simulate_leader(eid, &ret);
-#endif
   }
 
   while (!exch::interrupt::quit.load()) {

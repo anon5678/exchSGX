@@ -146,7 +146,7 @@ MerkleProof buildTxInclusionProof(const string &txid)
 }
 
 int sendTxToBlockchain(int index, const char* tx_hex) {
-    try{
+    try {
     if (index == 1) {
 #ifdef DEMO
         if (conf.getFailure() && conf.getIsFairnessLeader()) return 0;
@@ -158,7 +158,6 @@ int sendTxToBlockchain(int index, const char* tx_hex) {
 #ifdef DEMO
         rpc.generatetoaddress(2, "muEPF2wfm1QdLy3LKocBQiW8g73WpzFq72"); //TODO: just for demo, note that the last generated block is not fed into blockfifo!!!
 #endif
- 
         LOG4CXX_INFO(logger, "tx mined in bitcoin");
     } else {
         Bitcoind rpc("localhost", 8335);
@@ -167,7 +166,7 @@ int sendTxToBlockchain(int index, const char* tx_hex) {
         LOG4CXX_INFO(logger, "tx sent to litecoin");
 #ifdef DEMO
         rpc.generatetoaddress(2, "muEPF2wfm1QdLy3LKocBQiW8g73WpzFq72"); //TODO: just for demo, note that the last generated block is not fed into blockfifo!!!
-         LOG4CXX_INFO(logger, "tx mined in litecoin");
+        LOG4CXX_INFO(logger, "tx mined in litecoin");
 #endif
     }
     } catch (const BitcoindRPCException &e) {

@@ -11,7 +11,7 @@ int Bitcoind::getblockcount()
   try {
     return this->bitcoind_stub.getblockcount();
   } catch (const jsonrpc::JsonRpcException &e) {
-    throw std::runtime_error("jsonrpc error: " + string(e.what()));
+    throw BitcoindRPCException(e.GetCode(), e.GetMessage());
   }
 }
 
@@ -67,10 +67,10 @@ void Bitcoind::sendrawtransaction(const string &tx_hex)
   }
 }
 
-void Bitcoind::generate(int nblocks)
+void Bitcoind::generatetoaddress(int nblocks, const string &tx_hash)
 {
   try {
-    this->bitcoind_stub.generate(nblocks);
+    this->bitcoind_stub.generatetoaddress(nblocks, tx_hash);
   } catch (const jsonrpc::JsonRpcException &e) {
     throw BitcoindRPCException(e.GetCode(), e.GetMessage());
   }

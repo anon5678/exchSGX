@@ -45,7 +45,7 @@ class Bitcoind
   Value getblock(const string &block_hash);
   Value getrawtransaction(const string &tx_hash, bool JSONformat);
   void sendrawtransaction(const string &tx_hex);
-  void generate(int nblocks);
+  void generatetoaddress(int nblocks, const string &tx_hash);
 };
 
 class BitcoindRPCException : public std::exception

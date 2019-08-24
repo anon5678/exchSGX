@@ -170,7 +170,7 @@ int generate_settlement_tx(
         hex2bin(tx_tmp, HexStr(tx1_pair.first.GetHash()).c_str());
         byte_swap(tx_tmp, 32);
         string tx_1_id = bin2hex(tx_tmp, 32);
-        LL_NOTICE("settment tx1 id: %s", tx_1_id.c_str());        
+        LL_NOTICE("settment tx1 id: %s", tx_1_id.c_str());
         
         hex2bin(tx_tmp, HexStr(tx1_pair.second.GetHash()).c_str());
         byte_swap(tx_tmp, 32);

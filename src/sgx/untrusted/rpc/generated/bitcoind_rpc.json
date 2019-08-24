@@ -1,8 +1,9 @@
 [
   {
-    "method": "generate",
+    "method": "generatetoaddress",
     "params": [
-      123123123
+      123123123,
+      "address"
     ],
     "returns": [] 
   },
